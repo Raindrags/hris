@@ -235,7 +235,10 @@ export function ApprovalForm({
     >
       <div className="space-y-2">
         <Label>Tugas Diserahkan Kepada</Label>
-        <Select value={delegatedTo || ""} onValueChange={setDelegatedTo}>
+        <Select
+          value={delegatedTo || ""}
+          onValueChange={(value) => setDelegatedTo(value ?? "")}
+        >
           <SelectTrigger>
             <SelectValue placeholder="Pilih Pegawai Pengganti" />
           </SelectTrigger>
