@@ -45,11 +45,12 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
 const getAttendanceReportData = async (
   startDate: string,
   endDate: string,
-  divisiId: string,
+  divisiId: string, // <-- Variabel ini sekarang akan menerima NAMA DIVISI
 ) => {
   try {
     const params = new URLSearchParams({ startDate, endDate });
     if (divisiId && divisiId !== "all") {
+      // Mengirim param 'divisiId' yang sebenarnya berisi 'divisi name' ke API
       params.append("divisiId", divisiId);
     }
 
@@ -176,10 +177,9 @@ export default function RekapAbsensiView() {
       );
 
       if (res.success && res.data) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const processedData = res.data.map((emp: any) => {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const filteredLogs = emp.logs.filter((log: any) => {
+        // PERBAIKAN VERCEL: Menggunakan interface EmployeeReport dan AttendanceLog, bukan type 'any'
+        const processedData = res.data.map((emp: EmployeeReport) => {
+          const filteredLogs = emp.logs.filter((log: AttendanceLog) => {
             // Sembunyikan hari Minggu/Sabtu hanya jika tidak ada absen dan bukan hari dinas khusus
             if (log.dayName === "Sunday" && !log.in && !log.isSpecialWorkDay)
               return false;
@@ -495,8 +495,9 @@ export default function RekapAbsensiView() {
 
       <Card>
         <CardContent className="p-6">
+          {/* PERBAIKAN UI/UX: Menggunakan flex flex-col gap-2 pada setiap kolom agar jarak konsisten */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-            <div className="space-y-2">
+            <div className="flex flex-col gap-2">
               <Label htmlFor="startDate">Tanggal Mulai</Label>
               <Input
                 id="startDate"
@@ -505,7 +506,8 @@ export default function RekapAbsensiView() {
                 onChange={(e) => setStartDate(e.target.value)}
               />
             </div>
-            <div className="space-y-2">
+
+            <div className="flex flex-col gap-2">
               <Label htmlFor="endDate">Tanggal Akhir</Label>
               <Input
                 id="endDate"
@@ -514,7 +516,8 @@ export default function RekapAbsensiView() {
                 onChange={(e) => setEndDate(e.target.value)}
               />
             </div>
-            <div className="space-y-2">
+
+            <div className="flex flex-col gap-2">
               <Label htmlFor="divisi">Divisi / Unit</Label>
               <Select value={divisiId} onValueChange={setDivisiId}>
                 <SelectTrigger id="divisi">
@@ -523,26 +526,30 @@ export default function RekapAbsensiView() {
                 <SelectContent>
                   <SelectItem value="all">Semua Divisi</SelectItem>
                   {divisions.map((div) => (
-                    <SelectItem key={div.id} value={div.id}>
+                    <SelectItem key={div.id} value={String(div.id)}>
                       {div.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            <Button
-              onClick={handleGenerateReport}
-              disabled={isLoading}
-              className="w-full"
-            >
-              {isLoading ? (
-                "Memproses..."
-              ) : (
-                <>
-                  <Search className="w-4 h-4 mr-2" /> Tampilkan Data
-                </>
-              )}
-            </Button>
+
+            {/* Dibungkus flex-col agar posisi button ikut sejajar ke bawah bersama input */}
+            <div className="flex flex-col gap-2">
+              <Button
+                onClick={handleGenerateReport}
+                disabled={isLoading}
+                className="w-full h-10"
+              >
+                {isLoading ? (
+                  "Memproses..."
+                ) : (
+                  <>
+                    <Search className="w-4 h-4 mr-2" /> Tampilkan Data
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
