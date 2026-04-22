@@ -530,7 +530,10 @@ export default function RekapAbsensiView() {
 
             <div className="flex flex-col gap-2">
               <Label htmlFor="divisi">Divisi / Unit</Label>
-              <Select value={divisiId} onValueChange={setDivisiId}>
+              <Select
+                value={divisiId}
+                onValueChange={(value) => setDivisiId(value)}
+              >
                 <SelectTrigger id="divisi">
                   <SelectValue placeholder="Pilih Divisi" />
                 </SelectTrigger>
