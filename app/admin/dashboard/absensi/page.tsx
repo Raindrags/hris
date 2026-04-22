@@ -89,6 +89,13 @@ interface AttendanceLog {
   earlyLeaveDuration: string;
   isAbsent: boolean;
   status: string;
+  // UPDATE API BARU: tambahan opsional
+  leaveType?: string | null;
+  leaveCategory?: string | null;
+  partialLeave?: {
+    type: string;
+    timeRange: string;
+  } | null;
 }
 
 interface EmployeeReport {
@@ -104,9 +111,13 @@ interface EmployeeReport {
     onTime: number;
     late: number;
     off: number;
-    noFp: number;
+    noFp: number; // deprecated, tetap ada untuk kompatibilitas
     overtime: number;
     hasViolation: boolean;
+    // UPDATE API BARU: tambahan opsional
+    alpa?: number;
+    cuti?: number;
+    izin?: number;
   };
   logs: AttendanceLog[];
 }
@@ -626,6 +637,7 @@ export default function RekapAbsensiView() {
                           </span>
                         </div>
                       </div>
+                      {/* ===== PERUBAHAN UTAMA: BADGE DIPISAH MENJADI 4 ===== */}
                       <div className="flex gap-2 text-xs md:text-sm">
                         <div className="bg-green-50 text-green-700 px-3 py-1.5 rounded-md border border-green-100 flex flex-col justify-center items-center min-w-[70px]">
                           <span className="font-bold text-lg">
@@ -639,13 +651,20 @@ export default function RekapAbsensiView() {
                           </span>
                           <span>Telat</span>
                         </div>
+                        <div className="bg-red-50 text-red-700 px-3 py-1.5 rounded-md border border-red-100 flex flex-col justify-center items-center min-w-[70px]">
+                          <span className="font-bold text-lg">
+                            {emp.summary.alpa ?? emp.summary.noFp ?? 0}
+                          </span>
+                          <span>Alpa</span>
+                        </div>
                         <div className="bg-gray-50 text-gray-700 px-3 py-1.5 rounded-md border border-gray-200 flex flex-col justify-center items-center min-w-[70px]">
                           <span className="font-bold text-lg">
-                            {emp.summary.off + emp.summary.noFp}
+                            {emp.summary.off ?? 0}
                           </span>
-                          <span>Bolos/Off</span>
+                          <span>Off</span>
                         </div>
                       </div>
+                      {/* ===== AKHIR PERUBAHAN ===== */}
                     </div>
                   </CardHeader>
 
@@ -700,6 +719,18 @@ export default function RekapAbsensiView() {
                                 <span className="text-red-500 text-[10px] ml-1.5 px-1.5 py-0.5 bg-red-100 rounded font-medium inline-flex items-center gap-1">
                                   <AlertCircle className="w-3 h-3 inline" /> No
                                   FP
+                                </span>
+                              )}
+                              {/* UPDATE API BARU: tampilkan badge cuti/izin jika ada */}
+                              {log.leaveType && (
+                                <span className="text-blue-700 text-[10px] ml-1.5 px-1.5 py-0.5 bg-blue-100 rounded font-medium">
+                                  {log.leaveType}
+                                </span>
+                              )}
+                              {log.partialLeave && (
+                                <span className="text-purple-700 text-[10px] ml-1.5 px-1.5 py-0.5 bg-purple-100 rounded font-medium">
+                                  {log.partialLeave.type} (
+                                  {log.partialLeave.timeRange})
                                 </span>
                               )}
                             </TableCell>

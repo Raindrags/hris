@@ -48,3 +48,14 @@ export const apiClient = {
     fetcher(url, { method: "PUT", body: JSON.stringify(body) }),
   delete: (url: string) => fetcher(url, { method: "DELETE" }),
 };
+
+export async function verifyToken(token: string) {
+  const res = await fetch("/api/auth/verify-token", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Verifikasi gagal");
+  return data.user;
+}
