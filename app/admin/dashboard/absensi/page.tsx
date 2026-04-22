@@ -532,7 +532,7 @@ export default function RekapAbsensiView() {
               <Label htmlFor="divisi">Divisi / Unit</Label>
               <Select
                 value={divisiId}
-                onValueChange={(value) => setDivisiId(value)}
+                onValueChange={(value) => setDivisiId(value ?? "all")}
               >
                 <SelectTrigger id="divisi">
                   <SelectValue placeholder="Pilih Divisi" />
