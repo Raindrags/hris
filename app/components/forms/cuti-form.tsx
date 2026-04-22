@@ -189,7 +189,7 @@ export function LeaveForm({ user, onSuccess }: LeaveFormProps) {
           <div className="space-y-2 flex flex-col">
             <Label className="text-slate-300">Tanggal Mulai</Label>
             <Popover>
-              <PopoverTrigger asChild>
+              <PopoverTrigger>
                 <Button
                   variant={"outline"}
                   className={cn(
@@ -209,14 +209,7 @@ export function LeaveForm({ user, onSuccess }: LeaveFormProps) {
                 className="w-auto p-0 bg-slate-900 border-slate-700"
                 align="start"
               >
-                <Calendar
-                  mode="single"
-                  selected={startDate}
-                  onSelect={setStartDate}
-                  initialFocus
-                  modifiers={{ holiday: isHolidayOrSunday }}
-                  modifiersClassNames={{ holiday: "text-red-500 font-bold" }}
-                />
+                {/* Calendar */}
               </PopoverContent>
             </Popover>
           </div>
@@ -225,7 +218,7 @@ export function LeaveForm({ user, onSuccess }: LeaveFormProps) {
           <div className="space-y-2 flex flex-col">
             <Label className="text-slate-300">Tanggal Selesai</Label>
             <Popover>
-              <PopoverTrigger asChild>
+              <PopoverTrigger>
                 <Button
                   variant={"outline"}
                   className={cn(
@@ -245,14 +238,7 @@ export function LeaveForm({ user, onSuccess }: LeaveFormProps) {
                 className="w-auto p-0 bg-slate-900 border-slate-700"
                 align="start"
               >
-                <Calendar
-                  mode="single"
-                  selected={endDate}
-                  onSelect={setEndDate}
-                  initialFocus
-                  modifiers={{ holiday: isHolidayOrSunday }}
-                  modifiersClassNames={{ holiday: "text-red-500 font-bold" }}
-                />
+                {/* Calendar */}
               </PopoverContent>
             </Popover>
           </div>
