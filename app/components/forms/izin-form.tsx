@@ -280,7 +280,7 @@ export function PermissionForm({ user, onSuccess }: PermissionFormProps) {
           <div className="space-y-2 flex flex-col">
             <Label className="text-slate-300">Tanggal Mulai</Label>
             <Popover>
-              <PopoverTrigger >
+              <PopoverTrigger>
                 <Button
                   variant={"outline"}
                   className={cn(
@@ -391,7 +391,7 @@ export function PermissionForm({ user, onSuccess }: PermissionFormProps) {
           <Select
             value={category}
             onValueChange={(val) => {
-              setCategory(val);
+              setCategory(val ?? "");
               if (val !== "IzinKhusus") setSubCategory("");
               if (val !== "Terlambat" && val !== "PulangAwal") setTimeValue("");
             }}
