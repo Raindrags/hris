@@ -217,21 +217,20 @@ export default function DashboardLayout({
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
 
-              <DropdownMenuItem asChild>
-                <Link href="/dashboard/settings" className="cursor-pointer">
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
-                </Link>
+              <DropdownMenuItem
+                onClick={() => router.push("/dashboard/settings")}
+              >
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Settings</span>
               </DropdownMenuItem>
 
-              <DropdownMenuItem asChild>
-                <Link
-                  href="mailto:support@maitreyawira.sch.id"
-                  className="cursor-pointer"
-                >
-                  <LifeBuoy className="mr-2 h-4 w-4" />
-                  <span>Support</span>
-                </Link>
+              <DropdownMenuItem
+                onClick={() =>
+                  (window.location.href = "mailto:support@maitreyawira.sch.id")
+                }
+              >
+                <LifeBuoy className="mr-2 h-4 w-4" />
+                <span>Support</span>
               </DropdownMenuItem>
 
               <DropdownMenuSeparator />
