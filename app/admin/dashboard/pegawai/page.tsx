@@ -417,7 +417,9 @@ export default function PegawaiView() {
               <Label htmlFor="role">Peran (Role)</Label>
               <Select
                 value={formData.role}
-                onValueChange={(val) => setFormData({ ...formData, role: val })}
+                onValueChange={(val) =>
+                  setFormData({ ...formData, role: val ?? "TEACHER" })
+                }
               >
                 <SelectTrigger id="role">
                   <SelectValue placeholder="Pilih peran" />
@@ -438,7 +440,7 @@ export default function PegawaiView() {
               <Select
                 value={formData.supervisorId}
                 onValueChange={(val) =>
-                  setFormData({ ...formData, supervisorId: val })
+                  setFormData({ ...formData, supervisorId: val ?? "none" })
                 }
               >
                 <SelectTrigger id="supervisor">
