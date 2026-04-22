@@ -457,7 +457,10 @@ export function PermissionForm({ user, onSuccess }: PermissionFormProps) {
         {category === "IzinKhusus" && (
           <div className="space-y-2 p-3 bg-slate-900/50 rounded border border-slate-700">
             <Label className="text-slate-300">Detail Izin Khusus</Label>
-            <Select value={subCategory} onValueChange={setSubCategory}>
+            <Select
+              value={subCategory}
+              onValueChange={(value) => setSubCategory(value ?? "")}
+            >
               <SelectTrigger className="bg-slate-900 border-slate-700 text-slate-100">
                 <SelectValue placeholder="Pilih alasan khusus" />
               </SelectTrigger>
