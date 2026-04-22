@@ -242,10 +242,7 @@ export function ApprovalForm({
           <SelectTrigger>
             <SelectValue placeholder="Pilih Pegawai Pengganti" />
           </SelectTrigger>
-          <SelectContent
-            position="popper"
-            className="z-[9999] bg-slate-900 border shadow-md"
-          >
+          <SelectContent className="z-[9999] bg-slate-900 border shadow-md">
             <SelectGroup>
               {filteredSubstitutes.length === 0 ? (
                 <SelectItem value="empty" disabled>
