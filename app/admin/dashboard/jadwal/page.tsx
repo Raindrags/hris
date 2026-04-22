@@ -102,7 +102,8 @@ export default function PengaturanJadwalView() {
   // STATE: BATCH ASSIGN MODAL
   // ==========================================
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
-  const [selectedShiftForAssign, setSelectedShiftForAssign] = useState<any>(null);
+  const [selectedShiftForAssign, setSelectedShiftForAssign] =
+    useState<any>(null);
   const [employees, setEmployees] = useState<any[]>([]);
   const [divisions, setDivisions] = useState<any[]>([]);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
@@ -119,7 +120,7 @@ export default function PengaturanJadwalView() {
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     const res = await getAllShifts();
-    
+
     if (res.success) {
       setShifts(res.data || []);
       setShiftCurrentPage(1); // Reset ke halaman 1 setiap kali data baru di-load
@@ -137,7 +138,7 @@ export default function PengaturanJadwalView() {
   // PAGINASI TABEL SHIFT UTAMA
   // ==========================================
   const totalShiftPages = Math.ceil(shifts.length / shiftsPerPage);
-  
+
   const paginatedShifts = useMemo(() => {
     const start = (shiftCurrentPage - 1) * shiftsPerPage;
     return shifts.slice(start, start + shiftsPerPage);
@@ -237,10 +238,15 @@ export default function PengaturanJadwalView() {
   const handleSaveBatchAssign = async () => {
     if (!selectedShiftForAssign) return;
 
-    const res = await batchAssignShift(selectedUserIds, selectedShiftForAssign.id);
+    const res = await batchAssignShift(
+      selectedUserIds,
+      selectedShiftForAssign.id,
+    );
 
     if (res?.success) {
-      toast.success(`Berhasil menugaskan jadwal ke ${selectedUserIds.length} pegawai`);
+      toast.success(
+        `Berhasil menugaskan jadwal ke ${selectedUserIds.length} pegawai`,
+      );
       setIsAssignModalOpen(false);
     } else {
       toast.error(res.error || "Gagal menyimpan penugasan jadwal");
@@ -249,7 +255,7 @@ export default function PengaturanJadwalView() {
 
   const handleToggleEmployee = (id: string) => {
     setSelectedUserIds((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
     );
   };
 
@@ -262,14 +268,15 @@ export default function PengaturanJadwalView() {
         emp.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         emp.niy?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         emp.jabatan?.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesDivisi = divisiFilter === "all" || emp.divisiId === divisiFilter;
-      
+      const matchesDivisi =
+        divisiFilter === "all" || emp.divisiId === divisiFilter;
+
       return matchesSearch && matchesDivisi;
     });
   }, [employees, searchTerm, divisiFilter]);
 
   const totalEmployeePages = Math.ceil(filteredEmployees.length / itemsPerPage);
-  
+
   const paginatedEmployees = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
     return filteredEmployees.slice(start, start + itemsPerPage);
@@ -333,7 +340,9 @@ export default function PengaturanJadwalView() {
                       <Input
                         placeholder="Contoh: Guru Reguler, Satpam Pagi"
                         value={shiftForm.name}
-                        onChange={(e) => setShiftForm({ ...shiftForm, name: e.target.value })}
+                        onChange={(e) =>
+                          setShiftForm({ ...shiftForm, name: e.target.value })
+                        }
                       />
                     </div>
                     <div className="space-y-2 flex flex-col justify-end pb-2">
@@ -341,10 +350,13 @@ export default function PengaturanJadwalView() {
                         <Checkbox
                           id="flexible"
                           checked={shiftForm.isFlexible}
-                          onCheckedChange={(c) => setShiftForm({ ...shiftForm, isFlexible: !!c })}
+                          onCheckedChange={(c) =>
+                            setShiftForm({ ...shiftForm, isFlexible: !!c })
+                          }
                         />
                         <Label htmlFor="flexible" className="cursor-pointer">
-                          Jadwal Flexible (Bebas jam masuk, hanya hitung total jam)
+                          Jadwal Flexible (Bebas jam masuk, hanya hitung total
+                          jam)
                         </Label>
                       </div>
                     </div>
@@ -365,7 +377,9 @@ export default function PengaturanJadwalView() {
                           <div className="w-32 flex items-center gap-2">
                             <Checkbox
                               checked={day.isActive}
-                              onCheckedChange={(c) => handleDetailChange(index, "isActive", !!c)}
+                              onCheckedChange={(c) =>
+                                handleDetailChange(index, "isActive", !!c)
+                              }
                             />
                             <Label
                               className={
@@ -388,7 +402,13 @@ export default function PengaturanJadwalView() {
                                 value={day.checkIn}
                                 disabled={!day.isActive}
                                 className={!day.isActive ? "opacity-50" : ""}
-                                onChange={(e) => handleDetailChange(index, "checkIn", e.target.value)}
+                                onChange={(e) =>
+                                  handleDetailChange(
+                                    index,
+                                    "checkIn",
+                                    e.target.value,
+                                  )
+                                }
                               />
                             </div>
                             <div className="flex items-center gap-2">
@@ -400,7 +420,13 @@ export default function PengaturanJadwalView() {
                                 value={day.checkOut}
                                 disabled={!day.isActive}
                                 className={!day.isActive ? "opacity-50" : ""}
-                                onChange={(e) => handleDetailChange(index, "checkOut", e.target.value)}
+                                onChange={(e) =>
+                                  handleDetailChange(
+                                    index,
+                                    "checkOut",
+                                    e.target.value,
+                                  )
+                                }
                               />
                             </div>
                           </div>
@@ -431,13 +457,19 @@ export default function PengaturanJadwalView() {
                   <TableBody>
                     {isLoading && shifts.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
+                        <TableCell
+                          colSpan={4}
+                          className="text-center py-6 text-muted-foreground"
+                        >
                           Memuat data...
                         </TableCell>
                       </TableRow>
                     ) : shifts.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
+                        <TableCell
+                          colSpan={4}
+                          className="text-center py-6 text-muted-foreground"
+                        >
                           Belum ada template jadwal.
                         </TableCell>
                       </TableRow>
@@ -445,16 +477,21 @@ export default function PengaturanJadwalView() {
                       paginatedShifts.map((s) => {
                         const activeDays = s.details
                           ?.map((d: any) => {
-                            const dayObj = DAYS.find((day) => day.id === d.dayOfWeek);
+                            const dayObj = DAYS.find(
+                              (day) => day.id === d.dayOfWeek,
+                            );
                             return dayObj ? dayObj.name.substring(0, 3) : "";
                           })
                           .join(", ");
 
                         return (
                           <TableRow key={s.id}>
-                            <TableCell className="font-medium">{s.name}</TableCell>
+                            <TableCell className="font-medium">
+                              {s.name}
+                            </TableCell>
                             <TableCell className="text-sm text-muted-foreground">
-                              {s.details?.length || 0} Hari ({activeDays || "-"})
+                              {s.details?.length || 0} Hari ({activeDays || "-"}
+                              )
                             </TableCell>
                             <TableCell>
                               {s.isFlexible ? (
@@ -474,12 +511,21 @@ export default function PengaturanJadwalView() {
                                 className="text-blue-600 border-blue-200 bg-blue-50 hover:bg-blue-100 mr-2"
                                 onClick={() => openBatchAssignModal(s)}
                               >
-                                <Users className="w-4 h-4 mr-2" /> Assign Pegawai
+                                <Users className="w-4 h-4 mr-2" /> Assign
+                                Pegawai
                               </Button>
-                              <Button variant="ghost" size="icon" onClick={() => handleEditShift(s)}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleEditShift(s)}
+                              >
                                 <Pencil className="w-4 h-4 text-orange-500" />
                               </Button>
-                              <Button variant="ghost" size="icon" onClick={() => handleDeleteShift(s.id)}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDeleteShift(s.id)}
+                              >
                                 <Trash2 className="w-4 h-4 text-red-500" />
                               </Button>
                             </TableCell>
@@ -489,18 +535,21 @@ export default function PengaturanJadwalView() {
                     )}
                   </TableBody>
                 </Table>
-                
+
                 {/* Paginasi untuk Tabel Shift */}
                 {totalShiftPages > 1 && (
                   <div className="flex items-center justify-between px-4 py-3 bg-muted/20 border-t">
                     <span className="text-sm text-muted-foreground">
-                      Menampilkan {paginatedShifts.length} dari {shifts.length} template
+                      Menampilkan {paginatedShifts.length} dari {shifts.length}{" "}
+                      template
                     </span>
                     <div className="flex items-center gap-2">
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setShiftCurrentPage((p) => Math.max(1, p - 1))}
+                        onClick={() =>
+                          setShiftCurrentPage((p) => Math.max(1, p - 1))
+                        }
                         disabled={shiftCurrentPage === 1}
                       >
                         <ChevronLeft className="w-4 h-4 mr-1" /> Prev
@@ -511,7 +560,11 @@ export default function PengaturanJadwalView() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setShiftCurrentPage((p) => Math.min(totalShiftPages, p + 1))}
+                        onClick={() =>
+                          setShiftCurrentPage((p) =>
+                            Math.min(totalShiftPages, p + 1),
+                          )
+                        }
                         disabled={shiftCurrentPage === totalShiftPages}
                       >
                         Next <ChevronRight className="w-4 h-4 ml-1" />
@@ -529,7 +582,9 @@ export default function PengaturanJadwalView() {
       <Dialog open={isAssignModalOpen} onOpenChange={setIsAssignModalOpen}>
         <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>Atur Pegawai untuk: {selectedShiftForAssign?.name}</DialogTitle>
+            <DialogTitle>
+              Atur Pegawai untuk: {selectedShiftForAssign?.name}
+            </DialogTitle>
             <DialogDescription>
               Pilih pegawai yang akan ditugaskan ke template jadwal ini.
             </DialogDescription>
@@ -545,7 +600,10 @@ export default function PengaturanJadwalView() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <Select value={divisiFilter} onValueChange={setDivisiFilter}>
+            <Select
+              value={divisiFilter}
+              onValueChange={(value) => setDivisiFilter(value ?? "all")}
+            >
               <SelectTrigger className="w-full sm:w-[250px]">
                 <SelectValue placeholder="Semua Divisi" />
               </SelectTrigger>
@@ -569,14 +627,22 @@ export default function PengaturanJadwalView() {
                       <Checkbox
                         checked={
                           filteredEmployees.length > 0 &&
-                          filteredEmployees.every((emp) => selectedUserIds.includes(emp.id))
+                          filteredEmployees.every((emp) =>
+                            selectedUserIds.includes(emp.id),
+                          )
                         }
                         onCheckedChange={(checked) => {
-                          const filteredIds = filteredEmployees.map((e) => e.id);
+                          const filteredIds = filteredEmployees.map(
+                            (e) => e.id,
+                          );
                           if (checked) {
-                            setSelectedUserIds((prev) => Array.from(new Set([...prev, ...filteredIds])));
+                            setSelectedUserIds((prev) =>
+                              Array.from(new Set([...prev, ...filteredIds])),
+                            );
                           } else {
-                            setSelectedUserIds((prev) => prev.filter((id) => !filteredIds.includes(id)));
+                            setSelectedUserIds((prev) =>
+                              prev.filter((id) => !filteredIds.includes(id)),
+                            );
                           }
                         }}
                       />
@@ -590,7 +656,10 @@ export default function PengaturanJadwalView() {
                 <TableBody>
                   {paginatedEmployees.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                      <TableCell
+                        colSpan={5}
+                        className="text-center py-8 text-muted-foreground"
+                      >
                         Tidak ada pegawai yang ditemukan.
                       </TableCell>
                     </TableRow>
@@ -601,13 +670,18 @@ export default function PengaturanJadwalView() {
                         className="cursor-pointer hover:bg-muted/50 transition-colors"
                         onClick={() => handleToggleEmployee(emp.id)}
                       >
-                        <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                        <TableCell
+                          className="text-center"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <Checkbox
                             checked={selectedUserIds.includes(emp.id)}
                             onCheckedChange={() => handleToggleEmployee(emp.id)}
                           />
                         </TableCell>
-                        <TableCell className="font-medium">{emp.name}</TableCell>
+                        <TableCell className="font-medium">
+                          {emp.name}
+                        </TableCell>
                         <TableCell>{emp.niy || "-"}</TableCell>
                         <TableCell>{emp.jabatan || emp.role || "-"}</TableCell>
                         <TableCell>{emp.divisi?.name || "-"}</TableCell>
@@ -621,7 +695,8 @@ export default function PengaturanJadwalView() {
             {totalEmployeePages > 1 && (
               <div className="flex items-center justify-between px-4 py-2 bg-muted/20 border-t">
                 <span className="text-sm text-muted-foreground">
-                  Menampilkan {paginatedEmployees.length} dari {filteredEmployees.length} pegawai
+                  Menampilkan {paginatedEmployees.length} dari{" "}
+                  {filteredEmployees.length} pegawai
                 </span>
                 <div className="flex items-center gap-2">
                   <Button
@@ -638,7 +713,9 @@ export default function PengaturanJadwalView() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setCurrentPage((p) => Math.min(totalEmployeePages, p + 1))}
+                    onClick={() =>
+                      setCurrentPage((p) => Math.min(totalEmployeePages, p + 1))
+                    }
                     disabled={currentPage === totalEmployeePages}
                   >
                     Next <ChevronRight className="w-4 h-4 ml-1" />
@@ -652,7 +729,10 @@ export default function PengaturanJadwalView() {
             <span className="text-sm font-medium mr-auto text-blue-600 mt-2">
               Total Dipilih: {selectedUserIds.length} Pegawai
             </span>
-            <Button variant="outline" onClick={() => setIsAssignModalOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsAssignModalOpen(false)}
+            >
               Batal
             </Button>
             <Button onClick={handleSaveBatchAssign}>Simpan Penugasan</Button>
