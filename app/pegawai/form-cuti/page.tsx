@@ -1,17 +1,22 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { LeaveForm } from "@/app/components/forms/cuti-form";
+import { PermissionForm } from "@/app/components/forms/izin-form";
 
-export default function FormCutiPage() {
+export default function FormIzinPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [userData, setUserData] = useState<{ sisaCuti: number } | null>(null);
+  const [userData, setUserData] = useState<{
+    name: string;
+    divisi?: { name: string } | null;
+  } | null>(null);
 
   useEffect(() => {
     if (!token) {
@@ -34,16 +39,14 @@ export default function FormCutiPage() {
           throw new Error(data.error || "Token tidak valid atau kadaluarsa.");
         }
 
-        // Simpan data user di localStorage
         localStorage.setItem("user", JSON.stringify(data.user));
         if (data.accessToken) {
           localStorage.setItem("accessToken", data.accessToken);
         }
 
-        // Ambil data sisa cuti (bisa dari response user atau panggil API terpisah)
-        // Asumsikan backend menyertakan sisaCuti di data.user
         setUserData({
-          sisaCuti: data.user.sisaCuti ?? 0,
+          name: data.user.name,
+          divisi: data.user.divisi || null,
         });
       } catch (err: any) {
         setError(err.message);
@@ -56,7 +59,6 @@ export default function FormCutiPage() {
   }, [token]);
 
   const handleSuccess = () => {
-    // Setelah berhasil submit, arahkan ke dashboard
     router.push("/dashboard");
   };
 
@@ -91,16 +93,15 @@ export default function FormCutiPage() {
     <main className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md bg-slate-800 border border-slate-700 rounded-xl shadow-lg p-6">
         <h1 className="text-2xl font-bold text-slate-100 mb-2">
-          Form Pengajuan Cuti
+          Form Pengajuan Izin
         </h1>
         <p className="text-sm text-slate-400 mb-6">
-          Harap isi form di bawah ini dengan lengkap.
+          Pengajuan izin harian, terlambat, atau pulang awal.
         </p>
 
-        <LeaveForm
-          user={{ sisaCuti: userData?.sisaCuti ?? 0 }}
-          onSuccess={handleSuccess}
-        />
+        {userData && (
+          <PermissionForm user={userData as any} onSuccess={handleSuccess} />
+        )}
       </div>
     </main>
   );
