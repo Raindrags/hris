@@ -2,17 +2,17 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { User, Lock, Loader2 } from "lucide-react";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Loader2, Lock, User } from "lucide-react";
+} from "../components/ui/card";
+import { Label } from "../components/ui/label";
+import { Input } from "../components/ui/input";
+import { Button } from "../components/ui/button";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -46,7 +46,6 @@ export default function LoginPage() {
       // 3. Jika sukses, token otomatis sudah masuk ke Cookie. Kita tinggal pindah halaman.
       router.push("/admin/dashboard"); // Sesuaikan dengan URL dashboard admin Anda
       router.refresh();
-      
     } catch (err: any) {
       console.error(err);
       setError(err.message || "Terjadi kesalahan sistem.");
