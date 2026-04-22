@@ -13,12 +13,10 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  // URL backend
+  // URL backend - Pastikan diatur di Vercel Environment Variables!
   const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3434";
 
   try {
-    // PERBAIKAN: Menghapus awalan "/api" karena NestJS Anda sepertinya tidak memakainya.
-    // Sesuaikan "/dashboard/admin" dengan @Controller() di NestJS Anda!
     const endpoint = `${backendUrl}/dashboard/admin`;
 
     const res = await fetch(endpoint, {
@@ -27,7 +25,7 @@ export default async function DashboardPage() {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
-      cache: "no-store", // Jangan gunakan cache agar data selalu baru
+      cache: "no-store", // Mencegah caching agar data selalu segar (Dynamic Rendering)
     });
 
     // ==========================================
@@ -35,21 +33,18 @@ export default async function DashboardPage() {
     // ==========================================
     console.log("=== DEBUGGING KE BACKEND ===");
     console.log("Mencoba fetch ke URL:", endpoint);
-    console.log("Token yang dikirim:", token);
     console.log("Status HTTP dari Backend:", res.status);
 
     if (!res.ok) {
       const errBody = await res.text();
       console.log("Pesan Error dari Backend:", errBody);
 
-      // Jika status 401 atau 403, lempar error masalah token
       if (res.status === 401 || res.status === 403) {
         throw new Error(
           `Akses ditolak (Status: ${res.status}). Token mungkin expired atau tidak valid.`,
         );
       }
 
-      // Jika status 404, artinya controller NestJS untuk alamat ini tidak ada
       if (res.status === 404) {
         throw new Error(
           `Endpoint tidak ditemukan (404) di Backend! Pastikan alamat URL di NestJS benar-benar "${endpoint}".`,
@@ -77,8 +72,15 @@ export default async function DashboardPage() {
         leaveHistory={data.leaveHistory}
       />
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
+    // PERBAIKAN 1: Mengubah 'error: any' menjadi 'error: unknown' agar lolos TypeScript Vercel
     console.error("Gagal memuat data dashboard:", error);
+
+    // PERBAIKAN 2: Ekstraksi pesan error yang aman untuk Strict Mode
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "Terjadi kesalahan yang tidak diketahui";
 
     // Tampilan darurat di layar jika terjadi error
     return (
@@ -89,13 +91,11 @@ export default async function DashboardPage() {
           </h2>
           <div className="text-gray-700 text-sm mb-4">
             <p>Pesan Error:</p>
-            <strong className="text-red-500 break-words">
-              {error.message}
-            </strong>
+            <strong className="text-red-500 break-words">{errorMessage}</strong>
           </div>
           <p className="text-gray-700 text-xs">
-            Sistem gagal memuat halaman. Silakan buka{" "}
-            <strong>Terminal VSCode / CMD</strong> untuk melihat log lengkapnya.
+            Sistem gagal memuat halaman. Silakan periksa log server di dashboard
+            Vercel.
           </p>
         </div>
       </main>
