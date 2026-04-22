@@ -225,7 +225,7 @@ export default function AdminDashboardView({
               <Filter className="h-4 w-4 text-muted-foreground hidden sm:block" />
               <Select
                 value={selectedDivisionId}
-                onValueChange={setSelectedDivisionId}
+                onValueChange={(value) => setSelectedDivisionId(value ?? "ALL")}
               >
                 <SelectTrigger className="w-full sm:w-[200px] bg-white dark:bg-zinc-950">
                   <SelectValue placeholder="Semua Divisi" />
