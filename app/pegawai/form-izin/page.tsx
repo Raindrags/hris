@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { PermissionForm } from "@/app/components/forms/izin-form";
 
-export default function FormIzinPage() {
+function FormIzinContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
@@ -37,13 +38,11 @@ export default function FormIzinPage() {
           throw new Error(data.error || "Token tidak valid atau kadaluarsa.");
         }
 
-        // Simpan data user di localStorage
         localStorage.setItem("user", JSON.stringify(data.user));
         if (data.accessToken) {
           localStorage.setItem("accessToken", data.accessToken);
         }
 
-        // Set userData untuk digunakan di PermissionForm
         setUserData({
           name: data.user.name,
           divisi: data.user.divisi || null,
@@ -59,7 +58,6 @@ export default function FormIzinPage() {
   }, [token]);
 
   const handleSuccess = () => {
-    // Setelah berhasil submit, arahkan ke dashboard
     router.push("/dashboard");
   };
 
@@ -105,5 +103,21 @@ export default function FormIzinPage() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function FormIzinPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-4">
+          <div className="w-full max-w-md bg-slate-800 border border-slate-700 rounded-xl shadow-lg p-6 text-center">
+            <p className="text-slate-300">Memuat halaman...</p>
+          </div>
+        </main>
+      }
+    >
+      <FormIzinContent />
+    </Suspense>
   );
 }

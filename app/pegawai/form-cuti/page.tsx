@@ -1,22 +1,19 @@
 "use client";
 
-export const dynamic = "force-dynamic";
-
-import { useEffect, useState } from "react";
+import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { PermissionForm } from "@/app/components/forms/izin-form";
+import { useEffect, useState } from "react";
+import { LeaveForm } from "@/app/components/forms/cuti-form";
 
-export default function FormIzinPage() {
+// Komponen terpisah yang menggunakan useSearchParams
+function FormCutiContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [userData, setUserData] = useState<{
-    name: string;
-    divisi?: { name: string } | null;
-  } | null>(null);
+  const [userData, setUserData] = useState<{ sisaCuti: number } | null>(null);
 
   useEffect(() => {
     if (!token) {
@@ -45,8 +42,7 @@ export default function FormIzinPage() {
         }
 
         setUserData({
-          name: data.user.name,
-          divisi: data.user.divisi || null,
+          sisaCuti: data.user.sisaCuti ?? 0,
         });
       } catch (err: any) {
         setError(err.message);
@@ -93,16 +89,34 @@ export default function FormIzinPage() {
     <main className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md bg-slate-800 border border-slate-700 rounded-xl shadow-lg p-6">
         <h1 className="text-2xl font-bold text-slate-100 mb-2">
-          Form Pengajuan Izin
+          Form Pengajuan Cuti
         </h1>
         <p className="text-sm text-slate-400 mb-6">
-          Pengajuan izin harian, terlambat, atau pulang awal.
+          Harap isi form di bawah ini dengan lengkap.
         </p>
 
-        {userData && (
-          <PermissionForm user={userData as any} onSuccess={handleSuccess} />
-        )}
+        <LeaveForm
+          user={{ sisaCuti: userData?.sisaCuti ?? 0 }}
+          onSuccess={handleSuccess}
+        />
       </div>
     </main>
+  );
+}
+
+// Komponen utama halaman yang membungkus Content dengan Suspense
+export default function FormCutiPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-4">
+          <div className="w-full max-w-md bg-slate-800 border border-slate-700 rounded-xl shadow-lg p-6 text-center">
+            <p className="text-slate-300">Memuat halaman...</p>
+          </div>
+        </main>
+      }
+    >
+      <FormCutiContent />
+    </Suspense>
   );
 }
