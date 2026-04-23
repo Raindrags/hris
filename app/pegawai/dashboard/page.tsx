@@ -7,9 +7,9 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CalendarDays, FileText, User } from "lucide-react";
-import { ApprovalSection } from "../components/forms/approval-section";
-import { ApprovalRequestData } from "../components/forms/approval-form";
-import { ProfileForm } from "../components/forms/profile-form";
+import { ApprovalSection } from "../../components/forms/approval-section";
+import { ApprovalRequestData } from "../../components/forms/approval-form";
+import { ProfileForm } from "../../components/forms/profile-form";
 
 const formatDate = (date: Date | string | null | undefined) => {
   if (!date) return "-";
