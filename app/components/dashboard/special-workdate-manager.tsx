@@ -53,7 +53,7 @@ interface UserOption {
   id: string;
   name: string;
   niy: string;
-  divisi: { name: string };
+  divisi?: { name: string };
 }
 
 interface Division {
@@ -68,13 +68,22 @@ export function SpecialWorkDateManager() {
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
+
+  // Type annotation eksplisit agar divisiId selalu string ("all" atau id)
+  const [formData, setFormData] = useState<{
+    date: string;
+    reason: string;
+    checkIn: string;
+    checkOut: string;
+    divisiId: string;
+  }>({
     date: "",
     reason: "",
     checkIn: "07:30",
     checkOut: "16:00",
-    divisiId: "all", // "all" untuk global
+    divisiId: "all",
   });
+
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
 
   const fetchData = async () => {
