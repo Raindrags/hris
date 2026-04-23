@@ -79,13 +79,24 @@ export default function PegawaiDashboardPage() {
     const fetchDashboardData = async () => {
       try {
         const data = await getDashboardData();
+
+        // Debug: log di console browser
+        console.log("[DEBUG] Dashboard data received:", data);
+
+        if (!data.success) {
+          console.error("[DEBUG] Dashboard fetch failed:", data.error);
+          // Tampilkan pesan error
+          setUserData(null);
+          setLoading(false);
+          return;
+        }
+
         setUserData(data.user);
         setRecentRequests(data.recentRequests || []);
         setIncomingRequests(data.incomingRequests || []);
         setPotentialSubstitutes(data.potentialSubstitutes || []);
       } catch (error) {
-        console.error("Dashboard fetch error:", error);
-        // Tampilkan pesan error yang ramah (opsional)
+        console.error("[DEBUG] Dashboard fetch exception:", error);
       } finally {
         setLoading(false);
       }
