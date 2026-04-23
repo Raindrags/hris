@@ -34,7 +34,7 @@ if (userDataCookie) {
   try {
     const user = JSON.parse(userDataCookie);
     console.log('[Middleware] User role:', user.role);
-  } catch { ... }
+  } catch { console.error('[Middleware] Error parsing user data cookie'); }
 }
       } catch {
         // Jika cookie rusak, redirect ke login
