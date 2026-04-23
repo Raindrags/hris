@@ -3,60 +3,36 @@
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 
-// Sesuaikan dengan base URL backend Anda
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
+const API_BASE = process.env.BACKEND_API_URL;
 
-/**
- * Fungsi bantuan ASYNC untuk mengambil token otorisasi dari cookies.
- */
-async function getAuthToken() {
+async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
   const cookieStore = await cookies();
+  const token = cookieStore.get("access_token")?.value;
 
-  // 1. Ambil cookie dengan nama "access_token" (Sesuai dengan file login Anda!)
-  let token = cookieStore.get("access_token")?.value;
-
-  // 2. Fallback (cadangan) jika suatu saat Anda menggunakan nama "token"
-  if (!token) {
-    token = cookieStore.get("token")?.value;
-  }
-
-  return token;
-}
-
-/**
- * Helper ASYNC untuk menyusun Headers yang aman dari error Symbol Next.js
- */
-async function getHeaders() {
-  const token = await getAuthToken();
-
-  // Gunakan tipe Record<string, string> yang bersih
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
+    ...(options.headers as Record<string, string>),
   };
 
-  // Hanya tambahkan Authorization jika token benar-benar ada dan tidak undefined
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
-  } else {
-    // Memberikan log di server console untuk memudahkan tracking
-    console.warn("⚠️ PERINGATAN: Token otorisasi tidak ditemukan di cookies!");
   }
 
-  return headers;
+  const res = await fetch(`${API_BASE}${endpoint}`, {
+    ...options,
+    headers,
+  });
+
+  const data = await res.json();
+  return { status: res.status, data };
 }
 
-// ============================================================================
-// 1. Ambil Daftar Atasan (Supervisors) - Endpoint: /users/supervisors
-// ============================================================================
 export async function getSupervisors() {
   try {
-    const headers = await getHeaders();
-    const res = await fetch(`${API_URL}/users/supervisors`, {
+    const { status, data } = await fetchWithAuth("/users/supervisors", {
       cache: "no-store",
-      headers,
     });
-    const data = await res.json();
-    return data;
+    return { success: status >= 200 && status < 300, ...data };
   } catch (error: any) {
     return {
       success: false,
@@ -66,18 +42,12 @@ export async function getSupervisors() {
   }
 }
 
-// ============================================================================
-// 2. Ambil Semua Pegawai - Endpoint: /users
-// ============================================================================
 export async function getEmployees() {
   try {
-    const headers = await getHeaders();
-    const res = await fetch(`${API_URL}/users`, {
+    const { status, data } = await fetchWithAuth("/users", {
       cache: "no-store",
-      headers,
     });
-    const data = await res.json();
-    return data;
+    return { success: status >= 200 && status < 300, ...data };
   } catch (error: any) {
     return {
       success: false,
@@ -87,18 +57,12 @@ export async function getEmployees() {
   }
 }
 
-// ============================================================================
-// 3. Ambil Detail Pegawai Spesifik - Endpoint: /users/:id
-// ============================================================================
 export async function getEmployeeById(id: string) {
   try {
-    const headers = await getHeaders();
-    const res = await fetch(`${API_URL}/users/${id}`, {
+    const { status, data } = await fetchWithAuth(`/users/${id}`, {
       cache: "no-store",
-      headers,
     });
-    const data = await res.json();
-    return data;
+    return { success: status >= 200 && status < 300, ...data };
   } catch (error: any) {
     return {
       success: false,
@@ -108,24 +72,16 @@ export async function getEmployeeById(id: string) {
   }
 }
 
-// ============================================================================
-// 4. Buat Pegawai Baru - Endpoint: /users (POST)
-// ============================================================================
 export async function createEmployee(payload: any) {
   try {
-    const headers = await getHeaders();
-    const res = await fetch(`${API_URL}/users`, {
+    const { status, data } = await fetchWithAuth("/users", {
       method: "POST",
-      headers,
       body: JSON.stringify(payload),
     });
-    const data = await res.json();
-
-    if (data.success) {
+    if (status >= 200 && status < 300) {
       revalidatePath("/pegawai");
     }
-
-    return data;
+    return { success: status >= 200 && status < 300, ...data };
   } catch (error: any) {
     return {
       success: false,
@@ -135,24 +91,16 @@ export async function createEmployee(payload: any) {
   }
 }
 
-// ============================================================================
-// 5. Update Data Pegawai (Admin View) - Endpoint: /users/:id (PUT)
-// ============================================================================
 export async function updateEmployee(id: string, payload: any) {
   try {
-    const headers = await getHeaders();
-    const res = await fetch(`${API_URL}/users/${id}`, {
+    const { status, data } = await fetchWithAuth(`/users/${id}`, {
       method: "PUT",
-      headers,
       body: JSON.stringify(payload),
     });
-    const data = await res.json();
-
-    if (data.success) {
+    if (status >= 200 && status < 300) {
       revalidatePath("/pegawai");
     }
-
-    return data;
+    return { success: status >= 200 && status < 300, ...data };
   } catch (error: any) {
     return {
       success: false,
@@ -162,23 +110,15 @@ export async function updateEmployee(id: string, payload: any) {
   }
 }
 
-// ============================================================================
-// 6. Hapus Pegawai - Endpoint: /users/:id (DELETE)
-// ============================================================================
 export async function deleteEmployee(id: string) {
   try {
-    const headers = await getHeaders();
-    const res = await fetch(`${API_URL}/users/${id}`, {
+    const { status, data } = await fetchWithAuth(`/users/${id}`, {
       method: "DELETE",
-      headers,
     });
-    const data = await res.json();
-
-    if (data.success) {
+    if (status >= 200 && status < 300) {
       revalidatePath("/pegawai");
     }
-
-    return data;
+    return { success: status >= 200 && status < 300, ...data };
   } catch (error: any) {
     return {
       success: false,
@@ -188,24 +128,16 @@ export async function deleteEmployee(id: string) {
   }
 }
 
-// ============================================================================
-// 7. Update Profil Mandiri (User View) - Endpoint: /users/:id/profile (PUT)
-// ============================================================================
 export async function updateSelfProfile(id: string, payload: any) {
   try {
-    const headers = await getHeaders();
-    const res = await fetch(`${API_URL}/users/${id}/profile`, {
+    const { status, data } = await fetchWithAuth(`/users/${id}/profile`, {
       method: "PUT",
-      headers,
       body: JSON.stringify(payload),
     });
-    const data = await res.json();
-
-    if (data.success) {
+    if (status >= 200 && status < 300) {
       revalidatePath("/profile");
     }
-
-    return data;
+    return { success: status >= 200 && status < 300, ...data };
   } catch (error: any) {
     return {
       success: false,

@@ -58,6 +58,10 @@ import {
   getEmployeesForAssign,
   batchAssignShift,
 } from "@/app/actions/jadwal-action";
+import { HolidayManager } from "@/app/components/dashboard/holiday-manager";
+import { SpecialWorkDateManager } from "@/app/components/dashboard/special-workdate-manager";
+
+// Import Komponen Tambahan
 
 // Konstanta Hari
 const DAYS = [
@@ -123,7 +127,7 @@ export default function PengaturanJadwalView() {
 
     if (res.success) {
       setShifts(res.data || []);
-      setShiftCurrentPage(1); // Reset ke halaman 1 setiap kali data baru di-load
+      setShiftCurrentPage(1);
     } else {
       toast.error(res.error || "Gagal memuat jadwal");
     }
@@ -161,7 +165,7 @@ export default function PengaturanJadwalView() {
     if (res?.success) {
       toast.success(editingShiftId ? "Template diupdate!" : "Template dibuat!");
       setShowShiftForm(false);
-      fetchData(); // Refresh data
+      fetchData();
     } else {
       toast.error(res?.error || "Terjadi kesalahan saat menyimpan template");
     }
@@ -292,10 +296,13 @@ export default function PengaturanJadwalView() {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="shift">
-        <TabsList>
-          <TabsTrigger value="shift">Template Jadwal Kerja</TabsTrigger>
+        <TabsList className="flex-wrap">
+          <TabsTrigger value="shift">Template Shift</TabsTrigger>
+          <TabsTrigger value="holiday">Hari Libur</TabsTrigger>
+          <TabsTrigger value="special">Hari Kerja Khusus</TabsTrigger>
         </TabsList>
 
+        {/* ========== TAB TEMPLATE SHIFT ========== */}
         <TabsContent value="shift">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between border-b pb-4">
@@ -576,9 +583,41 @@ export default function PengaturanJadwalView() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* ========== TAB HARI LIBUR ========== */}
+        <TabsContent value="holiday">
+          <Card>
+            <CardHeader>
+              <CardTitle>Hari Libur Nasional & Perusahaan</CardTitle>
+              <CardDescription>
+                Kelola tanggal libur yang berlaku. Kosongkan pegawai untuk
+                berlaku ke semua.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <HolidayManager />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ========== TAB HARI KERJA KHUSUS ========== */}
+        <TabsContent value="special">
+          <Card>
+            <CardHeader>
+              <CardTitle>Hari Kerja Khusus</CardTitle>
+              <CardDescription>
+                Hari libur yang dijadikan hari kerja (misal: Sabtu/Minggu masuk
+                karena event). Bisa ditentukan per pegawai atau divisi.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <SpecialWorkDateManager />
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
 
-      {/* ========================================== MODAL BATCH ASSIGN ========================================== */}
+      {/* ========== MODAL BATCH ASSIGN ========== */}
       <Dialog open={isAssignModalOpen} onOpenChange={setIsAssignModalOpen}>
         <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col">
           <DialogHeader>

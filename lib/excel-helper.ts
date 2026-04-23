@@ -2,8 +2,71 @@
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 
+// Type definitions
+interface AttendanceLog {
+  date: string;
+  dayName: string;
+  isSpecialWorkDay: boolean;
+  isHoliday?: boolean;
+  holidayName?: string | null;
+  in: string | null;
+  out: string | null;
+  lateDuration: string;
+  earlyLeaveDuration: string;
+  isAbsent: boolean;
+  status: string;
+  leaveType?: string | null;
+  leaveCategory?: string | null;
+  partialLeave?: {
+    type: string;
+    timeRange: string;
+  } | null;
+}
+
+interface EmployeeReport {
+  id: string;
+  name: string;
+  niy: string | null;
+  jabatan: string | null;
+  isGuruRole: boolean;
+  shiftName: string;
+  checkIn: string;
+  checkOut: string;
+  summary: any;
+  logs: AttendanceLog[];
+}
+
+// Helper untuk menentukan warna berdasarkan tipe cuti/izin
+const getStatusStyle = (
+  leaveType: string | null,
+  leaveCategory?: string | null,
+) => {
+  if (!leaveType) return null;
+
+  // Default colors
+  let bgColor = "FFEEEEEE"; // abu-abu muda
+  let textColor = "FF000000";
+
+  const category = (leaveCategory || "").toLowerCase();
+  const type = leaveType.toLowerCase();
+
+  if (type === "cuti") {
+    bgColor = "FFD9EAF7"; // biru muda
+    textColor = "FF1E429F"; // biru tua
+  } else if (type === "izin") {
+    if (category.includes("sakit")) {
+      bgColor = "FFDCF5E6"; // hijau muda
+      textColor = "FF0E6245"; // hijau tua
+    } else {
+      bgColor = "FFF0E6F7"; // ungu muda
+      textColor = "FF6A0DAD"; // ungu tua
+    }
+  }
+  return { bgColor, textColor };
+};
+
 export const exportAttendanceToExcel = async (
-  dataToExport: any[],
+  dataToExport: EmployeeReport[],
   startDate: string,
   endDate: string,
 ) => {
@@ -138,16 +201,14 @@ export const exportAttendanceToExcel = async (
     }
     currentRow++;
 
-    const dates1 = emp1.logs.map((l: any) => l.date);
-    const dates2 = emp2 ? emp2.logs.map((l: any) => l.date) : [];
+    const dates1 = emp1.logs.map((l) => l.date);
+    const dates2 = emp2 ? emp2.logs.map((l) => l.date) : [];
     const uniqueDates = Array.from(new Set([...dates1, ...dates2])).sort();
 
     for (let d = 0; d < uniqueDates.length; d++) {
       const currentDate = uniqueDates[d] as string;
-      const log1 = emp1.logs.find((l: any) => l.date === currentDate);
-      const log2 = emp2
-        ? emp2.logs.find((l: any) => l.date === currentDate)
-        : null;
+      const log1 = emp1.logs.find((l) => l.date === currentDate);
+      const log2 = emp2 ? emp2.logs.find((l) => l.date === currentDate) : null;
       const row = worksheet.getRow(currentRow);
       row.height = 12.5;
 
@@ -158,32 +219,98 @@ export const exportAttendanceToExcel = async (
         row.getCell(1).value = d + 1;
         row.getCell(2).value = log1.date;
 
+        // Tentukan sel target untuk merge (kolom C sampai F)
+        let targetCell = row.getCell(3);
+        let mergeRange = `C${currentRow}:F${currentRow}`;
+
         if (log1.isHoliday && !log1.in && !log1.isSpecialWorkDay) {
-          row.getCell(3).value = `LIBUR: ${log1.holidayName?.toUpperCase()}`;
-          worksheet.mergeCells(`C${currentRow}:F${currentRow}`);
-          row.getCell(3).font = {
+          targetCell.value = `LIBUR: ${log1.holidayName?.toUpperCase()}`;
+          worksheet.mergeCells(mergeRange);
+          targetCell.font = {
             bold: true,
             color: { argb: "FFFF0000" },
             size: 8,
             name: "Arial",
           };
+          targetCell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FFFFE6E6" }, // merah muda
+          };
+        } else if (log1.leaveType && !log1.in) {
+          const style = getStatusStyle(log1.leaveType, log1.leaveCategory);
+          let leaveText = log1.leaveType;
+          if (log1.leaveCategory) {
+            leaveText += ` (${log1.leaveCategory})`;
+          }
+          targetCell.value = leaveText;
+          worksheet.mergeCells(mergeRange);
+          if (style) {
+            targetCell.font = {
+              bold: true,
+              color: { argb: style.textColor },
+              size: 8,
+              name: "Arial",
+            };
+            targetCell.fill = {
+              type: "pattern",
+              pattern: "solid",
+              fgColor: { argb: style.bgColor },
+            };
+          } else {
+            targetCell.font = { bold: true, size: 8, name: "Arial" };
+          }
+        } else if (!log1.in && log1.status === "ALPHA") {
+          targetCell.value = "ALPA";
+          worksheet.mergeCells(mergeRange);
+          targetCell.font = {
+            bold: true,
+            color: { argb: "FFFF0000" },
+            size: 8,
+            name: "Arial",
+          };
+          targetCell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FFFFD9D9" },
+          };
         } else if (!log1.in && log1.status === "DAY OFF") {
-          row.getCell(3).value = translateDay(log1.dayName);
-          worksheet.mergeCells(`C${currentRow}:F${currentRow}`);
+          targetCell.value = translateDay(log1.dayName);
+          worksheet.mergeCells(mergeRange);
+          targetCell.font = { size: 8, name: "Arial" };
         } else if (!log1.in && log1.isSpecialWorkDay) {
-          row.getCell(3).value = "DINAS";
-          worksheet.mergeCells(`C${currentRow}:F${currentRow}`);
+          targetCell.value = "DINAS";
+          worksheet.mergeCells(mergeRange);
+          targetCell.font = {
+            bold: true,
+            color: { argb: "FFB45F06" }, // oranye tua
+            size: 8,
+            name: "Arial",
+          };
+          targetCell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FFFFE5CC" }, // oranye muda
+          };
         } else {
+          // Normal hadir atau setengah hari (ada tap)
           row.getCell(3).value = log1.in ? log1.in.substring(0, 5) : "-";
           row.getCell(4).value = log1.out ? log1.out.substring(0, 5) : "-";
           row.getCell(5).value =
             log1.lateDuration !== "-" ? log1.lateDuration : "-";
           row.getCell(6).value =
             log1.earlyLeaveDuration !== "-" ? log1.earlyLeaveDuration : "-";
+
+          if (log1.partialLeave) {
+            const note = `${log1.partialLeave.type}: ${log1.partialLeave.timeRange}`;
+            row.getCell(3).note = note;
+          }
         }
       } else {
         for (let col = 1; col <= 6; col++) row.getCell(col).value = "-";
       }
+
+      // Apply border dan alignment untuk kolom 1-6
       for (let c = 1; c <= 6; c++) {
         const cell = row.getCell(c);
         if (!cell.font) cell.font = { size: 8, name: "Arial" };
@@ -199,21 +326,78 @@ export const exportAttendanceToExcel = async (
           row.getCell(8).value = d + 1;
           row.getCell(9).value = log2.date;
 
+          let targetCell = row.getCell(10);
+          let mergeRange = `J${currentRow}:M${currentRow}`;
+
           if (log2.isHoliday && !log2.in && !log2.isSpecialWorkDay) {
-            row.getCell(10).value = `LIBUR: ${log2.holidayName?.toUpperCase()}`;
-            worksheet.mergeCells(`J${currentRow}:M${currentRow}`);
-            row.getCell(10).font = {
+            targetCell.value = `LIBUR: ${log2.holidayName?.toUpperCase()}`;
+            worksheet.mergeCells(mergeRange);
+            targetCell.font = {
               bold: true,
               color: { argb: "FFFF0000" },
               size: 8,
               name: "Arial",
             };
+            targetCell.fill = {
+              type: "pattern",
+              pattern: "solid",
+              fgColor: { argb: "FFFFE6E6" },
+            };
+          } else if (log2.leaveType && !log2.in) {
+            const style = getStatusStyle(log2.leaveType, log2.leaveCategory);
+            let leaveText = log2.leaveType;
+            if (log2.leaveCategory) {
+              leaveText += ` (${log2.leaveCategory})`;
+            }
+            targetCell.value = leaveText;
+            worksheet.mergeCells(mergeRange);
+            if (style) {
+              targetCell.font = {
+                bold: true,
+                color: { argb: style.textColor },
+                size: 8,
+                name: "Arial",
+              };
+              targetCell.fill = {
+                type: "pattern",
+                pattern: "solid",
+                fgColor: { argb: style.bgColor },
+              };
+            } else {
+              targetCell.font = { bold: true, size: 8, name: "Arial" };
+            }
+          } else if (!log2.in && log2.status === "ALPHA") {
+            targetCell.value = "ALPA";
+            worksheet.mergeCells(mergeRange);
+            targetCell.font = {
+              bold: true,
+              color: { argb: "FFFF0000" },
+              size: 8,
+              name: "Arial",
+            };
+            targetCell.fill = {
+              type: "pattern",
+              pattern: "solid",
+              fgColor: { argb: "FFFFD9D9" },
+            };
           } else if (!log2.in && log2.status === "DAY OFF") {
-            row.getCell(10).value = translateDay(log2.dayName);
-            worksheet.mergeCells(`J${currentRow}:M${currentRow}`);
+            targetCell.value = translateDay(log2.dayName);
+            worksheet.mergeCells(mergeRange);
+            targetCell.font = { size: 8, name: "Arial" };
           } else if (!log2.in && log2.isSpecialWorkDay) {
-            row.getCell(10).value = "DINAS";
-            worksheet.mergeCells(`J${currentRow}:M${currentRow}`);
+            targetCell.value = "DINAS";
+            worksheet.mergeCells(mergeRange);
+            targetCell.font = {
+              bold: true,
+              color: { argb: "FFB45F06" },
+              size: 8,
+              name: "Arial",
+            };
+            targetCell.fill = {
+              type: "pattern",
+              pattern: "solid",
+              fgColor: { argb: "FFFFE5CC" },
+            };
           } else {
             row.getCell(10).value = log2.in ? log2.in.substring(0, 5) : "-";
             row.getCell(11).value = log2.out ? log2.out.substring(0, 5) : "-";
@@ -221,10 +405,16 @@ export const exportAttendanceToExcel = async (
               log2.lateDuration !== "-" ? log2.lateDuration : "-";
             row.getCell(13).value =
               log2.earlyLeaveDuration !== "-" ? log2.earlyLeaveDuration : "-";
+
+            if (log2.partialLeave) {
+              const note = `${log2.partialLeave.type}: ${log2.partialLeave.timeRange}`;
+              row.getCell(10).note = note;
+            }
           }
         } else {
           for (let col = 8; col <= 13; col++) row.getCell(col).value = "-";
         }
+
         for (let c = 8; c <= 13; c++) {
           const cell = row.getCell(c);
           if (!cell.font) cell.font = { size: 8, name: "Arial" };
