@@ -25,14 +25,6 @@ export async function PATCH(
   return handleProxy(request, path);
 }
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> },
-) {
-  const { path } = await params;
-  return handleProxy(request, path);
-}
-
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> },
@@ -45,7 +37,7 @@ async function handleProxy(request: NextRequest, pathSegments: string[]) {
   const backendUrl = process.env.BACKEND_API_URL;
   if (!backendUrl) {
     return NextResponse.json(
-      { success: false, error: "Backend URL not configured" },
+      { success: false, error: "BACKEND_API_URL tidak dikonfigurasi" },
       { status: 500 },
     );
   }
@@ -53,21 +45,21 @@ async function handleProxy(request: NextRequest, pathSegments: string[]) {
   const cookieStore = await cookies();
   const token = cookieStore.get("access_token")?.value;
 
-  const targetUrl = `${backendUrl}/${pathSegments.join("/")}`;
+  const targetPath = pathSegments.join("/");
+  const url = new URL(`${backendUrl}/${targetPath}`);
 
-  const url = new URL(targetUrl);
+  // Salin query parameters
   request.nextUrl.searchParams.forEach((value, key) => {
     url.searchParams.set(key, value);
   });
 
-  const headers = new Headers(request.headers);
+  const headers = new Headers();
+  headers.set("Content-Type", "application/json");
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
   }
-  headers.delete("host");
-  headers.delete("origin");
-  headers.delete("referer");
 
+  // Ambil body jika ada
   let body: BodyInit | null = null;
   if (request.method !== "GET" && request.method !== "HEAD") {
     body = await request.text();
