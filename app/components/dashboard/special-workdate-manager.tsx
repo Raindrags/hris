@@ -53,7 +53,7 @@ interface UserOption {
   id: string;
   name: string;
   niy: string;
-  divisi?: { name: string };
+  divisi: { name: string };
 }
 
 interface Division {
