@@ -325,7 +325,7 @@ export function SpecialWorkDateManager() {
               <Select
                 value={formData.divisiId}
                 onValueChange={(value) =>
-                  setFormData({ ...formData, divisiId: value })
+                  setFormData({ ...formData, divisiId: value as string })
                 }
               >
                 <SelectTrigger>
