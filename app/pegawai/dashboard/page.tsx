@@ -8,11 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CalendarDays, FileText, User } from "lucide-react";
 
-import { ProfileForm } from "@/components/forms/profile-form";
-import { ApprovalSection } from "../components/approval-section";
-import { ApprovalRequestData } from "../components/approval-form";
-
 // Import server action yang sudah dibuat
+import { ApprovalRequestData } from "@/app/components/forms/approval-form";
+import { ApprovalSection } from "@/app/components/forms/approval-section";
+import { ProfileForm } from "@/app/components/forms/profile-form";
 import { getDashboardData } from "@/app/actions/dashboard-action";
 
 // Helper Format Tanggal
