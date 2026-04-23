@@ -7,10 +7,15 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CalendarDays, FileText, User } from "lucide-react";
-import { ApprovalSection } from "../../components/forms/approval-section";
-import { ApprovalRequestData } from "../../components/forms/approval-form";
-import { ProfileForm } from "../../components/forms/profile-form";
 
+import { ProfileForm } from "@/components/forms/profile-form";
+import { ApprovalSection } from "../components/approval-section";
+import { ApprovalRequestData } from "../components/approval-form";
+
+// Import server action yang sudah dibuat
+import { getDashboardData } from "@/app/actions/dashboard-action";
+
+// Helper Format Tanggal
 const formatDate = (date: Date | string | null | undefined) => {
   if (!date) return "-";
   return new Intl.DateTimeFormat("id-ID", {
@@ -46,48 +51,42 @@ export default function PegawaiDashboardPage() {
   >([]);
   const [potentialSubstitutes, setPotentialSubstitutes] = useState<any[]>([]);
 
-  // Ambil data user dari localStorage (hasil magic link)
+  // State untuk menyimpan data user dari endpoint /api/auth/me
   const [currentUser, setCurrentUser] = useState<any>(null);
 
+  // Cek autentikasi via cookie httpOnly
   useEffect(() => {
     const checkAuth = async () => {
-      const res = await fetch("/api/auth/me");
-      if (res.status === 401) {
+      try {
+        const res = await fetch("/api/auth/me");
+        if (res.status === 401) {
+          router.push("/login?message=silakan_login_via_whatsapp");
+          return;
+        }
+        const data = await res.json();
+        setCurrentUser(data.user);
+      } catch (error) {
+        console.error("Auth check error:", error);
         router.push("/login?message=silakan_login_via_whatsapp");
-        return;
       }
-      const data = await res.json();
-      setCurrentUser(data.user);
     };
     checkAuth();
   }, [router]);
 
+  // Ambil data dashboard menggunakan server action
   useEffect(() => {
     if (!currentUser) return;
 
     const fetchDashboardData = async () => {
       try {
-        // Panggil API backend untuk data dashboard
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/pegawai/dashboard`,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("accessToken") || ""}`,
-            },
-          },
-        );
-
-        if (!res.ok) throw new Error("Gagal memuat data");
-
-        const data = await res.json();
-
+        const data = await getDashboardData();
         setUserData(data.user);
         setRecentRequests(data.recentRequests || []);
         setIncomingRequests(data.incomingRequests || []);
         setPotentialSubstitutes(data.potentialSubstitutes || []);
       } catch (error) {
         console.error("Dashboard fetch error:", error);
-        // Bisa tampilkan toast error di sini
+        // Tampilkan pesan error yang ramah (opsional)
       } finally {
         setLoading(false);
       }
@@ -105,7 +104,11 @@ export default function PegawaiDashboardPage() {
   }
 
   if (!userData) {
-    return null; // atau tampilkan pesan error
+    return (
+      <main className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <div className="text-slate-100">Gagal memuat data pengguna.</div>
+      </main>
+    );
   }
 
   if (userData.isFirstLogin) {
