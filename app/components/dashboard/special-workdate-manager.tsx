@@ -102,7 +102,7 @@ export function SpecialWorkDateManager() {
 
     const payload = {
       date: formData.date,
-      reason: formData.reason || null,
+      reason: formData.reason || undefined,
       checkIn: formData.checkIn,
       checkOut: formData.checkOut,
       divisiId: formData.divisiId === "all" ? null : formData.divisiId,

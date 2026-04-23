@@ -40,7 +40,7 @@ export async function updateSpecialWorkDate(
   id: string,
   data: Partial<{
     date: string;
-    reason: string;
+    reason: string | null;
     checkIn: string;
     checkOut: string;
     divisiId: string | null;
