@@ -26,6 +26,16 @@ export function middleware(request: NextRequest) {
           // Bukan admin, redirect ke unauthorized
           return NextResponse.redirect(new URL("/unauthorized", request.url));
         }
+        
+console.log('[Middleware] Path:', request.nextUrl.pathname);
+console.log('[Middleware] Token:', token ? 'exists' : 'missing');
+console.log('[Middleware] User data cookie:', userDataCookie ? 'exists' : 'missing');
+if (userDataCookie) {
+  try {
+    const user = JSON.parse(userDataCookie);
+    console.log('[Middleware] User role:', user.role);
+  } catch { ... }
+}
       } catch {
         // Jika cookie rusak, redirect ke login
         return NextResponse.redirect(
@@ -49,6 +59,7 @@ export function middleware(request: NextRequest) {
 
   return NextResponse.next();
 }
+
 
 export const config = {
   matcher: [
