@@ -14,7 +14,7 @@ export default async function DashboardPage() {
   }
 
   // URL backend - Pastikan diatur di Vercel Environment Variables!
-  const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3434";
+  const backendUrl = process.env.BACKEND_API_URL || "http://localhost:3434";
 
   try {
     const endpoint = `${backendUrl}/dashboard/admin`;
