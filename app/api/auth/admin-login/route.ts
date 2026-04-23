@@ -6,7 +6,7 @@ export async function POST(request: Request) {
     const body = await request.json();
 
     const nestResponse = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/auth/login`,
+      `${process.env.BACKEND_API_URL}/auth/login`,
       {
         method: "POST",
         headers: {
