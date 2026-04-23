@@ -50,18 +50,16 @@ export default function PegawaiDashboardPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (!storedUser) {
-      router.push("/login?message=silakan_login_via_whatsapp");
-      return;
-    }
-
-    try {
-      const parsedUser = JSON.parse(storedUser);
-      setCurrentUser(parsedUser);
-    } catch {
-      router.push("/login");
-    }
+    const checkAuth = async () => {
+      const res = await fetch("/api/auth/me");
+      if (res.status === 401) {
+        router.push("/login?message=silakan_login_via_whatsapp");
+        return;
+      }
+      const data = await res.json();
+      setCurrentUser(data.user);
+    };
+    checkAuth();
   }, [router]);
 
   useEffect(() => {
