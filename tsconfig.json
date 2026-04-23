@@ -29,8 +29,8 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts",
-    "app/wa-login/page.tsx.backup",
-    "lib/api-client.ts.backup"
+    "app/wa-login/page.tsx",
+    "lib/api-client.ts"
   ],
   "exclude": ["node_modules"]
 }
