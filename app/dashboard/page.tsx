@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { CalendarDays, FileText, User } from "lucide-react";
 import { ApprovalSection } from "../components/forms/approval-section";
 import { ApprovalRequestData } from "../components/forms/approval-form";
+import { ProfileForm } from "../components/forms/profile-form";
 
 const formatDate = (date: Date | string | null | undefined) => {
   if (!date) return "-";
@@ -19,7 +20,6 @@ const formatDate = (date: Date | string | null | undefined) => {
   }).format(new Date(date));
 };
 
-// Tipe data (disesuaikan dari struktur Prisma)
 interface UserData {
   name: string;
   sisaCuti: number;
@@ -108,6 +108,19 @@ export default function PegawaiDashboardPage() {
 
   if (!userData) {
     return null; // atau tampilkan pesan error
+  }
+
+  if (userData.isFirstLogin) {
+    return (
+      <main className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
+        <div className="w-full max-w-2xl bg-white rounded-xl shadow-lg border p-6">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            Selamat Datang!
+          </h1>
+          <ProfileForm user={currentUser} />
+        </div>
+      </main>
+    );
   }
 
   return (
