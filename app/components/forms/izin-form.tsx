@@ -75,6 +75,7 @@ export function PermissionForm({ user, onSuccess }: PermissionFormProps) {
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
   const [holidays, setHolidays] = useState<string[]>([]);
+  const [specialWorkDays, setSpecialWorkDays] = useState<string[]>([]);
   const [category, setCategory] = useState<string>("");
   const [subCategory, setSubCategory] = useState<string>("");
   const [timeValue, setTimeValue] = useState<string>("");
@@ -113,6 +114,32 @@ export function PermissionForm({ user, onSuccess }: PermissionFormProps) {
   }, []);
 
   useEffect(() => {
+    const fetchSpecialWorkDays = async () => {
+      try {
+        const res = await fetch("/api/special-workdays"); // atau endpoint yang sesuai
+        if (!res.ok) throw new Error("Gagal fetch");
+        const data = await res.json();
+
+        let daysArray: string[] = [];
+        if (Array.isArray(data)) {
+          daysArray = data.map((item: any) =>
+            typeof item === "string" ? item : (item.date ?? item.tanggal),
+          );
+        } else if (data?.data && Array.isArray(data.data)) {
+          daysArray = data.data.map((item: any) =>
+            typeof item === "string" ? item : (item.date ?? item.tanggal),
+          );
+        }
+        setSpecialWorkDays(daysArray);
+      } catch (error) {
+        console.warn("Data hari kerja khusus tidak tersedia:", error);
+        setSpecialWorkDays([]);
+      }
+    };
+    fetchSpecialWorkDays();
+  }, []);
+
+  useEffect(() => {
     if (category === "IzinKhusus" && subCategory && startDate) {
       const newEndDate = new Date(startDate);
       let isAutoSet = true;
@@ -141,11 +168,18 @@ export function PermissionForm({ user, onSuccess }: PermissionFormProps) {
   }, [category, subCategory, startDate]);
 
   const isHolidayOrSunday = (date: Date) => {
-    if (date.getDay() === 0) return true;
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
     const dateString = `${year}-${month}-${day}`;
+
+    // Jika tanggal terdaftar sebagai hari kerja khusus → bukan libur
+    if (specialWorkDays.includes(dateString)) return false;
+
+    // Hari Minggu tetap libur jika tidak termasuk dalam hari kerja khusus
+    if (date.getDay() === 0) return true;
+
+    // Cek daftar hari libur dari backend
     return holidays.includes(dateString);
   };
 
@@ -181,7 +215,7 @@ export function PermissionForm({ user, onSuccess }: PermissionFormProps) {
       if (payload.time) formDataObj.append("time", payload.time);
       if (payload.file) formDataObj.append("file", payload.file);
 
-      const res = await fetch(`${process.env.BACKEND_API_URL}/requests/izin`, {
+      const res = await fetch("/api/izin", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

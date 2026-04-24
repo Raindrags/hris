@@ -13,6 +13,7 @@ export async function middleware(request: NextRequest) {
     "/api",
     "/_next",
     "/favicon.ico",
+    "/uploads",
   ];
   if (publicPaths.some((p) => pathname.startsWith(p))) {
     return NextResponse.next();

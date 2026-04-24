@@ -70,17 +70,14 @@ export function ApprovalForm({
 
   const rejectRequestApi = async (id: string, reason: string) => {
     const token = localStorage.getItem("accessToken");
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/requests/${id}/reject`,
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ reason }),
+    const res = await fetch(`/api/requests/${id}/reject`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
       },
-    );
+      body: JSON.stringify({ reason }),
+    });
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || "Gagal menolak pengajuan");
     return data;
@@ -88,17 +85,14 @@ export function ApprovalForm({
 
   const approveRequestApi = async (id: string, payload: any) => {
     const token = localStorage.getItem("accessToken");
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/requests/${id}/approve`,
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
+    const res = await fetch(`/api/requests/${id}/approve`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
       },
-    );
+      body: JSON.stringify(payload),
+    });
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || "Gagal menyetujui pengajuan");
     return data;
@@ -148,8 +142,8 @@ export function ApprovalForm({
 
   if (!actionType) {
     return (
-      <div className="space-y-4">
-        <div className="p-4 bg-slate-900 rounded-lg text-sm mb-4">
+      <div className="space-y-4 text-gray-200">
+        <div className="p-4 bg-gray-900 rounded-lg border border-gray-800 text-sm mb-4">
           <p>
             <strong>Pengaju:</strong> {request.user.name}{" "}
             {request.user.divisi ? `(${request.user.divisi.name})` : ""}
@@ -169,7 +163,7 @@ export function ApprovalForm({
             Tolak
           </Button>
           <Button
-            className="bg-green-600 hover:bg-green-700"
+            className="bg-emerald-700 hover:bg-emerald-800 text-white"
             onClick={() => setActionType("APPROVE")}
           >
             Setujui
@@ -181,18 +175,20 @@ export function ApprovalForm({
 
   if (actionType === "REJECT") {
     return (
-      <form onSubmit={handleProcess} className="space-y-4">
-        <Label>Alasan Penolakan (Wajib)</Label>
+      <form onSubmit={handleProcess} className="space-y-4 text-gray-200">
+        <Label className="text-gray-300">Alasan Penolakan (Wajib)</Label>
         <Textarea
           name="rejectionReason"
           placeholder="Kenapa ditolak?"
           required
+          className="bg-gray-900 border-gray-700 focus:border-red-700 text-gray-200 placeholder:text-gray-500"
         />
         <div className="flex justify-end gap-2">
           <Button
             type="button"
             variant="ghost"
             onClick={() => setActionType(null)}
+            className="text-gray-400 hover:text-white"
           >
             Batal
           </Button>
@@ -206,8 +202,8 @@ export function ApprovalForm({
 
   if (actionType === "APPROVE" && request.type === "CUTI") {
     return (
-      <form onSubmit={handleProcess} className="space-y-4">
-        <p className="text-sm text-muted-foreground">
+      <form onSubmit={handleProcess} className="space-y-4 text-gray-200">
+        <p className="text-sm text-gray-400">
           Anda akan menyetujui Cuti ini. Status akan berubah menjadi Approved
           dan jatah cuti akan dikurangi.
         </p>
@@ -216,10 +212,15 @@ export function ApprovalForm({
             type="button"
             variant="ghost"
             onClick={() => setActionType(null)}
+            className="text-gray-400 hover:text-white"
           >
             Batal
           </Button>
-          <Button type="submit" className="bg-green-600" disabled={loading}>
+          <Button
+            type="submit"
+            className="bg-emerald-700 hover:bg-emerald-800 text-white"
+            disabled={loading}
+          >
             Konfirmasi Setuju
           </Button>
         </div>
@@ -231,26 +232,30 @@ export function ApprovalForm({
   return (
     <form
       onSubmit={handleProcess}
-      className="space-y-4 max-h-[60vh] overflow-y-auto px-1"
+      className="space-y-4 max-h-[60vh] overflow-y-auto px-1 text-gray-200"
     >
       <div className="space-y-2">
-        <Label>Tugas Diserahkan Kepada</Label>
+        <Label className="text-gray-300">Tugas Diserahkan Kepada</Label>
         <Select
           value={delegatedTo || ""}
           onValueChange={(value) => setDelegatedTo(value ?? "")}
         >
-          <SelectTrigger>
+          <SelectTrigger className="bg-gray-900 border-gray-700 text-gray-200">
             <SelectValue placeholder="Pilih Pegawai Pengganti" />
           </SelectTrigger>
-          <SelectContent className="z-[9999] bg-slate-900 border shadow-md">
+          <SelectContent className="z-[9999] bg-gray-900 border-gray-700 shadow-xl">
             <SelectGroup>
               {filteredSubstitutes.length === 0 ? (
-                <SelectItem value="empty" disabled>
+                <SelectItem value="empty" disabled className="text-gray-500">
                   Tidak ada pegawai pengganti yang tersedia
                 </SelectItem>
               ) : (
                 filteredSubstitutes.map((sub) => (
-                  <SelectItem key={sub.id} value={sub.id}>
+                  <SelectItem
+                    key={sub.id}
+                    value={sub.id}
+                    className="text-gray-200 focus:bg-crimson-900/40 focus:text-white"
+                  >
                     {sub.name}
                   </SelectItem>
                 ))
@@ -261,14 +266,15 @@ export function ApprovalForm({
       </div>
 
       <div className="space-y-2">
-        <Label>Rincian Tugas</Label>
+        <Label className="text-gray-300">Rincian Tugas</Label>
         <Textarea
           name="taskDetail"
           placeholder="Apa yang harus dikerjakan pengganti?"
+          className="bg-gray-900 border-gray-700 focus:border-crimson-700 text-gray-200 placeholder:text-gray-500"
         />
       </div>
 
-      <div className="border-t my-4 border-slate-700" />
+      <div className="border-t my-4 border-gray-800" />
 
       <div className="space-y-4">
         <div className="flex items-center space-x-2 mb-2">
@@ -277,15 +283,18 @@ export function ApprovalForm({
             checked={noDeduction}
             onCheckedChange={(c) => setNoDeduction(c as boolean)}
           />
-          <Label htmlFor="no_deduction" className="font-bold text-green-500">
+          <Label
+            htmlFor="no_deduction"
+            className="font-semibold text-emerald-400"
+          >
             Tidak Dikenakan Pemotongan
           </Label>
         </div>
 
         {!noDeduction && (
-          <div className="pl-4 space-y-4 border-l-2 border-slate-700">
+          <div className="pl-4 space-y-4 border-l-2 border-gray-800">
             <div className="space-y-2">
-              <Label className="text-xs font-semibold uppercase text-muted-foreground">
+              <Label className="text-xs font-semibold uppercase text-gray-400">
                 Jenis Potongan
               </Label>
               <div className="flex items-center space-x-2">
@@ -294,7 +303,7 @@ export function ApprovalForm({
                   name="potongGaji"
                   defaultChecked={isIzinPribadi}
                 />
-                <label htmlFor="p_gaji" className="text-sm">
+                <label htmlFor="p_gaji" className="text-sm text-gray-300">
                   Potong Gaji
                 </label>
               </div>
@@ -304,7 +313,7 @@ export function ApprovalForm({
                   name="potongKonsumsi"
                   defaultChecked={isSakit || isIzinPribadi}
                 />
-                <label htmlFor="p_konsum" className="text-sm">
+                <label htmlFor="p_konsum" className="text-sm text-gray-300">
                   Tunjangan Konsumsi
                 </label>
               </div>
@@ -314,59 +323,61 @@ export function ApprovalForm({
                   name="potongTransport"
                   defaultChecked={isSakit || isIzinPribadi}
                 />
-                <label htmlFor="p_trans" className="text-sm">
+                <label htmlFor="p_trans" className="text-sm text-gray-300">
                   Tunjangan Transportasi
                 </label>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label className="text-xs font-semibold uppercase text-muted-foreground">
+              <Label className="text-xs font-semibold uppercase text-gray-400">
                 Denda Telat
               </Label>
               <RadioGroup defaultValue="0" name="lateFine">
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="0" id="t_0" />
-                  <Label htmlFor="t_0">Tidak ada</Label>
+                  <Label htmlFor="t_0" className="text-gray-300">
+                    Tidak ada
+                  </Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="5000" id="t_5000" />
-                  <Label htmlFor="t_5000">Rp 5.000</Label>
+                  <Label htmlFor="t_5000" className="text-gray-300">
+                    Rp 5.000
+                  </Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="10000" id="t_10000" />
-                  <Label htmlFor="t_10000">Rp 10.000</Label>
+                  <Label htmlFor="t_10000" className="text-gray-300">
+                    Rp 10.000
+                  </Label>
                 </div>
               </RadioGroup>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
-                <Label className="text-xs">Jumlah Inval</Label>
+                <Label className="text-xs text-gray-400">Jumlah Inval</Label>
                 <div className="flex items-center gap-2">
                   <Input
                     type="number"
                     name="invalCount"
-                    className="w-16 bg-slate-800"
+                    className="w-16 bg-gray-900 border-gray-700 text-gray-200"
                     defaultValue={0}
                   />
-                  <span className="text-xs text-muted-foreground">
-                    x Rp 5.000
-                  </span>
+                  <span className="text-xs text-gray-500">x Rp 5.000</span>
                 </div>
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Jumlah Shift</Label>
+                <Label className="text-xs text-gray-400">Jumlah Shift</Label>
                 <div className="flex items-center gap-2">
                   <Input
                     type="number"
                     name="shiftCount"
-                    className="w-16 bg-slate-800"
+                    className="w-16 bg-gray-900 border-gray-700 text-gray-200"
                     defaultValue={0}
                   />
-                  <span className="text-xs text-muted-foreground">
-                    x Rp 30.000
-                  </span>
+                  <span className="text-xs text-gray-500">x Rp 30.000</span>
                 </div>
               </div>
             </div>
@@ -379,12 +390,13 @@ export function ApprovalForm({
           type="button"
           variant="ghost"
           onClick={() => setActionType(null)}
+          className="text-gray-400 hover:text-white"
         >
           Batal
         </Button>
         <Button
           type="submit"
-          className="bg-blue-600 hover:bg-blue-700"
+          className="bg-crimson-700 hover:bg-crimson-800 text-white shadow-sm shadow-crimson-900/30"
           disabled={loading}
         >
           Submit Keputusan

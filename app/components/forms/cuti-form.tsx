@@ -53,6 +53,7 @@ export function LeaveForm({ user, onSuccess }: LeaveFormProps) {
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
   const [holidays, setHolidays] = useState<string[]>([]);
+  const [specialWorkDays, setSpecialWorkDays] = useState<string[]>([]);
   const [reason, setReason] = useState<string>("");
   const [showWarning, setShowWarning] = useState<boolean>(false);
   const [pendingPayload, setPendingPayload] =
@@ -87,12 +88,45 @@ export function LeaveForm({ user, onSuccess }: LeaveFormProps) {
     fetchHolidays();
   }, []);
 
+  useEffect(() => {
+    const fetchSpecialWorkDays = async () => {
+      try {
+        const res = await fetch("/api/special-workdays"); // atau endpoint yang sesuai
+        if (!res.ok) throw new Error("Gagal fetch");
+        const data = await res.json();
+
+        let daysArray: string[] = [];
+        if (Array.isArray(data)) {
+          daysArray = data.map((item: any) =>
+            typeof item === "string" ? item : (item.date ?? item.tanggal),
+          );
+        } else if (data?.data && Array.isArray(data.data)) {
+          daysArray = data.data.map((item: any) =>
+            typeof item === "string" ? item : (item.date ?? item.tanggal),
+          );
+        }
+        setSpecialWorkDays(daysArray);
+      } catch (error) {
+        console.warn("Data hari kerja khusus tidak tersedia:", error);
+        setSpecialWorkDays([]);
+      }
+    };
+    fetchSpecialWorkDays();
+  }, []);
+
   const isHolidayOrSunday = (date: Date) => {
-    if (date.getDay() === 0) return true;
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
     const dateString = `${year}-${month}-${day}`;
+
+    // Jika tanggal terdaftar sebagai hari kerja khusus → bukan libur
+    if (specialWorkDays.includes(dateString)) return false;
+
+    // Hari Minggu tetap libur jika tidak termasuk dalam hari kerja khusus
+    if (date.getDay() === 0) return true;
+
+    // Cek daftar hari libur dari backend
     return holidays.includes(dateString);
   };
 
@@ -118,17 +152,14 @@ export function LeaveForm({ user, onSuccess }: LeaveFormProps) {
     setLoading(true);
     try {
       const token = localStorage.getItem("accessToken");
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/requests/cuti`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(payload),
+      const res = await fetch("/api/cuti", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-      );
+        body: JSON.stringify(payload),
+      });
 
       const data = await res.json();
       if (res.ok && data.success) {
