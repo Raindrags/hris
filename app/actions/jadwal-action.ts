@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3434/api";
+const API_URL = process.env.BACKEND_API_URL;
 
 /**
  * Helper untuk mengambil token dengan nama "access_token"
@@ -68,8 +68,6 @@ export async function getAllShifts() {
     const data = await res.json();
     console.log("Format Data dari Backend:", data);
 
-    // Pastikan backend mengembalikan object { success: true, data: [...] }
-    // Jika backend Anda hanya mengembalikan array data langsung: return { success: true, data };
     return data;
   } catch (error: any) {
     console.error("Fetch Gagal (Network error dll):", error.message);
@@ -158,8 +156,7 @@ export async function deleteShift(id: string) {
 export async function getEmployeesForAssign() {
   try {
     const headers = await getHeaders();
-    // Asumsi endpoint untuk mengambil data assign. Sesuaikan jika beda!
-    const res = await fetch(`${API_URL}/shifts/assign-data`, {
+    const res = await fetch(`${API_URL}/shifts/employees`, {
       cache: "no-store",
       headers,
     });
@@ -180,8 +177,7 @@ export async function getEmployeesForAssign() {
 export async function batchAssignShift(userIds: string[], shiftId: string) {
   try {
     const headers = await getHeaders();
-    const res = await fetch(`${API_URL}/shifts/${shiftId}/assign`, {
-      // Sesuaikan endpoint
+    const res = await fetch(`${API_URL}/shifts/assign`, {
       method: "POST",
       headers,
       body: JSON.stringify({ userIds }),

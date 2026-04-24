@@ -40,8 +40,10 @@ import {
 // ============================================================================
 // API FETCHERS (Pengganti absensi-action)
 // ============================================================================
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
+const API_BASE_URL =
+  process.env.BACKEND_API_URL || "https://hris.maitreyawirads.dpdns.org";
 
+console.log(process.env.BACKEND_API_URL);
 const getAttendanceReportData = async (
   startDate: string,
   endDate: string,
@@ -188,10 +190,8 @@ export default function RekapAbsensiView() {
       );
 
       if (res.success && res.data) {
-        // PERBAIKAN VERCEL: Menggunakan interface EmployeeReport dan AttendanceLog, bukan type 'any'
         const processedData = res.data.map((emp: EmployeeReport) => {
           const filteredLogs = emp.logs.filter((log: AttendanceLog) => {
-            // Sembunyikan hari Minggu/Sabtu hanya jika tidak ada absen dan bukan hari dinas khusus
             if (log.dayName === "Sunday" && !log.in && !log.isSpecialWorkDay)
               return false;
             if (

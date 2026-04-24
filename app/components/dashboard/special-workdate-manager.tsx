@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,14 +20,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import {
   getSpecialWorkDates,
@@ -36,16 +30,14 @@ import {
   deleteSpecialWorkDate,
 } from "@/app/actions/special-workdate-action";
 import { getUsers } from "@/app/actions/get-user-action";
-import { getDivisions } from "@/app/actions/get-division-action";
 
 interface SpecialWorkDate {
   id: string;
   date: string;
-  reason: string | null;
-  checkIn: string;
-  checkOut: string;
-  divisiId: string | null;
-  divisi?: { name: string };
+  description?: string; // tetap dipertahankan untuk backward compatibility
+  name?: string; // alternatif nama kegiatan
+  checkIn?: string; // jam masuk
+  checkOut?: string; // jam pulang
   users: { id: string; name: string; niy: string }[];
 }
 
@@ -56,46 +48,32 @@ interface UserOption {
   divisi?: { name: string };
 }
 
-interface Division {
-  id: string;
-  name: string;
-}
-
 export function SpecialWorkDateManager() {
   const [items, setItems] = useState<SpecialWorkDate[]>([]);
   const [users, setUsers] = useState<UserOption[]>([]);
-  const [divisions, setDivisions] = useState<Division[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-
-  // Type annotation eksplisit agar divisiId selalu string ("all" atau id)
-  const [formData, setFormData] = useState<{
-    date: string;
-    reason: string;
-    checkIn: string;
-    checkOut: string;
-    divisiId: string;
-  }>({
+  const [formData, setFormData] = useState({
     date: "",
-    reason: "",
-    checkIn: "07:30",
-    checkOut: "16:00",
-    divisiId: "all",
+    name: "",
+    checkIn: "07:00",
+    checkOut: "11:00",
   });
 
-  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  // State assign
+  const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [assignItemId, setAssignItemId] = useState<string | null>(null);
+  const [assignSelectedIds, setAssignSelectedIds] = useState<string[]>([]);
 
   const fetchData = async () => {
     setIsLoading(true);
-    const [swRes, userRes, divRes] = await Promise.all([
+    const [dateRes, userRes] = await Promise.all([
       getSpecialWorkDates(),
       getUsers(),
-      getDivisions(),
     ]);
-    if (swRes.success) setItems(swRes.data);
+    if (dateRes.success) setItems(dateRes.data);
     if (userRes.success) setUsers(userRes.data);
-    if (divRes.success) setDivisions(divRes.data);
     setIsLoading(false);
   };
 
@@ -104,39 +82,40 @@ export function SpecialWorkDateManager() {
   }, []);
 
   const handleSave = async () => {
-    if (!formData.date) {
-      toast.error("Tanggal wajib diisi");
+    if (
+      !formData.date ||
+      !formData.name ||
+      !formData.checkIn ||
+      !formData.checkOut
+    ) {
+      toast.error("Semua field wajib diisi");
       return;
     }
-
     const payload = {
       date: formData.date,
-      reason: formData.reason || undefined,
+      reason: formData.name,
       checkIn: formData.checkIn,
       checkOut: formData.checkOut,
-      divisiId: formData.divisiId === "all" ? null : formData.divisiId,
-      userIds: selectedUserIds.length ? selectedUserIds : null,
     };
-
     let res;
     if (editingId) {
       res = await updateSpecialWorkDate(editingId, payload);
     } else {
       res = await createSpecialWorkDate(payload);
     }
-
+    console.log(res);
     if (res.success) {
       toast.success(editingId ? "Data diperbarui" : "Data ditambahkan");
       setDialogOpen(false);
       resetForm();
       fetchData();
     } else {
-      toast.error(res.error || "Gagal menyimpan");
+      toast.error(res.error || res.message || "Gagal menyimpan");
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Hapus data ini?")) return;
+    if (!confirm("Hapus hari kerja khusus ini?")) return;
     const res = await deleteSpecialWorkDate(id);
     if (res.success) {
       toast.success("Data dihapus");
@@ -150,25 +129,45 @@ export function SpecialWorkDateManager() {
     setEditingId(item.id);
     setFormData({
       date: item.date,
-      reason: item.reason || "",
-      checkIn: item.checkIn,
-      checkOut: item.checkOut,
-      divisiId: item.divisiId || "all",
+      name: item.name || item.description || "",
+      checkIn: item.checkIn || "07:00",
+      checkOut: item.checkOut || "11:00",
     });
-    setSelectedUserIds(item.users.map((u) => u.id));
     setDialogOpen(true);
   };
 
   const resetForm = () => {
     setEditingId(null);
-    setFormData({
-      date: "",
-      reason: "",
-      checkIn: "07:30",
-      checkOut: "16:00",
-      divisiId: "all",
+    setFormData({ date: "", name: "", checkIn: "07:00", checkOut: "11:00" });
+  };
+
+  // Assign modal functions
+  const openAssignModal = (item: SpecialWorkDate) => {
+    setAssignItemId(item.id);
+    setAssignSelectedIds(item.users.map((u) => u.id));
+    setAssignModalOpen(true);
+  };
+
+  const handleAssignSave = async () => {
+    if (!assignItemId) return;
+    const res = await updateSpecialWorkDate(assignItemId, {
+      userIds: assignSelectedIds.length ? assignSelectedIds : null,
     });
-    setSelectedUserIds([]);
+    if (res.success) {
+      toast.success("Penugasan pegawai diperbarui");
+      setAssignModalOpen(false);
+      fetchData();
+    } else {
+      toast.error(res.error || "Gagal menyimpan penugasan");
+    }
+  };
+
+  const toggleAssignUser = (userId: string) => {
+    setAssignSelectedIds((prev) =>
+      prev.includes(userId)
+        ? prev.filter((id) => id !== userId)
+        : [...prev, userId],
+    );
   };
 
   return (
@@ -190,23 +189,22 @@ export function SpecialWorkDateManager() {
           <TableHeader className="bg-muted/50">
             <TableRow>
               <TableHead>Tanggal</TableHead>
-              <TableHead>Alasan</TableHead>
-              <TableHead>Jam Kerja</TableHead>
-              <TableHead>Divisi</TableHead>
-              <TableHead>Pegawai</TableHead>
+              <TableHead>Nama Kegiatan</TableHead>
+              <TableHead>Jam</TableHead>
+              <TableHead>Berlaku untuk</TableHead>
               <TableHead className="text-right">Aksi</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-6">
+                <TableCell colSpan={5} className="text-center py-6">
                   Memuat data...
                 </TableCell>
               </TableRow>
             ) : items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-6">
+                <TableCell colSpan={5} className="text-center py-6">
                   Belum ada data.
                 </TableCell>
               </TableRow>
@@ -220,14 +218,11 @@ export function SpecialWorkDateManager() {
                       year: "numeric",
                     })}
                   </TableCell>
-                  <TableCell>{item.reason || "-"}</TableCell>
+                  <TableCell>{item.name || item.description || "-"}</TableCell>
                   <TableCell>
-                    {item.checkIn} - {item.checkOut}
-                  </TableCell>
-                  <TableCell>
-                    {item.divisi?.name || (
-                      <Badge variant="secondary">Semua Divisi</Badge>
-                    )}
+                    {item.checkIn && item.checkOut
+                      ? `${item.checkIn.substring(0, 5)} - ${item.checkOut.substring(0, 5)}`
+                      : "-"}
                   </TableCell>
                   <TableCell>
                     {item.users.length === 0 ? (
@@ -247,7 +242,14 @@ export function SpecialWorkDateManager() {
                       </div>
                     )}
                   </TableCell>
-                  <TableCell className="text-right space-x-2">
+                  <TableCell className="text-right space-x-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openAssignModal(item)}
+                    >
+                      <Users className="w-4 h-4 mr-1" /> Assign
+                    </Button>
                     <Button
                       variant="ghost"
                       size="icon"
@@ -270,11 +272,14 @@ export function SpecialWorkDateManager() {
         </Table>
       </div>
 
+      {/* Modal Tambah/Edit */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {editingId ? "Edit" : "Tambah"} Hari Kerja Khusus
+              {editingId
+                ? "Edit Hari Kerja Khusus"
+                : "Tambah Hari Kerja Khusus"}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -289,13 +294,13 @@ export function SpecialWorkDateManager() {
               />
             </div>
             <div>
-              <Label>Alasan (opsional)</Label>
+              <Label>Nama Kegiatan</Label>
               <Input
-                value={formData.reason}
+                value={formData.name}
                 onChange={(e) =>
-                  setFormData({ ...formData, reason: e.target.value })
+                  setFormData({ ...formData, name: e.target.value })
                 }
-                placeholder="Contoh: Pengganti libur Lebaran"
+                placeholder="Contoh: Masuk Sabtu karena event"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -320,56 +325,69 @@ export function SpecialWorkDateManager() {
                 />
               </div>
             </div>
-            <div>
-              <Label>Divisi</Label>
-              <Select
-                value={formData.divisiId}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, divisiId: value as string })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih Divisi" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Semua Divisi</SelectItem>
-                  {divisions.map((d) => (
-                    <SelectItem key={d.id} value={d.id}>
-                      {d.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Berlaku untuk Pegawai</Label>
-              <Select
-                value={selectedUserIds}
-                onValueChange={setSelectedUserIds}
-                multiple
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih pegawai (kosongkan untuk semua di divisi)" />
-                </SelectTrigger>
-                <SelectContent className="max-h-60">
-                  {users.map((u) => (
-                    <SelectItem key={u.id} value={u.id}>
-                      {u.name} ({u.niy}) - {u.divisi?.name || "-"}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground mt-1">
-                Kosongkan untuk berlaku ke semua pegawai dalam divisi yang
-                dipilih (atau global).
-              </p>
-            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               Batal
             </Button>
             <Button onClick={handleSave}>Simpan</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Assign */}
+      <Dialog open={assignModalOpen} onOpenChange={setAssignModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Atur Pegawai untuk Hari Kerja Khusus</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto border rounded-md">
+            <Table>
+              <TableHeader className="bg-muted/50 sticky top-0 z-10">
+                <TableRow>
+                  <TableHead className="w-12 text-center">
+                    <Checkbox
+                      checked={
+                        users.length > 0 &&
+                        assignSelectedIds.length === users.length
+                      }
+                      onCheckedChange={(checked) => {
+                        if (checked)
+                          setAssignSelectedIds(users.map((u) => u.id));
+                        else setAssignSelectedIds([]);
+                      }}
+                    />
+                  </TableHead>
+                  <TableHead>Nama</TableHead>
+                  <TableHead>NIY</TableHead>
+                  <TableHead>Divisi</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {users.map((u) => (
+                  <TableRow key={u.id}>
+                    <TableCell className="text-center">
+                      <Checkbox
+                        checked={assignSelectedIds.includes(u.id)}
+                        onCheckedChange={() => toggleAssignUser(u.id)}
+                      />
+                    </TableCell>
+                    <TableCell className="font-medium">{u.name}</TableCell>
+                    <TableCell>{u.niy || "-"}</TableCell>
+                    <TableCell>{u.divisi?.name || "-"}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <div className="text-xs text-muted-foreground mt-2">
+            Kosongkan pilihan untuk berlaku ke semua pegawai.
+          </div>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setAssignModalOpen(false)}>
+              Batal
+            </Button>
+            <Button onClick={handleAssignSave}>Simpan</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

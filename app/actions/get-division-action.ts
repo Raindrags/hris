@@ -1,6 +1,7 @@
 "use server";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
+const API_BASE =
+  process.env.BACKEND_API_URL || "https://hris.maitreyawirads.dpdns.org";
 
 export async function getDivisions() {
   try {

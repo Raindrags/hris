@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { LeaveForm } from "@/app/components/forms/cuti-form";
 
-// Komponen terpisah yang menggunakan useSearchParams
 function FormCutiContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -16,46 +15,64 @@ function FormCutiContent() {
   const [userData, setUserData] = useState<{ sisaCuti: number } | null>(null);
 
   useEffect(() => {
-    if (!token) {
-      setError("Token tidak ditemukan. Silakan minta link baru dari WhatsApp.");
-      setLoading(false);
+    // Mode magic link: token tersedia
+    if (token) {
+      const verifyToken = async () => {
+        try {
+          const res = await fetch("/api/auth/verify-token", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token }),
+          });
+
+          const data = await res.json();
+
+          if (!res.ok || !data.success) {
+            throw new Error(data.error || "Token tidak valid atau kadaluarsa.");
+          }
+
+          localStorage.setItem("user", JSON.stringify(data.user));
+          if (data.accessToken) {
+            localStorage.setItem("accessToken", data.accessToken);
+          }
+
+          setUserData({
+            sisaCuti: data.user.sisaCuti ?? 0,
+          });
+        } catch (err: any) {
+          setError(err.message);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      verifyToken();
       return;
     }
 
-    const verifyToken = async () => {
+    // Mode akses langsung (sudah login via cookie)
+    const checkAuth = async () => {
       try {
-        const res = await fetch("/api/auth/verify-token", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token }),
-        });
-
-        const data = await res.json();
-
-        if (!res.ok || !data.success) {
-          throw new Error(data.error || "Token tidak valid atau kadaluarsa.");
+        const meRes = await fetch("/api/auth/me");
+        if (meRes.status === 401) {
+          setError("Anda belum login. Silakan login via WhatsApp.");
+          setLoading(false);
+          return;
         }
-
-        localStorage.setItem("user", JSON.stringify(data.user));
-        if (data.accessToken) {
-          localStorage.setItem("accessToken", data.accessToken);
-        }
-
-        setUserData({
-          sisaCuti: data.user.sisaCuti ?? 0,
-        });
+        const meData = await meRes.json();
+        setUserData({ sisaCuti: meData.user?.sisaCuti ?? 0 });
       } catch (err: any) {
-        setError(err.message);
+        setError("Gagal memeriksa sesi.");
       } finally {
         setLoading(false);
       }
     };
 
-    verifyToken();
-  }, [token]);
+    checkAuth();
+  }, [token, router]);
 
   const handleSuccess = () => {
-    router.push("/dashboard");
+    router.push("/pegawai/dashboard");
   };
 
   if (loading) {
@@ -75,7 +92,7 @@ function FormCutiContent() {
           <h1 className="text-2xl font-bold text-red-400 mb-2">Gagal Login</h1>
           <p className="text-sm text-slate-400 mb-6">{error}</p>
           <button
-            onClick={() => router.push("/")}
+            onClick={() => router.push("/pegawai/dashboard")}
             className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md"
           >
             Kembali ke Beranda
@@ -104,7 +121,6 @@ function FormCutiContent() {
   );
 }
 
-// Komponen utama halaman yang membungkus Content dengan Suspense
 export default function FormCutiPage() {
   return (
     <Suspense

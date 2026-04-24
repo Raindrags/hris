@@ -273,7 +273,7 @@ export default function PengaturanJadwalView() {
         emp.niy?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         emp.jabatan?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesDivisi =
-        divisiFilter === "all" || emp.divisiId === divisiFilter;
+        divisiFilter === "all" || emp.divisi?.id === divisiFilter;
 
       return matchesSearch && matchesDivisi;
     });
@@ -619,7 +619,7 @@ export default function PengaturanJadwalView() {
 
       {/* ========== MODAL BATCH ASSIGN ========== */}
       <Dialog open={isAssignModalOpen} onOpenChange={setIsAssignModalOpen}>
-        <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col">
+        <DialogContent className="!w-[60vw] !max-w-[95vw] max-h-[85vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>
               Atur Pegawai untuk: {selectedShiftForAssign?.name}

@@ -88,14 +88,26 @@ export function PermissionForm({ user, onSuccess }: PermissionFormProps) {
   useEffect(() => {
     const fetchHolidays = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/holidays`);
-        if (!res.ok) throw new Error("Gagal mengambil data libur");
+        const res = await fetch("/api/holidays");
+        if (!res.ok) throw new Error("Gagal fetch");
         const data = await res.json();
-        setHolidays(data);
+
+        let holidaysArray: string[] = [];
+        if (Array.isArray(data)) {
+          holidaysArray = data.map((item: any) =>
+            typeof item === "string" ? item : (item.date ?? item.tanggal),
+          );
+        } else if (data?.data && Array.isArray(data.data)) {
+          holidaysArray = data.data.map((item: any) =>
+            typeof item === "string" ? item : (item.date ?? item.tanggal),
+          );
+        }
+        setHolidays(holidaysArray);
       } catch (error) {
-        console.error("Gagal mengambil data libur:", error);
+        console.warn("Penanda merah tidak akan muncul:", error);
         setHolidays([]);
       }
+      console.log("Libur yang di-fetch:", holidays);
     };
     fetchHolidays();
   }, []);
@@ -169,16 +181,13 @@ export function PermissionForm({ user, onSuccess }: PermissionFormProps) {
       if (payload.time) formDataObj.append("time", payload.time);
       if (payload.file) formDataObj.append("file", payload.file);
 
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/requests/izin`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formDataObj,
+      const res = await fetch(`${process.env.BACKEND_API_URL}/requests/izin`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
-      );
+        body: formDataObj,
+      });
 
       const data = await res.json();
       if (res.ok && data.success) {
@@ -281,20 +290,17 @@ export function PermissionForm({ user, onSuccess }: PermissionFormProps) {
             <Label className="text-slate-300">Tanggal Mulai</Label>
             <Popover>
               <PopoverTrigger>
-                <Button
-                  variant={"outline"}
+                <span
                   className={cn(
-                    "w-full justify-start text-left font-normal bg-slate-900 border-slate-700 text-slate-100",
+                    "inline-flex w-full cursor-pointer items-center justify-start rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-normal text-slate-100 hover:bg-slate-800",
                     !startDate && "text-muted-foreground",
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {startDate ? (
-                    format(startDate, "PPP", { locale: id })
-                  ) : (
-                    <span>Pilih tanggal</span>
-                  )}
-                </Button>
+                  {startDate
+                    ? format(startDate, "PPP", { locale: id })
+                    : "Pilih tanggal"}
+                </span>
               </PopoverTrigger>
               <PopoverContent
                 className="w-auto p-0 bg-slate-900 border-slate-700"
@@ -316,23 +322,19 @@ export function PermissionForm({ user, onSuccess }: PermissionFormProps) {
             <Label className="text-slate-300">Tanggal Selesai</Label>
             <Popover>
               <PopoverTrigger>
-                <Button
-                  variant={"outline"}
-                  disabled={isAutoEndDate}
+                <span
                   className={cn(
-                    "w-full justify-start text-left font-normal bg-slate-900 border-slate-700 text-slate-100",
+                    "inline-flex w-full cursor-pointer items-center justify-start rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-normal text-slate-100 hover:bg-slate-800",
                     !endDate && "text-muted-foreground",
                     isAutoEndDate &&
-                      "opacity-70 cursor-not-allowed bg-slate-800",
+                      "pointer-events-none opacity-50 cursor-not-allowed",
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {endDate ? (
-                    format(endDate, "PPP", { locale: id })
-                  ) : (
-                    <span>Pilih tanggal</span>
-                  )}
-                </Button>
+                  {endDate
+                    ? format(endDate, "PPP", { locale: id })
+                    : "Pilih tanggal"}
+                </span>
               </PopoverTrigger>
               {!isAutoEndDate && (
                 <PopoverContent
@@ -391,9 +393,11 @@ export function PermissionForm({ user, onSuccess }: PermissionFormProps) {
           <Select
             value={category}
             onValueChange={(val) => {
-              setCategory(val ?? "");
-              if (val !== "IzinKhusus") setSubCategory("");
-              if (val !== "Terlambat" && val !== "PulangAwal") setTimeValue("");
+              const safeVal = val ?? "";
+              setCategory(safeVal);
+              if (safeVal !== "IzinKhusus") setSubCategory("");
+              if (safeVal !== "Terlambat" && safeVal !== "PulangAwal")
+                setTimeValue("");
             }}
             required
           >
@@ -459,7 +463,7 @@ export function PermissionForm({ user, onSuccess }: PermissionFormProps) {
             <Label className="text-slate-300">Detail Izin Khusus</Label>
             <Select
               value={subCategory}
-              onValueChange={(value) => setSubCategory(value ?? "")}
+              onValueChange={(val) => setSubCategory(val ?? "")}
             >
               <SelectTrigger className="bg-slate-900 border-slate-700 text-slate-100">
                 <SelectValue placeholder="Pilih alasan khusus" />

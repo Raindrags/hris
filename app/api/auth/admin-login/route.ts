@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers"; // Ganti js-cookie dengan bawaan Next.js
+import { cookies } from "next/headers";
 
 export async function POST(request: Request) {
   try {
@@ -29,15 +29,22 @@ export async function POST(request: Request) {
       );
     } // Jika sukses, atur cookie di sisi server!
 
-    const cookieStore = await cookies(); // Pastikan namanya "access_token" agar sesuai dengan dashboard page kita
+    const cookieStore = await cookies();
 
     cookieStore.set("access_token", data.access_token, {
-      httpOnly: true, // Lebih aman, tidak bisa diakses via JavaScript browser
+      httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
       maxAge: 60 * 60 * 24, // 1 hari
-    }); // Kirim konfirmasi ke Frontend (Form React) bahwa login berhasil
+    });
+    cookieStore.set("role", "ADMIN", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24, // 1 hari
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {
