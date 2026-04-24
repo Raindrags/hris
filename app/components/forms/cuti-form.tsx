@@ -60,6 +60,7 @@ export function LeaveForm({ user, onSuccess }: LeaveFormProps) {
 
   const sisaCutiNum = Number(user.sisaCuti) || 0;
 
+  // Fetch data hari libur — gunakan API route proxy jika ada, atau langsung
   useEffect(() => {
     const fetchHolidays = async () => {
       try {
@@ -117,14 +118,17 @@ export function LeaveForm({ user, onSuccess }: LeaveFormProps) {
     setLoading(true);
     try {
       const token = localStorage.getItem("accessToken");
-      const res = await fetch(`${process.env.BACKEND_API_URL}/requests/cuti`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/requests/cuti`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
         },
-        body: JSON.stringify(payload),
-      });
+      );
 
       const data = await res.json();
       if (res.ok && data.success) {
@@ -214,12 +218,19 @@ export function LeaveForm({ user, onSuccess }: LeaveFormProps) {
                 className="w-auto p-0 bg-slate-900 border-slate-700"
                 align="start"
               >
-                {/* Calendar */}
+                <Calendar
+                  mode="single"
+                  selected={startDate}
+                  onSelect={setStartDate}
+                  initialFocus
+                  modifiers={{ holiday: isHolidayOrSunday }}
+                  modifiersClassNames={{ holiday: "text-red-500 font-bold" }}
+                />
               </PopoverContent>
             </Popover>
           </div>
 
-          {/* Tanggal Selesai */}
+          {/* Tanggal Selesai — tidak ada isAutoEndDate */}
           <div className="space-y-2 flex flex-col">
             <Label className="text-slate-300">Tanggal Selesai</Label>
             <Popover>
@@ -228,8 +239,6 @@ export function LeaveForm({ user, onSuccess }: LeaveFormProps) {
                   className={cn(
                     "inline-flex w-full cursor-pointer items-center justify-start rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-normal text-slate-100 hover:bg-slate-800",
                     !endDate && "text-muted-foreground",
-                    isAutoEndDate &&
-                      "pointer-events-none opacity-50 cursor-not-allowed",
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
@@ -242,7 +251,14 @@ export function LeaveForm({ user, onSuccess }: LeaveFormProps) {
                 className="w-auto p-0 bg-slate-900 border-slate-700"
                 align="start"
               >
-                {/* Calendar */}
+                <Calendar
+                  mode="single"
+                  selected={endDate}
+                  onSelect={setEndDate}
+                  initialFocus
+                  modifiers={{ holiday: isHolidayOrSunday }}
+                  modifiersClassNames={{ holiday: "text-red-500 font-bold" }}
+                />
               </PopoverContent>
             </Popover>
           </div>
