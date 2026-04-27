@@ -70,7 +70,10 @@ const getLocalYYYYMMDD = (date: Date) => {
   return d.toISOString().split("T")[0];
 };
 
-export function PermissionForm({ user, onSuccess }: PermissionFormProps) {
+export default function PermissionForm({
+  user,
+  onSuccess,
+}: PermissionFormProps) {
   const [loading, setLoading] = useState<boolean>(false);
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
