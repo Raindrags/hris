@@ -32,7 +32,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { PermissionForm } from "@/app/components/forms/izin-form";
+import PermissionForm from "@/app/components/forms/izin-form";
 
 const ITEMS_PER_PAGE = 10;
 
