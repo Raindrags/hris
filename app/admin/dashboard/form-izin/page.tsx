@@ -162,7 +162,7 @@ export default function AdminFormIzinPage() {
                         key={u.id}
                         value={`${u.name} ${u.niy}`}
                         onSelect={() => handleSelectUser(u.id)}
-                        className="text-gray-200 hover:bg-gray-800 hover:text-white"
+                        className="text-gray-250 hover:bg-gray-800 hover:text-white"
                       >
                         <Check
                           className={cn(
