@@ -8,8 +8,6 @@ import {
   Trash2,
   Mail,
   User,
-  Briefcase,
-  Bug,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -48,14 +46,6 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 
-import {
-  getEmployees,
-  createEmployee,
-  updateEmployee,
-  deleteEmployee,
-  getSupervisors,
-} from "@/app/actions/pegawai-action";
-
 const initialFormState = {
   name: "",
   email: "",
@@ -67,63 +57,56 @@ export default function PegawaiView() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Data State
   const [employees, setEmployees] = useState<any[]>([]);
   const [supervisors, setSupervisors] = useState<any[]>([]);
 
-  // Modal & Form State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState(initialFormState);
 
-  // Search State
   const [searchTerm, setSearchTerm] = useState("");
 
-  // ==========================================
-  // STATE PAGINASI
-  // ==========================================
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5; // Ubah angka ini jika ingin menampilkan lebih banyak baris (misal 10)
+  const itemsPerPage = 5;
 
   useEffect(() => {
     fetchData();
   }, []);
 
-  // Kembalikan ke halaman 1 setiap kali user mengetik di kotak pencarian
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
 
   const fetchData = async () => {
     setIsLoading(true);
-
     try {
       const [empRes, supRes] = await Promise.all([
-        getEmployees(),
-        getSupervisors(),
+        fetch("/api/users"),
+        fetch("/api/users/supervisors"),
       ]);
 
-      if (empRes.success) {
+      const empData = await empRes.json();
+      const supData = await supRes.json();
+
+      if (empData.success || empRes.ok) {
         setEmployees(
-          Array.isArray(empRes.data) ? empRes.data : empRes.data?.data || [],
+          Array.isArray(empData.data) ? empData.data : (empData?.data ?? []),
         );
       } else {
         toast.error("Gagal memuat data pegawai");
       }
 
-      if (supRes.success) {
+      if (supData.success || supRes.ok) {
         setSupervisors(
-          Array.isArray(supRes.data) ? supRes.data : supRes.data?.data || [],
+          Array.isArray(supData.data) ? supData.data : (supData?.data ?? []),
         );
       }
     } catch (error: any) {
       toast.error("Terjadi kesalahan sistem saat mengambil data");
     }
-
     setIsLoading(false);
   };
 
-  // HANDLERS
   const openCreateModal = () => {
     setEditingId(null);
     setFormData(initialFormState);
@@ -144,12 +127,17 @@ export default function PegawaiView() {
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`Yakin ingin menghapus pegawai ${name}?`)) return;
     setIsLoading(true);
-    const res = await deleteEmployee(id);
-    if (res?.success) {
-      toast.success("Pegawai berhasil dihapus");
-      fetchData();
-    } else {
-      toast.error(res?.message || "Gagal menghapus pegawai");
+    try {
+      const res = await fetch(`/api/users/${id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success("Pegawai berhasil dihapus");
+        fetchData();
+      } else {
+        toast.error(data.message || data.error || "Gagal menghapus pegawai");
+      }
+    } catch (error) {
+      toast.error("Gagal menghapus pegawai");
     }
     setIsLoading(false);
   };
@@ -163,35 +151,39 @@ export default function PegawaiView() {
       supervisorId:
         formData.supervisorId === "none" ? null : formData.supervisorId,
     };
-    let res = editingId
-      ? await updateEmployee(editingId, payload)
-      : await createEmployee(payload);
-    if (res?.success) {
-      toast.success(
-        editingId
-          ? "Data pegawai diupdate!"
-          : "Pegawai baru berhasil ditambahkan!",
-      );
-      setIsModalOpen(false);
-      fetchData();
-    } else {
-      toast.error(res?.message || "Terjadi kesalahan sistem");
+
+    try {
+      const url = editingId ? `/api/users/${editingId}` : "/api/users";
+      const method = editingId ? "PUT" : "POST";
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success(
+          editingId
+            ? "Data pegawai diupdate!"
+            : "Pegawai baru berhasil ditambahkan!",
+        );
+        setIsModalOpen(false);
+        fetchData();
+      } else {
+        toast.error(data.message || data.error || "Terjadi kesalahan sistem");
+      }
+    } catch (error) {
+      toast.error("Terjadi kesalahan sistem");
     }
     setIsSaving(false);
   };
 
-  // ==========================================
-  // LOGIKA PENCARIAN & PAGINASI
-  // ==========================================
-
-  // 1. Filter data berdasarkan pencarian
   const filteredEmployees = useMemo(() => {
     return employees.filter((emp) => {
       const searchLower = searchTerm.toLowerCase();
       const empName = (emp.name || emp.fullName || "").toLowerCase();
       const empEmail = (emp.email || "").toLowerCase();
       const empRole = (emp.role || "").toLowerCase();
-
       return (
         empName.includes(searchLower) ||
         empEmail.includes(searchLower) ||
@@ -200,10 +192,7 @@ export default function PegawaiView() {
     });
   }, [employees, searchTerm]);
 
-  // 2. Hitung total halaman
   const totalPages = Math.ceil(filteredEmployees.length / itemsPerPage);
-
-  // 3. Potong data sesuai halaman saat ini
   const paginatedEmployees = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
@@ -212,16 +201,19 @@ export default function PegawaiView() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between border-b pb-4 gap-4">
+      <Card className="bg-gray-900 border-gray-800 shadow-md text-gray-100">
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-gray-800 pb-4 gap-4">
           <div>
-            <CardTitle>Manajemen Pegawai</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-white">Manajemen Pegawai</CardTitle>
+            <CardDescription className="text-gray-400">
               Kelola data seluruh pegawai, peran (role), dan pengaturan atasan.
             </CardDescription>
           </div>
           <div className="flex gap-2">
-            <Button onClick={openCreateModal}>
+            <Button
+              onClick={openCreateModal}
+              className="bg-crimson-700 hover:bg-crimson-800 text-white"
+            >
               <Plus className="w-4 h-4 mr-2" /> Tambah Pegawai
             </Button>
           </div>
@@ -230,24 +222,26 @@ export default function PegawaiView() {
         <CardContent className="pt-6 space-y-4">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
               <Input
                 placeholder="Cari nama, email, atau role..."
-                className="pl-9"
+                className="pl-9 bg-gray-800 border-gray-700 text-gray-100 placeholder:text-gray-500 focus:border-crimson-700 focus:ring-crimson-500/20"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
           </div>
 
-          <div className="border rounded-md overflow-hidden">
+          <div className="border border-gray-800 rounded-md overflow-hidden">
             <Table>
-              <TableHeader className="bg-muted/50">
-                <TableRow>
-                  <TableHead>Pegawai</TableHead>
-                  <TableHead>NIY</TableHead>
-                  <TableHead>Atasan</TableHead>
-                  <TableHead className="text-right">Aksi</TableHead>
+              <TableHeader className="bg-gray-800/50">
+                <TableRow className="border-gray-800">
+                  <TableHead className="text-gray-300">Pegawai</TableHead>
+                  <TableHead className="text-gray-300">NIY</TableHead>
+                  <TableHead className="text-gray-300">Atasan</TableHead>
+                  <TableHead className="text-right text-gray-300">
+                    Aksi
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -255,7 +249,7 @@ export default function PegawaiView() {
                   <TableRow>
                     <TableCell
                       colSpan={4}
-                      className="text-center py-8 text-muted-foreground"
+                      className="text-center py-8 text-gray-500"
                     >
                       Memuat data pegawai...
                     </TableCell>
@@ -264,7 +258,7 @@ export default function PegawaiView() {
                   <TableRow>
                     <TableCell
                       colSpan={4}
-                      className="text-center py-8 text-muted-foreground"
+                      className="text-center py-8 text-gray-500"
                     >
                       {searchTerm
                         ? "Tidak ada pegawai yang sesuai dengan pencarian."
@@ -275,21 +269,23 @@ export default function PegawaiView() {
                   paginatedEmployees.map((emp) => (
                     <TableRow
                       key={emp.id}
-                      className="hover:bg-muted/30 transition-colors"
+                      className="border-gray-800 hover:bg-gray-800/40 transition-colors"
                     >
                       <TableCell>
                         <div className="flex flex-col">
-                          <span className="font-medium">
+                          <span className="font-medium text-white">
                             {emp.name || emp.fullName || "Nama tidak ada"}
                           </span>
-                          <span className="text-xs text-muted-foreground flex items-center mt-1">
+                          <span className="text-xs text-gray-400 flex items-center mt-1">
                             <Mail className="w-3 h-3 mr-1" />{" "}
                             {emp.email || "Email tidak ada"}
                           </span>
                         </div>
                       </TableCell>
-                      <TableCell>{emp.niy || "Tidak ada NIY"}</TableCell>
-                      <TableCell className="text-muted-foreground text-sm">
+                      <TableCell className="text-gray-200">
+                        {emp.niy || "Tidak ada NIY"}
+                      </TableCell>
+                      <TableCell className="text-gray-400 text-sm">
                         {emp.supervisorId}
                       </TableCell>
                       <TableCell className="text-right">
@@ -298,7 +294,7 @@ export default function PegawaiView() {
                           size="icon"
                           onClick={() => openEditModal(emp)}
                         >
-                          <Pencil className="w-4 h-4 text-orange-500" />
+                          <Pencil className="w-4 h-4 text-amber-400" />
                         </Button>
                         <Button
                           variant="ghost"
@@ -307,7 +303,7 @@ export default function PegawaiView() {
                             handleDelete(emp.id, emp.name || emp.fullName)
                           }
                         >
-                          <Trash2 className="w-4 h-4 text-red-500" />
+                          <Trash2 className="w-4 h-4 text-red-400" />
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -317,23 +313,24 @@ export default function PegawaiView() {
             </Table>
           </div>
 
-          {/* ========================================== KONTROL PAGINASI ========================================== */}
           {filteredEmployees.length > 0 && (
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-2">
-              <div className="text-sm text-muted-foreground">
+              <div className="text-sm text-gray-400">
                 Menampilkan{" "}
-                <span className="font-medium">
+                <span className="font-medium text-white">
                   {(currentPage - 1) * itemsPerPage + 1}
                 </span>{" "}
                 hingga{" "}
-                <span className="font-medium">
+                <span className="font-medium text-white">
                   {Math.min(
                     currentPage * itemsPerPage,
                     filteredEmployees.length,
                   )}
                 </span>{" "}
                 dari total{" "}
-                <span className="font-medium">{filteredEmployees.length}</span>{" "}
+                <span className="font-medium text-white">
+                  {filteredEmployees.length}
+                </span>{" "}
                 pegawai
               </div>
               <div className="flex items-center space-x-2">
@@ -344,10 +341,11 @@ export default function PegawaiView() {
                     setCurrentPage((prev) => Math.max(1, prev - 1))
                   }
                   disabled={currentPage === 1}
+                  className="border-gray-700 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white disabled:opacity-50"
                 >
                   <ChevronLeft className="h-4 w-4 mr-1" /> Prev
                 </Button>
-                <div className="text-sm font-medium px-2">
+                <div className="text-sm font-medium px-2 text-gray-300">
                   Halaman {currentPage} dari {totalPages}
                 </div>
                 <Button
@@ -357,6 +355,7 @@ export default function PegawaiView() {
                     setCurrentPage((prev) => Math.min(totalPages, prev + 1))
                   }
                   disabled={currentPage === totalPages}
+                  className="border-gray-700 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white disabled:opacity-50"
                 >
                   Next <ChevronRight className="h-4 w-4 ml-1" />
                 </Button>
@@ -365,14 +364,14 @@ export default function PegawaiView() {
           )}
         </CardContent>
       </Card>
-      {/* MODAL FORM PEGAWAI */}
+
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px] bg-gray-900 border-gray-700 text-gray-100">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="text-white">
               {editingId ? "Edit Data Pegawai" : "Tambah Pegawai Baru"}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-gray-400">
               {editingId
                 ? "Perbarui informasi profil pegawai di bawah ini."
                 : "Masukkan detail informasi untuk pegawai baru."}
@@ -381,13 +380,15 @@ export default function PegawaiView() {
 
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Nama Lengkap</Label>
+              <Label htmlFor="name" className="text-gray-300">
+                Nama Lengkap
+              </Label>
               <div className="relative">
-                <User className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <User className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
                 <Input
                   id="name"
                   placeholder="Contoh: Siti Aminah"
-                  className="pl-9"
+                  className="pl-9 bg-gray-800 border-gray-700 text-gray-100 placeholder:text-gray-500 focus:border-crimson-700"
                   value={formData.name}
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
@@ -397,14 +398,16 @@ export default function PegawaiView() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-gray-300">
+                Email
+              </Label>
               <div className="relative">
-                <Mail className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Mail className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
                 <Input
                   id="email"
                   type="email"
                   placeholder="siti@sekolah.com"
-                  className="pl-9"
+                  className="pl-9 bg-gray-800 border-gray-700 text-gray-100 placeholder:text-gray-500 focus:border-crimson-700"
                   value={formData.email}
                   onChange={(e) =>
                     setFormData({ ...formData, email: e.target.value })
@@ -414,17 +417,22 @@ export default function PegawaiView() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="role">Peran (Role)</Label>
+              <Label htmlFor="role" className="text-gray-300">
+                Peran (Role)
+              </Label>
               <Select
                 value={formData.role}
                 onValueChange={(val) =>
                   setFormData({ ...formData, role: val ?? "TEACHER" })
                 }
               >
-                <SelectTrigger id="role">
+                <SelectTrigger
+                  id="role"
+                  className="bg-gray-800 border-gray-700 text-gray-200"
+                >
                   <SelectValue placeholder="Pilih peran" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-gray-800 border-gray-700 text-gray-200">
                   <SelectItem value="TEACHER">Guru (Teacher)</SelectItem>
                   <SelectItem value="ADMIN">Admin</SelectItem>
                   <SelectItem value="STAFF">Staf</SelectItem>
@@ -436,17 +444,22 @@ export default function PegawaiView() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="supervisor">Atasan Langsung (Opsional)</Label>
+              <Label htmlFor="supervisor" className="text-gray-300">
+                Atasan Langsung (Opsional)
+              </Label>
               <Select
                 value={formData.supervisorId}
                 onValueChange={(val) =>
                   setFormData({ ...formData, supervisorId: val ?? "none" })
                 }
               >
-                <SelectTrigger id="supervisor">
+                <SelectTrigger
+                  id="supervisor"
+                  className="bg-gray-800 border-gray-700 text-gray-200"
+                >
                   <SelectValue placeholder="Pilih atasan" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-gray-800 border-gray-700 text-gray-200">
                   <SelectItem value="none">-- Tidak ada atasan --</SelectItem>
                   {supervisors.map(
                     (sup) =>
@@ -466,10 +479,15 @@ export default function PegawaiView() {
               variant="outline"
               onClick={() => setIsModalOpen(false)}
               disabled={isSaving}
+              className="border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white"
             >
               Batal
             </Button>
-            <Button onClick={handleSave} disabled={isSaving}>
+            <Button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="bg-crimson-700 hover:bg-crimson-800 text-white"
+            >
               {isSaving ? "Menyimpan..." : "Simpan Pegawai"}
             </Button>
           </DialogFooter>

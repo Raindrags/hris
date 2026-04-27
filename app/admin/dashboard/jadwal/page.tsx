@@ -61,8 +61,6 @@ import {
 import { HolidayManager } from "@/app/components/dashboard/holiday-manager";
 import { SpecialWorkDateManager } from "@/app/components/dashboard/special-workdate-manager";
 
-// Import Komponen Tambahan
-
 // Konstanta Hari
 const DAYS = [
   { id: 1, name: "Senin" },
@@ -294,21 +292,38 @@ export default function PengaturanJadwalView() {
   // RENDER UI
   // ==========================================
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-gray-100">
       <Tabs defaultValue="shift">
-        <TabsList className="flex-wrap">
-          <TabsTrigger value="shift">Template Shift</TabsTrigger>
-          <TabsTrigger value="holiday">Hari Libur</TabsTrigger>
-          <TabsTrigger value="special">Hari Kerja Khusus</TabsTrigger>
+        <TabsList className="flex-wrap bg-gray-900 border border-gray-800 p-1 rounded-lg">
+          <TabsTrigger
+            value="shift"
+            className="data-[state=active]:bg-crimson-700 data-[state=active]:text-white text-gray-400"
+          >
+            Template Shift
+          </TabsTrigger>
+          <TabsTrigger
+            value="holiday"
+            className="data-[state=active]:bg-crimson-700 data-[state=active]:text-white text-gray-400"
+          >
+            Hari Libur
+          </TabsTrigger>
+          <TabsTrigger
+            value="special"
+            className="data-[state=active]:bg-crimson-700 data-[state=active]:text-white text-gray-400"
+          >
+            Hari Kerja Khusus
+          </TabsTrigger>
         </TabsList>
 
         {/* ========== TAB TEMPLATE SHIFT ========== */}
         <TabsContent value="shift">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between border-b pb-4">
+          <Card className="bg-gray-900 border-gray-800 shadow-md">
+            <CardHeader className="flex flex-row items-center justify-between border-b border-gray-800 pb-4">
               <div>
-                <CardTitle>Template Shift Kerja (Dinamis)</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-white">
+                  Template Shift Kerja (Dinamis)
+                </CardTitle>
+                <CardDescription className="text-gray-400">
                   Atur jam masuk & pulang per hari dalam satu template jadwal.
                 </CardDescription>
               </div>
@@ -325,6 +340,7 @@ export default function PengaturanJadwalView() {
                     });
                   }
                 }}
+                className="bg-crimson-700 hover:bg-crimson-800 text-white"
               >
                 {showShiftForm ? (
                   <>
@@ -340,16 +356,19 @@ export default function PengaturanJadwalView() {
 
             <CardContent className="pt-6">
               {showShiftForm && (
-                <div className="bg-muted/20 p-6 rounded-lg mb-6 border border-border space-y-6 animate-in slide-in-from-top-2">
+                <div className="bg-gray-800/50 p-6 rounded-lg mb-6 border border-gray-700 space-y-6">
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Nama Template Jadwal</Label>
+                      <Label className="text-gray-300">
+                        Nama Template Jadwal
+                      </Label>
                       <Input
                         placeholder="Contoh: Guru Reguler, Satpam Pagi"
                         value={shiftForm.name}
                         onChange={(e) =>
                           setShiftForm({ ...shiftForm, name: e.target.value })
                         }
+                        className="bg-gray-800 border-gray-700 text-gray-100 placeholder:text-gray-500 focus:border-crimson-700"
                       />
                     </div>
                     <div className="space-y-2 flex flex-col justify-end pb-2">
@@ -361,7 +380,10 @@ export default function PengaturanJadwalView() {
                             setShiftForm({ ...shiftForm, isFlexible: !!c })
                           }
                         />
-                        <Label htmlFor="flexible" className="cursor-pointer">
+                        <Label
+                          htmlFor="flexible"
+                          className="text-gray-300 cursor-pointer"
+                        >
                           Jadwal Flexible (Bebas jam masuk, hanya hitung total
                           jam)
                         </Label>
@@ -370,15 +392,15 @@ export default function PengaturanJadwalView() {
                   </div>
 
                   <div className="space-y-3">
-                    <Label className="text-base font-semibold">
+                    <Label className="text-base font-semibold text-white">
                       Pengaturan Jam per Hari
                     </Label>
-                    <div className="border rounded-md divide-y overflow-hidden">
+                    <div className="border border-gray-700 rounded-md divide-y divide-gray-700 overflow-hidden">
                       {shiftForm.details.map((day, index) => (
                         <div
                           key={day.dayOfWeek}
                           className={`flex items-center gap-4 p-3 transition-colors ${
-                            day.isActive ? "bg-background" : "bg-muted/50"
+                            day.isActive ? "bg-gray-800" : "bg-gray-900/50"
                           }`}
                         >
                           <div className="w-32 flex items-center gap-2">
@@ -391,8 +413,8 @@ export default function PengaturanJadwalView() {
                             <Label
                               className={
                                 day.isActive
-                                  ? "font-medium"
-                                  : "text-muted-foreground cursor-pointer"
+                                  ? "font-medium text-gray-200"
+                                  : "text-gray-500 cursor-pointer"
                               }
                             >
                               {day.dayName}
@@ -401,14 +423,18 @@ export default function PengaturanJadwalView() {
 
                           <div className="flex-1 grid grid-cols-2 gap-4">
                             <div className="flex items-center gap-2">
-                              <Label className="text-xs text-muted-foreground w-12">
+                              <Label className="text-xs text-gray-400 w-12">
                                 Masuk
                               </Label>
                               <Input
                                 type="time"
                                 value={day.checkIn}
                                 disabled={!day.isActive}
-                                className={!day.isActive ? "opacity-50" : ""}
+                                className={
+                                  !day.isActive
+                                    ? "opacity-50"
+                                    : "bg-gray-800 border-gray-700 text-gray-100"
+                                }
                                 onChange={(e) =>
                                   handleDetailChange(
                                     index,
@@ -419,14 +445,18 @@ export default function PengaturanJadwalView() {
                               />
                             </div>
                             <div className="flex items-center gap-2">
-                              <Label className="text-xs text-muted-foreground w-16">
+                              <Label className="text-xs text-gray-400 w-16">
                                 Pulang
                               </Label>
                               <Input
                                 type="time"
                                 value={day.checkOut}
                                 disabled={!day.isActive}
-                                className={!day.isActive ? "opacity-50" : ""}
+                                className={
+                                  !day.isActive
+                                    ? "opacity-50"
+                                    : "bg-gray-800 border-gray-700 text-gray-100"
+                                }
                                 onChange={(e) =>
                                   handleDetailChange(
                                     index,
@@ -443,7 +473,11 @@ export default function PengaturanJadwalView() {
                   </div>
 
                   <div className="flex justify-end pt-2">
-                    <Button onClick={handleSaveShift} disabled={isLoading}>
+                    <Button
+                      onClick={handleSaveShift}
+                      disabled={isLoading}
+                      className="bg-crimson-700 hover:bg-crimson-800 text-white"
+                    >
                       <Save className="w-4 h-4 mr-2" />
                       {editingShiftId ? "Update Template" : "Simpan Template"}
                     </Button>
@@ -451,14 +485,20 @@ export default function PengaturanJadwalView() {
                 </div>
               )}
 
-              <div className="border rounded-md">
+              <div className="border border-gray-800 rounded-md">
                 <Table>
-                  <TableHeader className="bg-muted/50">
+                  <TableHeader className="bg-gray-800/50">
                     <TableRow>
-                      <TableHead>Nama Template</TableHead>
-                      <TableHead>Hari Kerja (Aktif)</TableHead>
-                      <TableHead>Tipe</TableHead>
-                      <TableHead className="text-right">Aksi</TableHead>
+                      <TableHead className="text-gray-300">
+                        Nama Template
+                      </TableHead>
+                      <TableHead className="text-gray-300">
+                        Hari Kerja (Aktif)
+                      </TableHead>
+                      <TableHead className="text-gray-300">Tipe</TableHead>
+                      <TableHead className="text-right text-gray-300">
+                        Aksi
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -466,7 +506,7 @@ export default function PengaturanJadwalView() {
                       <TableRow>
                         <TableCell
                           colSpan={4}
-                          className="text-center py-6 text-muted-foreground"
+                          className="text-center py-6 text-gray-500"
                         >
                           Memuat data...
                         </TableCell>
@@ -475,7 +515,7 @@ export default function PengaturanJadwalView() {
                       <TableRow>
                         <TableCell
                           colSpan={4}
-                          className="text-center py-6 text-muted-foreground"
+                          className="text-center py-6 text-gray-500"
                         >
                           Belum ada template jadwal.
                         </TableCell>
@@ -492,21 +532,21 @@ export default function PengaturanJadwalView() {
                           .join(", ");
 
                         return (
-                          <TableRow key={s.id}>
-                            <TableCell className="font-medium">
+                          <TableRow key={s.id} className="border-gray-800">
+                            <TableCell className="font-medium text-white">
                               {s.name}
                             </TableCell>
-                            <TableCell className="text-sm text-muted-foreground">
+                            <TableCell className="text-sm text-gray-400">
                               {s.details?.length || 0} Hari ({activeDays || "-"}
                               )
                             </TableCell>
                             <TableCell>
                               {s.isFlexible ? (
-                                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-medium">
+                                <span className="text-xs bg-blue-900/30 text-blue-300 px-2 py-1 rounded-full font-medium">
                                   Flexible
                                 </span>
                               ) : (
-                                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">
+                                <span className="text-xs bg-emerald-900/30 text-emerald-300 px-2 py-1 rounded-full font-medium">
                                   Reguler
                                 </span>
                               )}
@@ -515,7 +555,7 @@ export default function PengaturanJadwalView() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="text-blue-600 border-blue-200 bg-blue-50 hover:bg-blue-100 mr-2"
+                                className="border-blue-800 bg-blue-900/20 text-blue-300 hover:bg-blue-900/40 mr-2"
                                 onClick={() => openBatchAssignModal(s)}
                               >
                                 <Users className="w-4 h-4 mr-2" /> Assign
@@ -526,14 +566,14 @@ export default function PengaturanJadwalView() {
                                 size="icon"
                                 onClick={() => handleEditShift(s)}
                               >
-                                <Pencil className="w-4 h-4 text-orange-500" />
+                                <Pencil className="w-4 h-4 text-amber-400" />
                               </Button>
                               <Button
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => handleDeleteShift(s.id)}
                               >
-                                <Trash2 className="w-4 h-4 text-red-500" />
+                                <Trash2 className="w-4 h-4 text-red-400" />
                               </Button>
                             </TableCell>
                           </TableRow>
@@ -543,10 +583,9 @@ export default function PengaturanJadwalView() {
                   </TableBody>
                 </Table>
 
-                {/* Paginasi untuk Tabel Shift */}
                 {totalShiftPages > 1 && (
-                  <div className="flex items-center justify-between px-4 py-3 bg-muted/20 border-t">
-                    <span className="text-sm text-muted-foreground">
+                  <div className="flex items-center justify-between px-4 py-3 bg-gray-800/30 border-t border-gray-800">
+                    <span className="text-sm text-gray-400">
                       Menampilkan {paginatedShifts.length} dari {shifts.length}{" "}
                       template
                     </span>
@@ -558,10 +597,11 @@ export default function PengaturanJadwalView() {
                           setShiftCurrentPage((p) => Math.max(1, p - 1))
                         }
                         disabled={shiftCurrentPage === 1}
+                        className="border-gray-700 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white disabled:opacity-50"
                       >
                         <ChevronLeft className="w-4 h-4 mr-1" /> Prev
                       </Button>
-                      <span className="text-sm font-medium px-2">
+                      <span className="text-sm font-medium px-2 text-gray-300">
                         Hal {shiftCurrentPage} / {totalShiftPages}
                       </span>
                       <Button
@@ -573,6 +613,7 @@ export default function PengaturanJadwalView() {
                           )
                         }
                         disabled={shiftCurrentPage === totalShiftPages}
+                        className="border-gray-700 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white disabled:opacity-50"
                       >
                         Next <ChevronRight className="w-4 h-4 ml-1" />
                       </Button>
@@ -586,10 +627,12 @@ export default function PengaturanJadwalView() {
 
         {/* ========== TAB HARI LIBUR ========== */}
         <TabsContent value="holiday">
-          <Card>
+          <Card className="bg-gray-900 border-gray-800 shadow-md">
             <CardHeader>
-              <CardTitle>Hari Libur Nasional & Perusahaan</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-white">
+                Hari Libur Nasional & Perusahaan
+              </CardTitle>
+              <CardDescription className="text-gray-400">
                 Kelola tanggal libur yang berlaku. Kosongkan pegawai untuk
                 berlaku ke semua.
               </CardDescription>
@@ -602,10 +645,10 @@ export default function PengaturanJadwalView() {
 
         {/* ========== TAB HARI KERJA KHUSUS ========== */}
         <TabsContent value="special">
-          <Card>
+          <Card className="bg-gray-900 border-gray-800 shadow-md">
             <CardHeader>
-              <CardTitle>Hari Kerja Khusus</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-white">Hari Kerja Khusus</CardTitle>
+              <CardDescription className="text-gray-400">
                 Hari libur yang dijadikan hari kerja (misal: Sabtu/Minggu masuk
                 karena event). Bisa ditentukan per pegawai atau divisi.
               </CardDescription>
@@ -619,22 +662,22 @@ export default function PengaturanJadwalView() {
 
       {/* ========== MODAL BATCH ASSIGN ========== */}
       <Dialog open={isAssignModalOpen} onOpenChange={setIsAssignModalOpen}>
-        <DialogContent className="!w-[60vw] !max-w-[95vw] max-h-[85vh] flex flex-col">
+        <DialogContent className="!w-[60vw] !max-w-[95vw] max-h-[85vh] flex flex-col bg-gray-900 border-gray-700 text-gray-100">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="text-white">
               Atur Pegawai untuk: {selectedShiftForAssign?.name}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-gray-400">
               Pilih pegawai yang akan ditugaskan ke template jadwal ini.
             </DialogDescription>
           </DialogHeader>
 
           <div className="flex flex-col sm:flex-row items-center gap-4 mt-2">
             <div className="relative flex-1 w-full">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
               <Input
                 placeholder="Cari Nama, NIY, atau Jabatan..."
-                className="pl-9"
+                className="pl-9 bg-gray-800 border-gray-700 text-gray-100 placeholder:text-gray-500 focus:border-crimson-700"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -643,10 +686,10 @@ export default function PengaturanJadwalView() {
               value={divisiFilter}
               onValueChange={(value) => setDivisiFilter(value ?? "all")}
             >
-              <SelectTrigger className="w-full sm:w-[250px]">
+              <SelectTrigger className="w-full sm:w-[250px] bg-gray-800 border-gray-700 text-gray-200">
                 <SelectValue placeholder="Semua Divisi" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-gray-800 border-gray-700 text-gray-200">
                 <SelectItem value="all">Semua Divisi</SelectItem>
                 {divisions.map((d) => (
                   <SelectItem key={d.id} value={d.id}>
@@ -657,10 +700,10 @@ export default function PengaturanJadwalView() {
             </Select>
           </div>
 
-          <div className="flex-1 overflow-hidden flex flex-col mt-4 border rounded-md">
+          <div className="flex-1 overflow-hidden flex flex-col mt-4 border border-gray-800 rounded-md">
             <div className="overflow-y-auto flex-1">
               <Table>
-                <TableHeader className="bg-muted/50 sticky top-0 z-10 shadow-sm">
+                <TableHeader className="bg-gray-800/50 sticky top-0 z-10 shadow-sm">
                   <TableRow>
                     <TableHead className="w-12 text-center">
                       <Checkbox
@@ -686,10 +729,12 @@ export default function PengaturanJadwalView() {
                         }}
                       />
                     </TableHead>
-                    <TableHead>Nama Pegawai</TableHead>
-                    <TableHead>NIY</TableHead>
-                    <TableHead>Jabatan</TableHead>
-                    <TableHead>Divisi</TableHead>
+                    <TableHead className="text-gray-300">
+                      Nama Pegawai
+                    </TableHead>
+                    <TableHead className="text-gray-300">NIY</TableHead>
+                    <TableHead className="text-gray-300">Jabatan</TableHead>
+                    <TableHead className="text-gray-300">Divisi</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -697,7 +742,7 @@ export default function PengaturanJadwalView() {
                     <TableRow>
                       <TableCell
                         colSpan={5}
-                        className="text-center py-8 text-muted-foreground"
+                        className="text-center py-8 text-gray-500"
                       >
                         Tidak ada pegawai yang ditemukan.
                       </TableCell>
@@ -706,7 +751,7 @@ export default function PengaturanJadwalView() {
                     paginatedEmployees.map((emp) => (
                       <TableRow
                         key={emp.id}
-                        className="cursor-pointer hover:bg-muted/50 transition-colors"
+                        className="cursor-pointer hover:bg-gray-800/50 transition-colors border-gray-800"
                         onClick={() => handleToggleEmployee(emp.id)}
                       >
                         <TableCell
@@ -718,12 +763,18 @@ export default function PengaturanJadwalView() {
                             onCheckedChange={() => handleToggleEmployee(emp.id)}
                           />
                         </TableCell>
-                        <TableCell className="font-medium">
+                        <TableCell className="font-medium text-white">
                           {emp.name}
                         </TableCell>
-                        <TableCell>{emp.niy || "-"}</TableCell>
-                        <TableCell>{emp.jabatan || emp.role || "-"}</TableCell>
-                        <TableCell>{emp.divisi?.name || "-"}</TableCell>
+                        <TableCell className="text-gray-300">
+                          {emp.niy || "-"}
+                        </TableCell>
+                        <TableCell className="text-gray-300">
+                          {emp.jabatan || emp.role || "-"}
+                        </TableCell>
+                        <TableCell className="text-gray-300">
+                          {emp.divisi?.name || "-"}
+                        </TableCell>
                       </TableRow>
                     ))
                   )}
@@ -732,8 +783,8 @@ export default function PengaturanJadwalView() {
             </div>
 
             {totalEmployeePages > 1 && (
-              <div className="flex items-center justify-between px-4 py-2 bg-muted/20 border-t">
-                <span className="text-sm text-muted-foreground">
+              <div className="flex items-center justify-between px-4 py-2 bg-gray-800/30 border-t border-gray-800">
+                <span className="text-sm text-gray-400">
                   Menampilkan {paginatedEmployees.length} dari{" "}
                   {filteredEmployees.length} pegawai
                 </span>
@@ -743,10 +794,11 @@ export default function PengaturanJadwalView() {
                     size="sm"
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
+                    className="border-gray-700 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white disabled:opacity-50"
                   >
                     <ChevronLeft className="w-4 h-4 mr-1" /> Prev
                   </Button>
-                  <span className="text-sm font-medium px-2">
+                  <span className="text-sm font-medium px-2 text-gray-300">
                     Hal {currentPage} / {totalEmployeePages}
                   </span>
                   <Button
@@ -756,6 +808,7 @@ export default function PengaturanJadwalView() {
                       setCurrentPage((p) => Math.min(totalEmployeePages, p + 1))
                     }
                     disabled={currentPage === totalEmployeePages}
+                    className="border-gray-700 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white disabled:opacity-50"
                   >
                     Next <ChevronRight className="w-4 h-4 ml-1" />
                   </Button>
@@ -764,17 +817,23 @@ export default function PengaturanJadwalView() {
             )}
           </div>
 
-          <DialogFooter className="border-t pt-4 mt-2">
-            <span className="text-sm font-medium mr-auto text-blue-600 mt-2">
+          <DialogFooter className="border-t border-gray-800 pt-4 mt-2">
+            <span className="text-sm font-medium mr-auto text-blue-400 mt-2">
               Total Dipilih: {selectedUserIds.length} Pegawai
             </span>
             <Button
               variant="outline"
               onClick={() => setIsAssignModalOpen(false)}
+              className="border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white"
             >
               Batal
             </Button>
-            <Button onClick={handleSaveBatchAssign}>Simpan Penugasan</Button>
+            <Button
+              onClick={handleSaveBatchAssign}
+              className="bg-crimson-700 hover:bg-crimson-800 text-white"
+            >
+              Simpan Penugasan
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

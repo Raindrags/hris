@@ -59,7 +59,6 @@ export function HolidayManager() {
   const [assignHolidayId, setAssignHolidayId] = useState<string | null>(null);
   const [assignSelectedIds, setAssignSelectedIds] = useState<string[]>([]);
 
-  // Fetch data awal – dijalankan sekali saat mount
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     const [holidayRes, userRes] = await Promise.all([
@@ -75,7 +74,6 @@ export function HolidayManager() {
     fetchData();
   }, [fetchData]);
 
-  // --- Handler CRUD ---
   const handleSave = async () => {
     if (!formData.date || !formData.description) {
       toast.error("Tanggal dan deskripsi wajib diisi");
@@ -102,7 +100,6 @@ export function HolidayManager() {
     }
   };
 
-  // Handler delete – dibungkus useCallback agar referensinya stabil
   const handleDelete = useCallback(
     async (id: string) => {
       if (!confirm("Hapus hari libur ini?")) return;
@@ -117,7 +114,6 @@ export function HolidayManager() {
     [fetchData],
   );
 
-  // Buka modal edit
   const openEdit = useCallback((holiday: Holiday) => {
     setEditingId(holiday.id);
     setFormData({ date: holiday.date, description: holiday.description });
@@ -131,7 +127,6 @@ export function HolidayManager() {
     setSelectedUserIds([]);
   };
 
-  // --- Assign modal handlers ---
   const openAssignModal = useCallback((holiday: Holiday) => {
     setAssignHolidayId(holiday.id);
     setAssignSelectedIds(holiday.users.map((u) => u.id));
@@ -161,7 +156,7 @@ export function HolidayManager() {
   }, []);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 text-gray-100">
       <div className="flex justify-end">
         <Button
           size="sm"
@@ -169,12 +164,12 @@ export function HolidayManager() {
             resetForm();
             setDialogOpen(true);
           }}
+          className="bg-crimson-700 hover:bg-crimson-800 text-white"
         >
           <Plus className="w-4 h-4 mr-2" /> Tambah Hari Libur
         </Button>
       </div>
 
-      {/* Tabel yang sudah di-memo dan menerima handler stabil */}
       <HolidayTable
         holidays={holidays}
         isLoading={isLoading}
@@ -183,54 +178,65 @@ export function HolidayManager() {
         onDelete={handleDelete}
       />
 
-      {/* Modal Tambah/Edit */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md bg-gray-900 border-gray-700 text-gray-100">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="text-white">
               {editingId ? "Edit Hari Libur" : "Tambah Hari Libur"}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <Label>Tanggal</Label>
+              <Label className="text-gray-300">Tanggal</Label>
               <Input
                 type="date"
                 value={formData.date}
                 onChange={(e) =>
                   setFormData({ ...formData, date: e.target.value })
                 }
+                className="bg-gray-800 border-gray-700 text-gray-100 focus:border-crimson-700"
               />
             </div>
             <div>
-              <Label>Deskripsi</Label>
+              <Label className="text-gray-300">Deskripsi</Label>
               <Input
                 value={formData.description}
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })
                 }
                 placeholder="Contoh: Cuti Bersama"
+                className="bg-gray-800 border-gray-700 text-gray-100 placeholder:text-gray-500 focus:border-crimson-700"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setDialogOpen(false)}
+              className="border-gray-700 bg-red-600 text-gray-300 hover:bg-red-700 hover:text-white"
+            >
               Batal
             </Button>
-            <Button onClick={handleSave}>Simpan</Button>
+            <Button
+              onClick={handleSave}
+              className="bg-crimson-700 hover:bg-crimson-800 text-white"
+            >
+              Simpan
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Modal Assign Pegawai */}
       <Dialog open={assignModalOpen} onOpenChange={setAssignModalOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col">
+        <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col bg-gray-900 border-gray-700 text-gray-100">
           <DialogHeader>
-            <DialogTitle>Atur Pegawai untuk Hari Libur Ini</DialogTitle>
+            <DialogTitle className="text-white">
+              Atur Pegawai untuk Hari Libur Ini
+            </DialogTitle>
           </DialogHeader>
-          <div className="flex-1 overflow-y-auto border rounded-md">
+          <div className="flex-1 overflow-y-auto border border-gray-800 rounded-md">
             <Table>
-              <TableHeader className="bg-muted/50 sticky top-0 z-10">
+              <TableHeader className="bg-gray-800/50 sticky top-0 z-10">
                 <TableRow>
                   <TableHead className="w-12 text-center">
                     <Checkbox
@@ -245,36 +251,51 @@ export function HolidayManager() {
                       }}
                     />
                   </TableHead>
-                  <TableHead>Nama</TableHead>
-                  <TableHead>NIY</TableHead>
-                  <TableHead>Divisi</TableHead>
+                  <TableHead className="text-gray-300">Nama</TableHead>
+                  <TableHead className="text-gray-300">NIY</TableHead>
+                  <TableHead className="text-gray-300">Divisi</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {users.map((u) => (
-                  <TableRow key={u.id}>
+                  <TableRow key={u.id} className="border-gray-800">
                     <TableCell className="text-center">
                       <Checkbox
                         checked={assignSelectedIds.includes(u.id)}
                         onCheckedChange={() => toggleAssignUser(u.id)}
                       />
                     </TableCell>
-                    <TableCell className="font-medium">{u.name}</TableCell>
-                    <TableCell>{u.niy || "-"}</TableCell>
-                    <TableCell>{u.divisi?.name || "-"}</TableCell>
+                    <TableCell className="font-medium text-white">
+                      {u.name}
+                    </TableCell>
+                    <TableCell className="text-gray-300">
+                      {u.niy || "-"}
+                    </TableCell>
+                    <TableCell className="text-gray-300">
+                      {u.divisi?.name || "-"}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           </div>
-          <div className="text-xs text-muted-foreground mt-2">
+          <div className="text-xs text-gray-400 mt-2">
             Kosongkan pilihan untuk berlaku ke semua pegawai.
           </div>
           <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => setAssignModalOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setAssignModalOpen(false)}
+              className="border-gray-700 text-gray-300 bg-red-600 hover:bg-red-700 hover:text-white"
+            >
               Batal
             </Button>
-            <Button onClick={handleAssignSave}>Simpan</Button>
+            <Button
+              onClick={handleAssignSave}
+              className="bg-crimson-700 hover:bg-crimson-800 text-white"
+            >
+              Simpan
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -1,6 +1,6 @@
-import AdminDashboardView from "@/app/components/dashboard/admin-dashboard-view";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import AdminDashboardView from "@/app/components/dashboard/admin-dashboard-view";
 
 export default async function DashboardPage() {
   // 1. Ambil token dari cookies
@@ -84,16 +84,16 @@ export default async function DashboardPage() {
 
     // Tampilan darurat di layar jika terjadi error
     return (
-      <main className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
-        <div className="w-full max-w-md text-center bg-white p-6 rounded-xl shadow-lg">
-          <h2 className="text-2xl font-bold text-red-600 mb-2">
+      <main className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
+        <div className="w-full max-w-md text-center bg-gray-900 p-6 rounded-xl shadow-lg border border-gray-800">
+          <h2 className="text-2xl font-bold text-red-400 mb-2">
             Terjadi Error!
           </h2>
-          <div className="text-gray-700 text-sm mb-4">
+          <div className="text-gray-300 text-sm mb-4">
             <p>Pesan Error:</p>
             <strong className="text-red-500 break-words">{errorMessage}</strong>
           </div>
-          <p className="text-gray-700 text-xs">
+          <p className="text-gray-400 text-xs">
             Sistem gagal memuat halaman. Silakan periksa log server di dashboard
             Vercel.
           </p>
