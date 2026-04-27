@@ -3,7 +3,7 @@
 import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { PermissionForm } from "@/app/components/forms/izin-form";
+import PermissionForm from "@/app/components/forms/izin-form";
 
 function FormIzinContent() {
   const router = useRouter();
