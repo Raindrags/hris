@@ -1,35 +1,22 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers";
 
-const API_BASE = process.env.BACKEND_API_URL;
-
-async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("access_token")?.value;
-
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    ...(options.headers as Record<string, string>),
-  };
-
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
-  const res = await fetch(`${API_BASE}${endpoint}`, {
+async function fetchFromApi(endpoint: string, options: RequestInit = {}) {
+  const res = await fetch(`/api/users${endpoint}`, {
     ...options,
-    headers,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
   });
-
   const data = await res.json();
   return { status: res.status, data };
 }
 
 export async function getSupervisors() {
   try {
-    const { status, data } = await fetchWithAuth("/users/supervisors", {
+    const { status, data } = await fetchFromApi("/supervisors", {
       cache: "no-store",
     });
     return { success: status >= 200 && status < 300, ...data };
@@ -44,9 +31,7 @@ export async function getSupervisors() {
 
 export async function getEmployees() {
   try {
-    const { status, data } = await fetchWithAuth("/users", {
-      cache: "no-store",
-    });
+    const { status, data } = await fetchFromApi("", { cache: "no-store" });
     return { success: status >= 200 && status < 300, ...data };
   } catch (error: any) {
     return {
@@ -59,7 +44,7 @@ export async function getEmployees() {
 
 export async function getEmployeeById(id: string) {
   try {
-    const { status, data } = await fetchWithAuth(`/users/${id}`, {
+    const { status, data } = await fetchFromApi(`/${id}`, {
       cache: "no-store",
     });
     return { success: status >= 200 && status < 300, ...data };
@@ -74,13 +59,11 @@ export async function getEmployeeById(id: string) {
 
 export async function createEmployee(payload: any) {
   try {
-    const { status, data } = await fetchWithAuth("/users", {
+    const { status, data } = await fetchFromApi("", {
       method: "POST",
       body: JSON.stringify(payload),
     });
-    if (status >= 200 && status < 300) {
-      revalidatePath("/pegawai");
-    }
+    if (status >= 200 && status < 300) revalidatePath("/pegawai");
     return { success: status >= 200 && status < 300, ...data };
   } catch (error: any) {
     return {
@@ -93,13 +76,11 @@ export async function createEmployee(payload: any) {
 
 export async function updateEmployee(id: string, payload: any) {
   try {
-    const { status, data } = await fetchWithAuth(`/users/${id}`, {
+    const { status, data } = await fetchFromApi(`/${id}`, {
       method: "PUT",
       body: JSON.stringify(payload),
     });
-    if (status >= 200 && status < 300) {
-      revalidatePath("/pegawai");
-    }
+    if (status >= 200 && status < 300) revalidatePath("/pegawai");
     return { success: status >= 200 && status < 300, ...data };
   } catch (error: any) {
     return {
@@ -112,12 +93,10 @@ export async function updateEmployee(id: string, payload: any) {
 
 export async function deleteEmployee(id: string) {
   try {
-    const { status, data } = await fetchWithAuth(`/users/${id}`, {
+    const { status, data } = await fetchFromApi(`/${id}`, {
       method: "DELETE",
     });
-    if (status >= 200 && status < 300) {
-      revalidatePath("/pegawai");
-    }
+    if (status >= 200 && status < 300) revalidatePath("/pegawai");
     return { success: status >= 200 && status < 300, ...data };
   } catch (error: any) {
     return {
@@ -130,13 +109,11 @@ export async function deleteEmployee(id: string) {
 
 export async function updateSelfProfile(id: string, payload: any) {
   try {
-    const { status, data } = await fetchWithAuth(`/users/${id}/profile`, {
+    const { status, data } = await fetchFromApi(`/${id}/profile`, {
       method: "PUT",
       body: JSON.stringify(payload),
     });
-    if (status >= 200 && status < 300) {
-      revalidatePath("/profile");
-    }
+    if (status >= 200 && status < 300) revalidatePath("/profile");
     return { success: status >= 200 && status < 300, ...data };
   } catch (error: any) {
     return {

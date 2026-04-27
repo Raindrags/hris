@@ -61,18 +61,11 @@ function ProfileFormContent({
         address: formData.get("address") as string,
       };
 
-      const token = localStorage.getItem("accessToken");
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/users/profile`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(payload),
-        },
-      );
+      const res = await fetch(`/api/users/${user.id}/profile`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
       const data = await res.json();
 
@@ -85,6 +78,9 @@ function ProfileFormContent({
 
         if (onSuccess) {
           onSuccess();
+        } else {
+          // Redirect default ke dashboard
+          router.push("/pegawai/dashboard");
         }
 
         if (isFirstTime && callbackUrl) {
