@@ -120,7 +120,7 @@ export default function AdminFormIzinPage() {
           <div className="space-y-2">
             <Label>Cari Pegawai</Label>
             <Popover open={open} onOpenChange={setOpen}>
-              <PopoverTrigger asChild>
+              <PopoverTrigger>
                 <Button
                   variant="outline"
                   role="combobox"
