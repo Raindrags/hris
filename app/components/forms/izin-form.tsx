@@ -62,6 +62,7 @@ export type PermissionSubmitPayload = {
 interface PermissionFormProps {
   user: PermissionUserData;
   onSuccess: () => void;
+  userId?: string;
 }
 
 const getLocalYYYYMMDD = (date: Date) => {
@@ -217,6 +218,7 @@ export default function PermissionForm({
         formDataObj.append("subCategory", payload.subCategory);
       if (payload.time) formDataObj.append("time", payload.time);
       if (payload.file) formDataObj.append("file", payload.file);
+      if (userId) formDataObj.append("userId", userId);
 
       const res = await fetch("/api/izin", {
         method: "POST",
