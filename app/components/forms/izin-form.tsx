@@ -74,6 +74,7 @@ const getLocalYYYYMMDD = (date: Date) => {
 export default function PermissionForm({
   user,
   onSuccess,
+  userId
 }: PermissionFormProps) {
   const [loading, setLoading] = useState<boolean>(false);
   const [startDate, setStartDate] = useState<Date>();
