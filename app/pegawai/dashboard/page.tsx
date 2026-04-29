@@ -6,15 +6,19 @@ import { useRouter } from "next/navigation";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CalendarDays, FileText, User } from "lucide-react";
+import {
+  CalendarDays,
+  FileText,
+  User,
+  CheckCircle,
+  AlertCircle,
+} from "lucide-react";
 
-// Import server action yang sudah dibuat
 import { ApprovalRequestData } from "@/app/components/forms/approval-form";
 import { ApprovalSection } from "@/app/components/forms/approval-section";
 import { ProfileForm } from "@/app/components/forms/profile-form";
 import { getDashboardData } from "@/app/actions/dashboard-action";
 
-// Helper Format Tanggal
 const formatDate = (date: Date | string | null | undefined) => {
   if (!date) return "-";
   return new Intl.DateTimeFormat("id-ID", {
@@ -40,6 +44,16 @@ interface RecentRequest {
   endDate: Date | string;
 }
 
+// Ringkasan kehadiran dari backend
+interface AttendanceSummary {
+  onTime: number;
+  late: number;
+  off: number;
+  izin: number;
+  cuti: number;
+  earlyLeaves: number;
+}
+
 export default function PegawaiDashboardPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -49,11 +63,10 @@ export default function PegawaiDashboardPage() {
     ApprovalRequestData[]
   >([]);
   const [potentialSubstitutes, setPotentialSubstitutes] = useState<any[]>([]);
-
-  // State untuk menyimpan data user dari endpoint /api/auth/me
+  const [attendanceSummary, setAttendanceSummary] =
+    useState<AttendanceSummary | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
 
-  // Cek autentikasi via cookie httpOnly
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -72,20 +85,13 @@ export default function PegawaiDashboardPage() {
     checkAuth();
   }, [router]);
 
-  // Ambil data dashboard menggunakan server action
   useEffect(() => {
     if (!currentUser) return;
 
     const fetchDashboardData = async () => {
       try {
         const data = await getDashboardData();
-
-        // Debug: log di console browser
-        console.log("[DEBUG] Dashboard data received:", data);
-
         if (!data.success) {
-          console.error("[DEBUG] Dashboard fetch failed:", data.error);
-          // Tampilkan pesan error
           setUserData(null);
           setLoading(false);
           return;
@@ -95,8 +101,9 @@ export default function PegawaiDashboardPage() {
         setRecentRequests(data.recentRequests || []);
         setIncomingRequests(data.incomingRequests || []);
         setPotentialSubstitutes(data.potentialSubstitutes || []);
+        setAttendanceSummary(data.attendanceSummary || null); // ambil ringkasan absensi
       } catch (error) {
-        console.error("[DEBUG] Dashboard fetch exception:", error);
+        console.error("Dashboard fetch exception:", error);
       } finally {
         setLoading(false);
       }
@@ -139,7 +146,7 @@ export default function PegawaiDashboardPage() {
   return (
     <main className="min-h-screen bg-gray-950 p-6 md:p-10 text-gray-100">
       <div className="max-w-6xl mx-auto space-y-8">
-        {/* Header Section */}
+        {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-white">
@@ -166,8 +173,8 @@ export default function PegawaiDashboardPage() {
           </div>
         </div>
 
-        {/* Info Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Info Cards – sekarang 4 kolom bila ada ringkasan */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card className="border-gray-800 bg-gray-900 shadow-md text-gray-100">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-gray-400">
@@ -181,6 +188,7 @@ export default function PegawaiDashboardPage() {
               </div>
             </CardContent>
           </Card>
+
           <Card className="border-gray-800 bg-gray-900 shadow-md text-gray-100">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-gray-400">
@@ -194,15 +202,82 @@ export default function PegawaiDashboardPage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Kehadiran & Ketidakhadiran (muncul jika data ada) */}
+          {attendanceSummary && (
+            <>
+              <Card className="border-gray-800 bg-gray-900 shadow-md text-gray-100">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-400">
+                    Kehadiran Bulan Ini
+                  </CardTitle>
+                  <CheckCircle className="h-5 w-5 text-green-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="flex justify-around text-center">
+                    <div>
+                      <p className="text-2xl font-bold text-green-400">
+                        {attendanceSummary.onTime}
+                      </p>
+                      <p className="text-xs text-gray-500">Tepat</p>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-amber-400">
+                        {attendanceSummary.late}
+                      </p>
+                      <p className="text-xs text-gray-500">Telat</p>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-red-400">
+                        {attendanceSummary.earlyLeaves}
+                      </p>
+                      <p className="text-xs text-gray-500">Pulang Awal</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-gray-800 bg-gray-900 shadow-md text-gray-100">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-400">
+                    Ketidakhadiran
+                  </CardTitle>
+                  <AlertCircle className="h-5 w-5 text-red-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="flex justify-around text-center">
+                    <div>
+                      <p className="text-2xl font-bold text-blue-400">
+                        {attendanceSummary.izin}
+                      </p>
+                      <p className="text-xs text-gray-500">Izin</p>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-purple-400">
+                        {attendanceSummary.cuti}
+                      </p>
+                      <p className="text-xs text-gray-500">Cuti</p>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-red-500">
+                        {attendanceSummary.off}
+                      </p>
+                      <p className="text-xs text-gray-500">Off/Holiday</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          )}
         </div>
 
-        {/* Section Approval Bawahan */}
+        {/* Approval Bawahan */}
         <ApprovalSection
           incomingRequests={incomingRequests}
           potentialSubstitutes={potentialSubstitutes}
         />
 
-        {/* Riwayat Pribadi */}
+        {/* Riwayat */}
         <Card className="border-gray-800 bg-gray-900 shadow-md text-gray-100">
           <CardHeader>
             <CardTitle className="text-lg font-semibold text-white">

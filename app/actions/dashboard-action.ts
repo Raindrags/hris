@@ -3,7 +3,8 @@
 import { cookies } from "next/headers";
 
 export async function getDashboardData() {
-  const backendUrl = process.env.BACKEND_API_URL;
+  const backendUrl =
+    process.env.BACKEND_API_URL || "https://hris.maitreyawirads.dpdns.org";
   console.log("[DEBUG] BACKEND_API_URL:", backendUrl);
 
   if (!backendUrl) {
@@ -46,8 +47,8 @@ export async function getDashboardData() {
 
     const data = await res.json();
     console.log(
-      "[DEBUG] Backend response data:",
-      JSON.stringify(data, null, 2).substring(0, 500),
+      "[DEBUG] Backend dashboard response:",
+      JSON.stringify(data, null, 2),
     );
 
     if (!res.ok) {
@@ -64,6 +65,7 @@ export async function getDashboardData() {
       recentRequests: data.recentRequests || [],
       incomingRequests: data.incomingRequests || [],
       potentialSubstitutes: data.potentialSubstitutes || [],
+      attendanceSummary: data.attendanceSummary || null, // ← tambahkan ini
     };
   } catch (error: any) {
     console.error("[DEBUG] Fetch error:", error.message);

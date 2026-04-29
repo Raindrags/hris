@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { Loader2, Pencil, Save, X } from "lucide-react";
 
 export type UserProfileData = {
+  id?: string | null;
   name?: string | null;
   email?: string | null;
   phone?: string | null;

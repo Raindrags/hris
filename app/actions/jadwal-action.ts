@@ -3,7 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 
-const API_URL = process.env.BACKEND_API_URL;
+const API_URL =
+  process.env.BACKEND_API_URL || "https://hris.maitreyawirads.dpdns.org";
+console.log("[DEBUG] BACKEND_API_URL:", API_URL);
 
 /**
  * Helper untuk mengambil token dengan nama "access_token"
@@ -37,16 +39,23 @@ async function getHeaders() {
   return headers;
 }
 
+/**
+ * Fungsi bantuan untuk membersihkan `dayName` dari array details
+ * sebelum dikirim ke backend.
+ */
+function sanitizeDetails(details: any[]) {
+  return details.map(({ dayName, ...rest }) => rest);
+}
+
 // ============================================================================
 // 1. Ambil Semua Template Shift
 // ============================================================================
 export async function getAllShifts() {
   try {
     const headers = await getHeaders();
-    const url = `${API_URL}/shifts`; // SESUAIKAN DENGAN ENDPOINT ASLI ANDA
+    const url = `${API_URL}/shifts`;
 
     console.log("Mencoba fetch ke URL:", url);
-    // console.log("Headers:", headers); // Buka komen ini jika ingin memastikan token terkirim
 
     const res = await fetch(url, {
       cache: "no-store",
@@ -55,7 +64,6 @@ export async function getAllShifts() {
 
     console.log("Status Code dari Backend:", res.status);
 
-    // Tangkap jika backend mengembalikan error (misal 401, 404, 500)
     if (!res.ok) {
       const errorText = await res.text();
       console.error("Error Response Backend:", errorText);
@@ -84,22 +92,27 @@ export async function getAllShifts() {
 // ============================================================================
 export async function createShift(payload: any) {
   try {
+    console.log(
+      "[DEBUG] createShift dipanggil dengan payload:",
+      JSON.stringify(payload, null, 2),
+    );
+    const sanitizedPayload = {
+      ...payload,
+      details: sanitizeDetails(payload.details),
+    };
     const headers = await getHeaders();
     const res = await fetch(`${API_URL}/shifts`, {
       method: "POST",
       headers,
-      body: JSON.stringify(payload),
+      body: JSON.stringify(sanitizedPayload),
     });
     const data = await res.json();
-
+    console.log("[DEBUG] Respons dari backend (createShift):", data);
     if (data.success) revalidatePath("/pengaturan-jadwal");
     return data;
   } catch (error: any) {
-    return {
-      success: false,
-      error: "Gagal menyimpan jadwal.",
-      errorDetail: error.message,
-    };
+    console.error("[DEBUG] Error createShift:", error);
+    return { success: false, error: error.message };
   }
 }
 
@@ -108,11 +121,15 @@ export async function createShift(payload: any) {
 // ============================================================================
 export async function updateShift(id: string, payload: any) {
   try {
+    const sanitizedPayload = {
+      ...payload,
+      details: sanitizeDetails(payload.details),
+    };
     const headers = await getHeaders();
     const res = await fetch(`${API_URL}/shifts/${id}`, {
       method: "PUT",
       headers,
-      body: JSON.stringify(payload),
+      body: JSON.stringify(sanitizedPayload),
     });
     const data = await res.json();
 
@@ -180,7 +197,7 @@ export async function batchAssignShift(userIds: string[], shiftId: string) {
     const res = await fetch(`${API_URL}/shifts/assign`, {
       method: "POST",
       headers,
-      body: JSON.stringify({ userIds }),
+      body: JSON.stringify({ userIds, shiftId }),
     });
     const data = await res.json();
 
