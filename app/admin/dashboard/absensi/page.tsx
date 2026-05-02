@@ -36,6 +36,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { exportAttendanceToExcel } from "@/lib/excel-helper";
 
 // ============================================================================
 // API FETCHERS (Pengganti absensi-action)
@@ -43,7 +44,6 @@ import {
 const API_BASE_URL =
   process.env.BACKEND_API_URL || "https://hris.maitreyawirads.dpdns.org";
 
-console.log(process.env.BACKEND_API_URL);
 const getAttendanceReportData = async (
   startDate: string,
   endDate: string,
@@ -244,26 +244,14 @@ export default function RekapAbsensiView() {
       return;
     }
 
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet("Rekap Absensi", {
-      pageSetup: {
-        paperSize: 9,
-        orientation: "portrait",
-        fitToPage: true,
-        fitToWidth: 1,
-        fitToHeight: 0,
-      },
-    });
-
-    // ... (kode export Excel tidak diubah, tetap sama)
-    // Saya tidak tulis ulang karena panjang, dan tidak terkait tema UI.
-    // Anggap saja fungsi export tetap.
-
-    const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    });
-    saveAs(blob, `Rekap_Absensi_${startDate}_sd_${endDate}.xlsx`);
+    try {
+      await exportAttendanceToExcel(dataToExport, startDate, endDate);
+    } catch (error) {
+      console.error("Export gagal:", error);
+      alert(
+        "Terjadi kesalahan saat mengexport Excel. Lihat konsol untuk detail.",
+      );
+    }
   };
 
   return (
