@@ -65,12 +65,13 @@ import { toast } from "sonner";
 const initialFormState = {
   name: "",
   email: "",
-  role: "TEACHER",
+  role: "USER",
   supervisorId: "none",
   divisiId: "none",
   niy: "",
   phone: "",
   emergencyContact: "",
+  jabatan: "",
 };
 
 export default function PegawaiView() {
@@ -149,12 +150,13 @@ export default function PegawaiView() {
     setFormData({
       name: employee.name || employee.fullName || "",
       email: employee.email || "",
-      role: employee.role || "TEACHER",
+      role: employee.role || "USER",
       supervisorId: employee.supervisorId || employee.supervisor?.id || "none",
       divisiId: employee.divisiId || employee.divisi?.id || "none",
       niy: employee.niy || "",
       phone: employee.phone || "",
       emergencyContact: employee.emergencyContact || "",
+      jabatan: employee.jabatan || "",
     });
     setIsModalOpen(true);
   };
@@ -198,6 +200,8 @@ export default function PegawaiView() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+      console.log("payload:", payload);
+      console.log("Response status:", res.status);
       const data = await res.json();
       if (res.ok && data.success) {
         toast.success(
@@ -221,7 +225,7 @@ export default function PegawaiView() {
       const searchLower = searchTerm.toLowerCase();
       const empName = (emp.name || emp.fullName || "").toLowerCase();
       const empEmail = (emp.email || "").toLowerCase();
-      const empRole = (emp.role || "").toLowerCase();
+      const empRole = (emp.jabatan || "").toLowerCase();
       return (
         empName.includes(searchLower) ||
         empEmail.includes(searchLower) ||
@@ -463,6 +467,21 @@ export default function PegawaiView() {
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="jabatan" className="text-gray-300">
+                Jabatan
+              </Label>
+              <Input
+                id="jabatan"
+                placeholder="Contoh: Guru Matematika"
+                className="bg-gray-800 border-gray-700 text-gray-100 placeholder:text-gray-500 focus:border-crimson-700"
+                value={formData.jabatan}
+                onChange={(e) =>
+                  setFormData({ ...formData, jabatan: e.target.value })
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="email" className="text-gray-300">
                 Email
               </Label>
@@ -527,7 +546,7 @@ export default function PegawaiView() {
               <Select
                 value={formData.role}
                 onValueChange={(val) =>
-                  setFormData({ ...formData, role: val ?? "TEACHER" })
+                  setFormData({ ...formData, role: val ?? "USER" })
                 }
               >
                 <SelectTrigger
@@ -537,12 +556,8 @@ export default function PegawaiView() {
                   <SelectValue placeholder="Pilih peran" />
                 </SelectTrigger>
                 <SelectContent className="bg-gray-800 border-gray-700 text-gray-200">
-                  <SelectItem value="TEACHER">Guru (Teacher)</SelectItem>
                   <SelectItem value="ADMIN">Admin</SelectItem>
-                  <SelectItem value="STAFF">Staf</SelectItem>
-                  <SelectItem value="PRINCIPAL">
-                    Kepala Sekolah (Principal)
-                  </SelectItem>
+                  <SelectItem value="USER">User</SelectItem>
                 </SelectContent>
               </Select>
             </div>
