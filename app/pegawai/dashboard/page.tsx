@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -44,7 +44,6 @@ interface RecentRequest {
   endDate: Date | string;
 }
 
-// Ringkasan kehadiran dari backend
 interface AttendanceSummary {
   onTime: number;
   late: number;
@@ -67,6 +66,26 @@ export default function PegawaiDashboardPage() {
     useState<AttendanceSummary | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
 
+  const refreshData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await getDashboardData();
+      if (!data.success) {
+        setUserData(null);
+        return;
+      }
+      setUserData(data.user);
+      setRecentRequests(data.recentRequests || []);
+      setIncomingRequests(data.incomingRequests || []);
+      setPotentialSubstitutes(data.potentialSubstitutes || []);
+      setAttendanceSummary(data.attendanceSummary || null);
+    } catch (error) {
+      console.error("Refresh dashboard error:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -87,30 +106,8 @@ export default function PegawaiDashboardPage() {
 
   useEffect(() => {
     if (!currentUser) return;
-
-    const fetchDashboardData = async () => {
-      try {
-        const data = await getDashboardData();
-        if (!data.success) {
-          setUserData(null);
-          setLoading(false);
-          return;
-        }
-
-        setUserData(data.user);
-        setRecentRequests(data.recentRequests || []);
-        setIncomingRequests(data.incomingRequests || []);
-        setPotentialSubstitutes(data.potentialSubstitutes || []);
-        setAttendanceSummary(data.attendanceSummary || null); // ambil ringkasan absensi
-      } catch (error) {
-        console.error("Dashboard fetch exception:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDashboardData();
-  }, [currentUser]);
+    refreshData();
+  }, [currentUser, refreshData]);
 
   if (loading) {
     return (
@@ -146,7 +143,6 @@ export default function PegawaiDashboardPage() {
   return (
     <main className="min-h-screen bg-gray-950 p-6 md:p-10 text-gray-100">
       <div className="max-w-6xl mx-auto space-y-8">
-        {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-white">
@@ -173,7 +169,6 @@ export default function PegawaiDashboardPage() {
           </div>
         </div>
 
-        {/* Info Cards – sekarang 4 kolom bila ada ringkasan */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card className="border-gray-800 bg-gray-900 shadow-md text-gray-100">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -203,7 +198,6 @@ export default function PegawaiDashboardPage() {
             </CardContent>
           </Card>
 
-          {/* Kehadiran & Ketidakhadiran (muncul jika data ada) */}
           {attendanceSummary && (
             <>
               <Card className="border-gray-800 bg-gray-900 shadow-md text-gray-100">
@@ -271,13 +265,12 @@ export default function PegawaiDashboardPage() {
           )}
         </div>
 
-        {/* Approval Bawahan */}
         <ApprovalSection
           incomingRequests={incomingRequests}
           potentialSubstitutes={potentialSubstitutes}
+          onRefresh={refreshData}
         />
 
-        {/* Riwayat */}
         <Card className="border-gray-800 bg-gray-900 shadow-md text-gray-100">
           <CardHeader>
             <CardTitle className="text-lg font-semibold text-white">

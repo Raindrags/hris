@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import AdminDashboardView from "@/app/components/dashboard/admin-dashboard-view";
 
 export default async function DashboardPage() {
-  // 1. Ambil token dari cookies
   const cookieStore = await cookies();
   const token = cookieStore.get("access_token")?.value;
 
@@ -13,7 +12,6 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  // URL backend - Pastikan diatur di Vercel Environment Variables!
   const backendUrl = process.env.BACKEND_API_URL || "http://localhost:3434";
 
   try {
@@ -25,7 +23,7 @@ export default async function DashboardPage() {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
-      cache: "no-store", // Mencegah caching agar data selalu segar (Dynamic Rendering)
+      cache: "no-store",
     });
 
     // ==========================================

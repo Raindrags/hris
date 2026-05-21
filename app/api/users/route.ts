@@ -21,8 +21,14 @@ export async function GET(req: NextRequest) {
       cache: "no-store",
     });
     const data = await res.json();
+
+    // --- TAMBAHKAN LOGGING INI UNTUK DEBUGGING ---
+    console.log("🔍 CEK DATA DARI BACKEND:", JSON.stringify(data, null, 2));
+    // ---------------------------------------------
+
     return NextResponse.json(data, { status: res.status });
-  } catch {
+  } catch (error) {
+    console.error("❌ ERROR API USERS:", error);
     return NextResponse.json(
       { success: false, error: "Terjadi kesalahan server" },
       { status: 500 },

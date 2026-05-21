@@ -35,11 +35,13 @@ export type LeaveSubmitPayload = {
   startDate: string;
   endDate: string;
   reason: string;
+  userId?: string; // 🆕 opsional, untuk dikirim ke backend
 };
 
 interface LeaveFormProps {
   user: LeaveUserData;
   onSuccess: () => void;
+  userId?: string; // 🆕 prop userId
 }
 
 const getLocalYYYYMMDD = (date: Date) => {
@@ -48,7 +50,7 @@ const getLocalYYYYMMDD = (date: Date) => {
   return d.toISOString().split("T")[0];
 };
 
-export function LeaveForm({ user, onSuccess }: LeaveFormProps) {
+export function LeaveForm({ user, onSuccess, userId }: LeaveFormProps) {
   const [loading, setLoading] = useState<boolean>(false);
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
@@ -61,7 +63,7 @@ export function LeaveForm({ user, onSuccess }: LeaveFormProps) {
 
   const sisaCutiNum = Number(user.sisaCuti) || 0;
 
-  // Fetch data hari libur — gunakan API route proxy jika ada, atau langsung
+  // Fetch data hari libur
   useEffect(() => {
     const fetchHolidays = async () => {
       try {
@@ -91,7 +93,7 @@ export function LeaveForm({ user, onSuccess }: LeaveFormProps) {
   useEffect(() => {
     const fetchSpecialWorkDays = async () => {
       try {
-        const res = await fetch("/api/special-workdays"); // atau endpoint yang sesuai
+        const res = await fetch("/api/special-workdays");
         if (!res.ok) throw new Error("Gagal fetch");
         const data = await res.json();
 
@@ -120,13 +122,8 @@ export function LeaveForm({ user, onSuccess }: LeaveFormProps) {
     const day = String(date.getDate()).padStart(2, "0");
     const dateString = `${year}-${month}-${day}`;
 
-    // Jika tanggal terdaftar sebagai hari kerja khusus → bukan libur
     if (specialWorkDays.includes(dateString)) return false;
-
-    // Hari Minggu tetap libur jika tidak termasuk dalam hari kerja khusus
     if (date.getDay() === 0) return true;
-
-    // Cek daftar hari libur dari backend
     return holidays.includes(dateString);
   };
 
@@ -152,13 +149,18 @@ export function LeaveForm({ user, onSuccess }: LeaveFormProps) {
     setLoading(true);
     try {
       const token = localStorage.getItem("accessToken");
+      // 🆕 Sertakan userId jika ada
+      const bodyPayload = {
+        ...payload,
+        userId: userId || undefined,
+      };
       const res = await fetch("/api/cuti", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(bodyPayload),
       });
 
       const data = await res.json();
@@ -201,6 +203,7 @@ export function LeaveForm({ user, onSuccess }: LeaveFormProps) {
       startDate: getLocalYYYYMMDD(startDate),
       endDate: getLocalYYYYMMDD(endDate),
       reason: reason,
+      userId: userId, // 🆕
     };
 
     if (excessDays > 0) {
@@ -228,7 +231,6 @@ export function LeaveForm({ user, onSuccess }: LeaveFormProps) {
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          {/* Tanggal Mulai */}
           <div className="space-y-2 flex flex-col">
             <Label className="text-slate-300">Tanggal Mulai</Label>
             <Popover>
@@ -261,7 +263,6 @@ export function LeaveForm({ user, onSuccess }: LeaveFormProps) {
             </Popover>
           </div>
 
-          {/* Tanggal Selesai — tidak ada isAutoEndDate */}
           <div className="space-y-2 flex flex-col">
             <Label className="text-slate-300">Tanggal Selesai</Label>
             <Popover>

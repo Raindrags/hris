@@ -41,8 +41,7 @@ import { exportAttendanceToExcel } from "@/lib/excel-helper";
 // ============================================================================
 // API FETCHERS (Pengganti absensi-action)
 // ============================================================================
-const API_BASE_URL =
-  process.env.BACKEND_API_URL || "https://hris.maitreyawirads.dpdns.org";
+const API_BASE_URL = process.env.BACKEND_API_URL || "http://localhost:3434";
 
 const getAttendanceReportData = async (
   startDate: string,
@@ -67,7 +66,7 @@ const getAttendanceReportData = async (
 
 const getDivisions = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/divisions`);
+    const response = await fetch("/api/division");
     return await response.json();
   } catch (error) {
     console.error("Fetch divisions error:", error);

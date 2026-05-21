@@ -72,6 +72,37 @@ const initialFormState = {
   phone: "",
   emergencyContact: "",
   jabatan: "",
+  jatahCuti: "",
+};
+
+const extractArray = (responseData: any): any[] => {
+  // Jika response kosong/null
+  if (!responseData) return [];
+
+  if (Array.isArray(responseData)) return responseData;
+
+  if (
+    responseData.data &&
+    responseData.data.data &&
+    Array.isArray(responseData.data.data)
+  ) {
+    return responseData.data.data;
+  }
+
+  if (responseData.data && Array.isArray(responseData.data)) {
+    return responseData.data;
+  }
+
+  if (typeof responseData === "object") {
+    const arrayInsideObject = Object.values(responseData).find((val) =>
+      Array.isArray(val),
+    );
+    if (arrayInsideObject) {
+      return arrayInsideObject as any[];
+    }
+  }
+
+  return [];
 };
 
 export default function PegawaiView() {
@@ -110,28 +141,24 @@ export default function PegawaiView() {
         fetch("/api/division"),
       ]);
 
+      // Parse JSON bodies
       const empData = await empRes.json();
       const supData = await supRes.json();
       const divData = await divRes.json();
 
-      if (empData.success || empRes.ok) {
-        setEmployees(
-          Array.isArray(empData.data) ? empData.data : (empData?.data ?? []),
-        );
+      // Use a flexible parser – no matter the exact shape, we get an array
+      if (empRes.ok) {
+        setEmployees(extractArray(empData));
       } else {
         toast.error("Gagal memuat data pegawai");
       }
 
-      if (supData.success || supRes.ok) {
-        setSupervisors(
-          Array.isArray(supData.data) ? supData.data : (supData?.data ?? []),
-        );
+      if (supRes.ok) {
+        setSupervisors(extractArray(supData));
       }
 
-      if (divData.success || divRes.ok) {
-        setDivisions(
-          Array.isArray(divData.data) ? divData.data : (divData?.data ?? []),
-        );
+      if (divRes.ok) {
+        setDivisions(extractArray(divData));
       }
     } catch (error: any) {
       toast.error("Terjadi kesalahan sistem saat mengambil data");
@@ -157,6 +184,7 @@ export default function PegawaiView() {
       phone: employee.phone || "",
       emergencyContact: employee.emergencyContact || "",
       jabatan: employee.jabatan || "",
+      jatahCuti: employee.jatahCuti || "",
     });
     setIsModalOpen(true);
   };
@@ -193,15 +221,12 @@ export default function PegawaiView() {
 
     try {
       const url = editingId ? `/api/users/${editingId}` : "/api/users";
-      console.log("editingId:", editingId, "url:", url);
       const method = editingId ? "PUT" : "POST";
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      console.log("payload:", payload);
-      console.log("Response status:", res.status);
       const data = await res.json();
       if (res.ok && data.success) {
         toast.success(
@@ -221,7 +246,8 @@ export default function PegawaiView() {
   };
 
   const filteredEmployees = useMemo(() => {
-    return employees.filter((emp) => {
+    const safeEmployees = Array.isArray(employees) ? employees : [];
+    return safeEmployees.filter((emp) => {
       const searchLower = searchTerm.toLowerCase();
       const empName = (emp.name || emp.fullName || "").toLowerCase();
       const empEmail = (emp.email || "").toLowerCase();
@@ -247,6 +273,10 @@ export default function PegawaiView() {
     const supervisor = supervisors.find((sup) => sup.id === supId);
     return supervisor ? supervisor.name || supervisor.fullName : "-";
   };
+
+  const hideJatahCuti = /guru|kepala sekolah|wakil kepala sekolah/i.test(
+    formData.jabatan,
+  );
 
   return (
     <div className="space-y-6">
@@ -480,7 +510,23 @@ export default function PegawaiView() {
                 }
               />
             </div>
-
+            {!hideJatahCuti && (
+              <div className="space-y-2">
+                <Label htmlFor="jatahCuti" className="text-gray-300">
+                  Jatah Cuti (Hari)
+                </Label>
+                <Input
+                  id="jatahCuti"
+                  type="number"
+                  placeholder="12"
+                  className="bg-gray-800 border-gray-700 text-gray-100 placeholder:text-gray-500 focus:border-crimson-700"
+                  value={formData.jatahCuti}
+                  onChange={(e) =>
+                    setFormData({ ...formData, jatahCuti: e.target.value })
+                  }
+                />
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="email" className="text-gray-300">
                 Email

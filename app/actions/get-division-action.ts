@@ -1,7 +1,6 @@
 "use server";
 
-const API_BASE =
-  process.env.BACKEND_API_URL || "https://hris.maitreyawirads.dpdns.org";
+const API_BASE = process.env.BACKEND_API_URL || "http://localhost:3434";
 
 export async function getDivisions() {
   try {

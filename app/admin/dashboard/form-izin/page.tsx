@@ -1,6 +1,15 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import {
+  Check,
+  ChevronsUpDown,
+  User,
+  FileText,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+
 import { useRouter } from "next/navigation";
 import {
   Card,
@@ -23,17 +32,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Check,
-  ChevronsUpDown,
-  User,
-  FileText,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
 import { cn } from "@/lib/utils";
 import PermissionForm from "@/app/components/forms/izin-form";
-
 const ITEMS_PER_PAGE = 10;
 
 export default function AdminFormIzinPage() {
@@ -54,10 +54,32 @@ export default function AdminFormIzinPage() {
     const fetchUsers = async () => {
       try {
         const res = await fetch("/api/users");
-        const data = await res.json();
-        if (data.success && data.data) setUsers(data.data);
+        const responseData = await res.json();
+
+        // Pencari otomatis (Smart Extractor) yang sudah di-upgrade!
+        let extractedUsers: any[] = [];
+
+        if (Array.isArray(responseData)) {
+          extractedUsers = responseData;
+        } else if (responseData?.data && Array.isArray(responseData.data)) {
+          extractedUsers = responseData.data;
+        } else if (
+          responseData?.data?.data &&
+          Array.isArray(responseData.data.data)
+        ) {
+          extractedUsers = responseData.data.data;
+        } else if (responseData?.users && Array.isArray(responseData.users)) {
+          extractedUsers = responseData.users;
+        }
+
+        if (extractedUsers.length > 0) {
+          setUsers(extractedUsers);
+        } else {
+          setUsers([]);
+        }
       } catch (error) {
-        console.error("Gagal mengambil daftar pegawai", error);
+        console.error("Error fetching users:", error);
+        setUsers([]);
       }
     };
     fetchUsers();
@@ -73,168 +95,285 @@ export default function AdminFormIzinPage() {
     }, 300);
   }, []);
 
-  // Filter data
-  const filteredUsers = debouncedSearch
-    ? users.filter(
-        (u) =>
-          u.name?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-          u.niy?.toLowerCase().includes(debouncedSearch.toLowerCase()),
-      )
-    : users;
+  // --- BAGIAN YANG SUDAH KITA AMANKAN 100% ---
+  const safeUsers = Array.isArray(users) ? users : [];
 
-  const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
-  const pagedUsers = filteredUsers.slice(
+  const filteredUsers = debouncedSearch
+    ? safeUsers.filter(
+        (u) =>
+          u?.name?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+          u?.niy?.toLowerCase().includes(debouncedSearch.toLowerCase()),
+      )
+    : safeUsers;
+
+  const finalUsers = Array.isArray(filteredUsers) ? filteredUsers : [];
+
+  const totalPages = Math.ceil(finalUsers.length / ITEMS_PER_PAGE) || 1;
+
+  const pagedUsers = finalUsers.slice(
     (page - 1) * ITEMS_PER_PAGE,
     page * ITEMS_PER_PAGE,
   );
+  // -------------------------------------------
 
   const handleSelectUser = async (userId: string) => {
-    const user = users.find((u) => u.id === userId);
+    const user = safeUsers.find((u) => u.id === userId);
     setSelectedUser(user);
     setOpen(false);
     setShowForm(false);
 
     try {
       const res = await fetch(`/api/users/${userId}`);
-      const data = await res.json();
-      setUserDetail(data.data || data.user || {});
-    } catch {
-      setUserDetail({});
+      const responseData = await res.json();
+
+      // 🚀 Bongkar pembungkus ganda dari proxy
+      let rawUser =
+        responseData?.data?.data || // dua kali bungkus
+        responseData?.data || // sekali bungkus
+        responseData; // mentah
+
+      // Jika masih terbungkus, ambil data.user
+      if (rawUser?.success !== undefined && rawUser?.data) {
+        rawUser = rawUser.data;
+      }
+
+      // Parsing divisi: bisa string, objek { name: '...' }, atau null
+      let divisi = null;
+      if (rawUser?.divisi) {
+        if (typeof rawUser.divisi === "string") {
+          divisi = rawUser.divisi;
+        } else if (
+          rawUser.divisi.name &&
+          typeof rawUser.divisi.name === "string"
+        ) {
+          divisi = rawUser.divisi.name;
+        }
+      }
+
+      setUserDetail({
+        ...rawUser,
+        divisi,
+      });
+
+      console.log("✅ divisi final:", divisi); // Harus 'BPH'
+    } catch (error) {
+      console.error("Gagal fetch detail pengguna:", error);
+      setUserDetail({ divisi: null });
     }
   };
 
   const handleAjukan = () => setShowForm(true);
 
   return (
-    <div className="min-h-screen bg-gray-950 p-6 max-w-2xl mx-auto space-y-6 text-gray-100">
-      <Card className="bg-gray-900 border-gray-800 shadow-md">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-white">
-            <FileText className="h-5 w-5 text-crimson-500" />
-            Pengajuan Izin untuk Pegawai
-          </CardTitle>
-          <CardDescription className="text-gray-400">
-            Pilih pegawai yang akan diajukan izin, lalu klik tombol Ajukan untuk
-            mengisi form.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-2">
-            <Label className="text-gray-300">Cari Pegawai</Label>
-            <Popover open={open} onOpenChange={setOpen}>
-              <PopoverTrigger>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={open}
-                  className="w-full justify-between border-gray-700 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white"
-                >
-                  {selectedUser ? (
-                    <span className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-gray-400" />
-                      {selectedUser.name} ({selectedUser.niy || "-"})
-                    </span>
-                  ) : (
-                    <span className="text-gray-500">
-                      Ketik nama atau NIY pegawai…
-                    </span>
-                  )}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[--radix-popover-trigger-width] p-0 border-gray-700 bg-gray-900 shadow-xl">
-                <Command
-                  shouldFilter={false}
-                  className="bg-transparent text-gray-200"
-                >
-                  <CommandInput
-                    placeholder="Cari pegawai..."
-                    value={search}
-                    onValueChange={handleSearchChange}
-                    className="border-gray-700 bg-gray-800 text-gray-200 placeholder:text-gray-500"
-                  />
-                  <CommandEmpty className="text-gray-500">
-                    Tidak ditemukan.
-                  </CommandEmpty>
-                  <CommandGroup className="max-h-60 overflow-y-auto">
-                    {pagedUsers.map((u) => (
-                      <CommandItem
-                        key={u.id}
-                        value={`${u.name} ${u.niy}`}
-                        onSelect={() => handleSelectUser(u.id)}
-                        className="text-gray-250 hover:bg-gray-800 hover:text-white"
-                      >
-                        <Check
-                          className={cn(
-                            "mr-2 h-4 w-4 text-crimson-500",
-                            selectedUser?.id === u.id
-                              ? "opacity-100"
-                              : "opacity-0",
-                          )}
-                        />
-                        {u.name} ({u.niy})
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                  {totalPages > 1 && (
-                    <div className="flex items-center justify-between px-2 py-1.5 border-t border-gray-800">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setPage((p) => Math.max(1, p - 1))}
-                        disabled={page === 1}
-                        className="text-gray-400 hover:text-white"
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                      </Button>
-                      <span className="text-xs text-gray-400">
-                        {page} / {totalPages}
+    // Background modern: Dark base dengan ambient glow (pendaran cahaya blur di pojok)
+    <div className="min-h-screen bg-slate-950 relative overflow-hidden flex items-center justify-center p-4 sm:p-6 text-slate-100 font-sans">
+      {/* Decorative Ambient Backgrounds */}
+      <div className="absolute top-[-15%] left-[-10%] w-[500px] h-[500px] rounded-full bg-rose-600/15 blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-15%] right-[-10%] w-[500px] h-[500px] rounded-full bg-indigo-600/15 blur-[120px] pointer-events-none" />
+
+      {/* Main Content Container */}
+      <div className="w-full max-w-2xl relative z-10 space-y-6">
+        {/* Card berdesain Glassmorphism */}
+        <Card className="bg-slate-900/60 backdrop-blur-xl border border-slate-700/50 shadow-2xl shadow-black/40 rounded-3xl overflow-visible transition-all duration-500">
+          <CardHeader className="space-y-3 pb-8 border-b border-slate-700/50 bg-slate-800/30 px-6 sm:px-8 pt-8 rounded-t-3xl">
+            <CardTitle className="text-2xl sm:text-3xl font-bold tracking-tight text-white mt-2">
+              Pengajuan Izin{" "}
+              <span className="bg-gradient-to-r from-rose-400 to-pink-400 bg-clip-text text-transparent">
+                Pegawai
+              </span>
+            </CardTitle>
+            <CardDescription className="text-slate-400 text-base">
+              Pilih pegawai yang akan diajukan izin, lalu klik tombol Ajukan
+              untuk melengkapi formulir persetujuan.
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent className="space-y-8 pt-8 px-6 sm:px-8 pb-8">
+            {/* Area Pencarian */}
+            <div className="space-y-3">
+              <Label className="text-slate-300 font-medium ml-1 block">
+                Cari Pegawai
+              </Label>
+              <Popover open={open} onOpenChange={setOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={open}
+                    className="w-full justify-between h-14 px-5 rounded-2xl bg-slate-950/50 border border-slate-700 hover:bg-slate-800/80 hover:text-white transition-all text-base font-normal shadow-inner"
+                  >
+                    {selectedUser ? (
+                      <span className="flex items-center gap-3">
+                        <div className="p-1.5 rounded-full bg-slate-800">
+                          <User className="h-4 w-4 text-rose-400" />
+                        </div>
+                        <span className="font-medium text-slate-200">
+                          {selectedUser.name}
+                        </span>
+                        <span className="text-slate-500 text-sm hidden sm:inline-block">
+                          ({selectedUser.niy || "-"})
+                        </span>
                       </span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          setPage((p) => Math.min(totalPages, p + 1))
-                        }
-                        disabled={page === totalPages}
-                        className="text-gray-400 hover:text-white"
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  )}
-                </Command>
-              </PopoverContent>
-            </Popover>
-          </div>
+                    ) : (
+                      <span className="text-slate-500">
+                        Ketik nama atau NIY pegawai...
+                      </span>
+                    )}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-slate-500" />
+                  </Button>
+                </PopoverTrigger>
 
-          {selectedUser && !showForm && (
-            <Button
-              onClick={handleAjukan}
-              className="w-full bg-crimson-700 hover:bg-crimson-800 text-white"
-            >
-              <FileText className="mr-2 h-4 w-4" />
-              Ajukan Izin untuk {selectedUser.name}
-            </Button>
-          )}
+                {/* Desain Popover Modern yang terhubung dengan komponen UI bawaanmu */}
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-1.5 rounded-2xl border-slate-700/60 bg-slate-900/95 backdrop-blur-2xl shadow-2xl shadow-black/60">
+                  <Command
+                    shouldFilter={false}
+                    className="bg-transparent text-slate-200"
+                  >
+                    <CommandInput
+                      placeholder="Ketik untuk mencari..."
+                      value={search}
+                      onValueChange={handleSearchChange}
+                      className="border-none bg-transparent h-10 px-2 text-slate-200 placeholder:text-slate-500 focus:ring-0"
+                    />
 
-          {showForm && selectedUser && userDetail && (
-            <div className="border-t border-gray-800 pt-6">
-              <h3 className="font-semibold text-lg mb-4 text-white">
-                Form Izin – {selectedUser.name}
-              </h3>
-              <PermissionForm
-                userId={selectedUser.id}
-                user={{
-                  name: userDetail.name || selectedUser.name,
-                  divisi: userDetail.divisi || null,
-                }}
-                onSuccess={() => router.push("/admin/dashboard")}
-              />
+                    {pagedUsers.length === 0 ? (
+                      <CommandEmpty className="text-slate-500 py-6 text-center text-sm">
+                        Pegawai tidak ditemukan.
+                      </CommandEmpty>
+                    ) : (
+                      <CommandGroup className="max-h-64 overflow-y-auto mt-2 space-y-1">
+                        {pagedUsers.map((u) => (
+                          <CommandItem
+                            key={u.id}
+                            value={`${u.name} ${u.niy}`}
+                            onSelect={() => handleSelectUser(u.id)}
+                            className="flex items-center gap-3 rounded-xl px-3 py-3 text-slate-300 hover:bg-slate-800 hover:text-white cursor-pointer transition-colors"
+                          >
+                            <div
+                              className={cn(
+                                "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-all",
+                                selectedUser?.id === u.id
+                                  ? "border-rose-500 bg-rose-500/20"
+                                  : "border-slate-700 bg-transparent",
+                              )}
+                            >
+                              <Check
+                                className={cn(
+                                  "h-3 w-3 text-rose-400 transition-opacity",
+                                  selectedUser?.id === u.id
+                                    ? "opacity-100"
+                                    : "opacity-0",
+                                )}
+                              />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="font-medium">{u.name}</span>
+                              <span className="text-xs text-slate-500">
+                                {u.niy}
+                              </span>
+                            </div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    )}
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-between p-2 mt-2 border-t border-slate-800/50">
+                        <Button
+                          variant="ghost"
+                          onClick={() => setPage((p) => Math.max(1, p - 1))}
+                          disabled={page === 1}
+                          className="h-8 px-3 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+                        >
+                          <ChevronLeft className="h-4 w-4 mr-1" /> Prev
+                        </Button>
+                        <span className="text-xs font-medium text-slate-400 bg-slate-800/50 px-3 py-1.5 rounded-full">
+                          {page} / {totalPages}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          onClick={() =>
+                            setPage((p) => Math.min(totalPages, p + 1))
+                          }
+                          disabled={page === totalPages}
+                          className="h-8 px-3 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+                        >
+                          Next <ChevronRight className="h-4 w-4 ml-1" />
+                        </Button>
+                      </div>
+                    )}
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
-          )}
-        </CardContent>
-      </Card>
+
+            {/* Tombol Ajukan (Animasi Muncul) */}
+            {selectedUser && !showForm && (
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 mt-2">
+                <Button
+                  onClick={handleAjukan}
+                  className="w-full h-14 rounded-2xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white shadow-lg shadow-rose-500/25 border-t border-white/10 transition-all hover:scale-[1.02] active:scale-[0.98] text-base font-medium"
+                >
+                  <FileText className="mr-2 h-5 w-5" />
+                  Lanjutkan Pengajuan
+                </Button>
+              </div>
+            )}
+
+            {/* Area Form (Animasi Muncul & Pemisah Elegan) */}
+            {showForm && selectedUser && userDetail && (
+              <div className="animate-in fade-in slide-in-from-top-6 duration-700 ease-out">
+                <div className="relative py-8">
+                  {/* Garis pemisah estetik */}
+                  <div
+                    className="absolute inset-0 flex items-center"
+                    aria-hidden="true"
+                  >
+                    <div className="w-full border-t border-slate-700/60" />
+                  </div>
+                  <div className="relative flex justify-center">
+                    <span className="bg-slate-900 px-4 text-xs font-medium text-slate-500 uppercase tracking-widest rounded-full border border-slate-700/60">
+                      Lengkapi Data
+                    </span>
+                  </div>
+                </div>
+
+                <div className="bg-slate-950/40 rounded-3xl p-6 sm:p-8 border border-slate-700/50 shadow-inner relative overflow-hidden">
+                  {/* Subtle highlight inside the form card */}
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-rose-500/50 to-transparent opacity-50"></div>
+
+                  <div className="flex items-center gap-4 mb-8">
+                    <div className="h-14 w-14 rounded-full bg-rose-500/10 flex items-center justify-center border border-rose-500/20 shadow-inner">
+                      <User className="h-7 w-7 text-rose-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-xl text-white">
+                        {selectedUser.name}
+                      </h3>
+                      <p className="text-sm text-slate-400 mt-0.5">
+                        Divisi: {userDetail?.divisi || "Tidak diketahui"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Memanggil komponen aslimu */}
+                  <PermissionForm
+                    userId={selectedUser.id}
+                    user={{
+                      name: userDetail?.name || selectedUser.name,
+                      divisi: userDetail?.divisi
+                        ? { name: userDetail.divisi }
+                        : null,
+                    }}
+                    onSuccess={() => router.push("/admin/dashboard")}
+                  />
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

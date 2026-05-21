@@ -1,5 +1,51 @@
 import { NextRequest, NextResponse } from "next/server";
 
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  // 2. PERBAIKAN: Ekstrak id dari params dengan await
+  const { id } = await params;
+
+  try {
+    const token = req.cookies.get("access_token")?.value;
+    if (!token) {
+      return NextResponse.json(
+        { success: false, error: "Tidak terautentikasi" },
+        { status: 401 },
+      );
+    }
+
+    const backendUrl = process.env.BACKEND_API_URL;
+    if (!backendUrl) {
+      return NextResponse.json(
+        { success: false, error: "Backend URL not configured" },
+        { status: 500 },
+      );
+    }
+
+    // Mengirim permintaan ke backend asli menggunakan id yang sudah diekstrak
+    const res = await fetch(`${backendUrl}/users/${id}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    });
+
+    const data = await res.json();
+    console.log("sisaCuti from backend:", data.user.sisaCuti);
+    return NextResponse.json(data, { status: res.status });
+  } catch (error) {
+    console.error("Error fetching user detail:", error);
+    return NextResponse.json(
+      { success: false, error: "Terjadi kesalahan server" },
+      { status: 500 },
+    );
+  }
+}
+
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -60,6 +106,66 @@ export async function PUT(
     console.error(`[API /users/${id}] 💥 Server error:`, error);
     return NextResponse.json(
       { success: false, error: "Terjadi kesalahan server" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id } = await params;
+
+  try {
+    const token = req.cookies.get("access_token")?.value;
+    if (!token) {
+      return NextResponse.json(
+        { success: false, error: "Tidak terautentikasi" },
+        { status: 401 },
+      );
+    }
+
+    const backendUrl = process.env.BACKEND_API_URL;
+    if (!backendUrl) {
+      return NextResponse.json(
+        { success: false, error: "Backend URL not configured" },
+        { status: 500 },
+      );
+    }
+
+    // 🔍 Log info bahwa proses hapus dimulai
+    console.log(
+      `[API /users/${id}] 🗑️ Meminta backend untuk menghapus data...`,
+    );
+
+    const res = await fetch(`${backendUrl}/users/${id}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      console.error(
+        `[API /users/${id}] ❌ Backend error saat delete ${res.status}:`,
+        JSON.stringify(data, null, 2),
+      );
+    } else {
+      console.log(
+        `[API /users/${id}] ✅ Backend sukses menghapus data:`,
+        JSON.stringify(data, null, 2),
+      );
+    }
+
+    return NextResponse.json(data, { status: res.status });
+  } catch (error) {
+    console.error(`[API /users/${id}] 💥 Server error saat delete:`, error);
+    return NextResponse.json(
+      { success: false, error: "Terjadi kesalahan server saat menghapus" },
       { status: 500 },
     );
   }

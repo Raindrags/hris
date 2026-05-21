@@ -26,11 +26,13 @@ import {
 interface ApprovalSectionProps {
   incomingRequests: ApprovalRequestData[];
   potentialSubstitutes: SubstituteUser[];
+  onRefresh: () => void;
 }
 
 export function ApprovalSection({
   incomingRequests,
   potentialSubstitutes,
+  onRefresh,
 }: ApprovalSectionProps) {
   const [selectedRequest, setSelectedRequest] =
     useState<ApprovalRequestData | null>(null);
@@ -70,7 +72,6 @@ export function ApprovalSection({
                       : `Izin (${req.user?.category || "Umum"})`}
                   </Badge>
 
-                  {/* INFO TANGGAL */}
                   <div className="flex items-center gap-1 text-xs text-blue-300 bg-blue-900/20 px-2 py-1 rounded border border-blue-800/50">
                     <Calendar className="w-3.5 h-3.5 text-blue-400" />
                     <span>
@@ -94,7 +95,6 @@ export function ApprovalSection({
                   </p>
                 )}
 
-                {/* LINK SURAT DOKTER / BUKTI */}
                 {req.attachmentUrl && (
                   <div className="pt-1">
                     <a
@@ -123,7 +123,12 @@ export function ApprovalSection({
 
       <Dialog
         open={!!selectedRequest}
-        onOpenChange={(open) => !open && setSelectedRequest(null)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedRequest(null);
+            onRefresh();
+          }
+        }}
       >
         <DialogContent className="max-w-xl bg-gray-950 text-gray-100 border-gray-800 shadow-xl">
           <DialogHeader>
