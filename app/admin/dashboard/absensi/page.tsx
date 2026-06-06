@@ -41,7 +41,7 @@ import { exportAttendanceToExcel } from "@/lib/excel-helper";
 // ============================================================================
 // API FETCHERS (Pengganti absensi-action)
 // ============================================================================
-const API_BASE_URL = process.env.BACKEND_API_URL || "http://localhost:3434";
+const API_BASE_URL = process.env.BACKEND_API_URL || "https://hris.maitreyawirads.dpdns.org";
 
 const getAttendanceReportData = async (
   startDate: string,
