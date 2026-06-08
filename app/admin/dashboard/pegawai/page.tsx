@@ -641,7 +641,7 @@ export default function PegawaiView() {
                 open={supervisorPopoverOpen}
                 onOpenChange={setSupervisorPopoverOpen}
               >
-                <PopoverTrigger className="inline-flex w-full items-center justify-between rounded-md border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-200 hover:bg-gray-700 hover:text-white">
+                <PopoverTrigger className="inline-flex w-full items-center justify-between rounded-md border border-gray-700 px-3 py-2 text-sm text-gray-200 hover:bg-gray-700 hover:text-white">
                   {formData.supervisorId && formData.supervisorId !== "none"
                     ? supervisors.find((s) => s.id === formData.supervisorId)
                         ?.name ||
@@ -651,17 +651,18 @@ export default function PegawaiView() {
                     : "Pilih atasan..."}
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </PopoverTrigger>
-                <PopoverContent className="w-[--radix-popover-trigger-width] p-0 bg-gray-800 border-gray-700">
-                  <Command>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0  border-gray-700">
+                  <Command className="bg-gray-900 text-gray-200">
                     <CommandInput
                       placeholder="Cari atasan..."
-                      className="text-gray-200"
+                      className=" text-gray-200"
                     />
                     <CommandEmpty className="text-gray-400 py-2 text-center text-sm">
                       Tidak ditemukan.
                     </CommandEmpty>
                     <CommandGroup className="max-h-60 overflow-y-auto">
                       <CommandItem
+                        className="text-gray-200 bg-slate-900 hover:bg-gray-700"
                         value="none"
                         onSelect={() => {
                           setFormData({ ...formData, supervisorId: "none" });
@@ -685,7 +686,7 @@ export default function PegawaiView() {
                               });
                               setSupervisorPopoverOpen(false);
                             }}
-                            className="text-gray-200 hover:bg-gray-700"
+                            className="text-gray-200 bg-slate-900 hover:bg-gray-700"
                           >
                             <Check
                               className={`mr-2 h-4 w-4 ${
