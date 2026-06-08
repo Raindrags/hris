@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useState } from "react";
+// PENTING: Tambahkan kembali useSearchParams
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +15,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, Pencil, Save, X } from "lucide-react";
+import { Loader2, Save } from "lucide-react";
 
 export type UserProfileData = {
   id?: string | null;
@@ -29,25 +30,19 @@ export type UserProfileData = {
 
 interface ProfileFormProps {
   user: UserProfileData;
-  onSuccess?: () => void;
   variant?: "page" | "onboarding";
 }
 
-// Komponen dalam yang menggunakan useSearchParams
-function ProfileFormContent({
-  user,
-  onSuccess,
-  variant = "page",
-}: ProfileFormProps) {
+// Komponen dalam
+function ProfileFormContent({ user, variant = "page" }: ProfileFormProps) {
   const router = useRouter();
+  // Membaca target url awal (contoh: /pegawai/form-cuti)
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl");
 
-  const [isEditingState, setIsEditingState] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
 
   const isFirstTime = user?.isFirstLogin === true;
-  const isEditing = variant === "onboarding" || isFirstTime || isEditingState;
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -60,6 +55,7 @@ function ProfileFormContent({
         phone: formData.get("phone") as string,
         emergencyContact: formData.get("emergencyContact") as string,
         address: formData.get("address") as string,
+        isFirstLogin: false,
       };
 
       const res = await fetch(`/api/users/${user.id}/profile`, {
@@ -73,22 +69,18 @@ function ProfileFormContent({
       if (res.ok && data.success) {
         toast.success(data.message || "Profil berhasil diperbarui");
 
-        if (variant === "page" && !isFirstTime) {
-          setIsEditingState(false);
-        }
+        // --- UBAH BAGIAN INI ---
+        // Kita gunakan window.location.href untuk memaksa browser memuat
+        // ulang halaman sepenuhnya agar tidak memakai Cache / Ingatan lama.
 
-        if (onSuccess) {
-          onSuccess();
-        } else {
-          // Redirect default ke dashboard
-          router.push("/pegawai/dashboard");
-        }
-
-        if (isFirstTime && callbackUrl) {
-          router.push(callbackUrl);
-        } else if (isFirstTime) {
-          router.refresh();
-        }
+        setTimeout(() => {
+          if (callbackUrl) {
+            window.location.href = callbackUrl;
+          } else {
+            window.location.href = "/pegawai/dashboard";
+          }
+        }, 1000); // Beri jeda 1 detik agar pesan toast "Berhasil" sempat terbaca
+        // ------------------------
       } else {
         toast.error(data.message || "Gagal memperbarui profil");
       }
@@ -109,11 +101,7 @@ function ProfileFormContent({
         </div>
         <div className="space-y-2">
           <Label className="text-muted-foreground">Email (Login)</Label>
-          <Input
-            name="email"
-            defaultValue={user?.email ?? ""}
-            disabled={!isEditing}
-          />
+          <Input name="email" defaultValue={user?.email ?? ""} />
         </div>
 
         <div className="space-y-2">
@@ -121,7 +109,6 @@ function ProfileFormContent({
           <Input
             name="phone"
             defaultValue={user?.phone ?? ""}
-            disabled={!isEditing}
             placeholder="0812xxxx"
           />
         </div>
@@ -130,7 +117,6 @@ function ProfileFormContent({
           <Input
             name="emergencyContact"
             defaultValue={user?.emergencyContact ?? ""}
-            disabled={!isEditing}
             placeholder="Istri - 0812xxxx"
           />
         </div>
@@ -141,28 +127,21 @@ function ProfileFormContent({
         <Textarea
           name="address"
           defaultValue={user?.address ?? ""}
-          disabled={!isEditing}
           placeholder="Masukkan alamat lengkap..."
           className="min-h-[100px]"
         />
       </div>
 
-      {isEditing && (
-        <div className="flex justify-end pt-4 border-t">
-          <Button type="submit" disabled={loading} className="w-full sm:w-auto">
-            {loading ? (
-              <Loader2 className="w-4 h-4 animate-spin mr-2" />
-            ) : (
-              <Save className="w-4 h-4 mr-2" />
-            )}
-            {isFirstTime
-              ? "Simpan & Lanjutkan"
-              : variant === "onboarding"
-                ? "Simpan & Lanjut"
-                : "Simpan Perubahan"}
-          </Button>
-        </div>
-      )}
+      <div className="flex justify-end pt-4 border-t">
+        <Button type="submit" disabled={loading} className="w-full sm:w-auto">
+          {loading ? (
+            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+          ) : (
+            <Save className="w-4 h-4 mr-2" />
+          )}
+          {isFirstTime ? "Simpan & Lanjutkan" : "Simpan Perubahan"}
+        </Button>
+      </div>
     </form>
   );
 
@@ -182,25 +161,6 @@ function ProfileFormContent({
                 : "Data diri dan kontak yang dapat dihubungi."}
             </CardDescription>
           </div>
-
-          {!isFirstTime &&
-            (!isEditingState ? (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsEditingState(true)}
-              >
-                <Pencil className="w-4 h-4 mr-2" /> Edit Data
-              </Button>
-            ) : (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsEditingState(false)}
-              >
-                <X className="w-4 h-4 mr-2" /> Batal
-              </Button>
-            ))}
         </div>
       </CardHeader>
       <CardContent>{FormContent}</CardContent>
