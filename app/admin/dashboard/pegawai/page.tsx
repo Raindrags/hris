@@ -668,7 +668,6 @@ export default function PegawaiView() {
                           setFormData({ ...formData, supervisorId: "none" });
                           setSupervisorPopoverOpen(false);
                         }}
-                        className="text-gray-200 hover:bg-gray-700"
                       >
                         <Check className="mr-2 h-4 w-4 opacity-0" />
                         -- Tidak ada atasan --
