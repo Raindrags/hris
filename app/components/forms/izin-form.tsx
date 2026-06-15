@@ -11,6 +11,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectGroup,
 } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -41,9 +42,17 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
+// Tambahan tipe untuk pengganti
+export interface SubstituteUser {
+  id: string;
+  name: string;
+  divisi?: { id: string; name: string } | null;
+}
+
 export type PermissionUserData = {
   name: string;
   divisi?: {
+    id?: string;
     name: string;
   } | null;
   [key: string]: unknown;
@@ -57,10 +66,13 @@ export type PermissionSubmitPayload = {
   subCategory: string | null;
   time: string | null;
   file?: File | null;
+  delegatedToId?: string | null; // Tambahan
+  taskDetail?: string | null; // Tambahan
 };
 
 interface PermissionFormProps {
   user: PermissionUserData;
+  potentialSubstitutes?: SubstituteUser[]; // Tambahan Props
   onSuccess: () => void;
   userId?: string;
 }
@@ -73,8 +85,9 @@ const getLocalYYYYMMDD = (date: Date) => {
 
 export default function PermissionForm({
   user,
+  potentialSubstitutes = [],
   onSuccess,
-  userId
+  userId,
 }: PermissionFormProps) {
   const [loading, setLoading] = useState<boolean>(false);
   const [startDate, setStartDate] = useState<Date>();
@@ -87,9 +100,19 @@ export default function PermissionForm({
   const [reason, setReason] = useState<string>("");
   const [file, setFile] = useState<File | null>(null);
 
+  // State tambahan untuk delegasi tugas
+  const [delegatedTo, setDelegatedTo] = useState<string>("");
+  const [taskDetail, setTaskDetail] = useState<string>("");
+
   const [showWarning, setShowWarning] = useState<boolean>(false);
   const [pendingPayload, setPendingPayload] =
     useState<PermissionSubmitPayload | null>(null);
+
+  // Filter pengganti hanya yang satu divisi
+  const filteredSubstitutes = potentialSubstitutes.filter((sub) => {
+    if (!user?.divisi?.name || !sub.divisi?.name) return false;
+    return sub.divisi.name === user.divisi.name;
+  });
 
   useEffect(() => {
     const fetchHolidays = async () => {
@@ -97,7 +120,6 @@ export default function PermissionForm({
         const res = await fetch("/api/holidays");
         if (!res.ok) throw new Error("Gagal fetch");
         const data = await res.json();
-
         let holidaysArray: string[] = [];
         if (Array.isArray(data)) {
           holidaysArray = data.map((item: any) =>
@@ -110,10 +132,8 @@ export default function PermissionForm({
         }
         setHolidays(holidaysArray);
       } catch (error) {
-        console.warn("Penanda merah tidak akan muncul:", error);
         setHolidays([]);
       }
-      console.log("Libur yang di-fetch:", holidays);
     };
     fetchHolidays();
   }, []);
@@ -121,10 +141,9 @@ export default function PermissionForm({
   useEffect(() => {
     const fetchSpecialWorkDays = async () => {
       try {
-        const res = await fetch("/api/special-workdays"); // atau endpoint yang sesuai
+        const res = await fetch("/api/special-workdays");
         if (!res.ok) throw new Error("Gagal fetch");
         const data = await res.json();
-
         let daysArray: string[] = [];
         if (Array.isArray(data)) {
           daysArray = data.map((item: any) =>
@@ -137,7 +156,6 @@ export default function PermissionForm({
         }
         setSpecialWorkDays(daysArray);
       } catch (error) {
-        console.warn("Data hari kerja khusus tidak tersedia:", error);
         setSpecialWorkDays([]);
       }
     };
@@ -177,14 +195,8 @@ export default function PermissionForm({
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
     const dateString = `${year}-${month}-${day}`;
-
-    // Jika tanggal terdaftar sebagai hari kerja khusus → bukan libur
     if (specialWorkDays.includes(dateString)) return false;
-
-    // Hari Minggu tetap libur jika tidak termasuk dalam hari kerja khusus
     if (date.getDay() === 0) return true;
-
-    // Cek daftar hari libur dari backend
     return holidays.includes(dateString);
   };
 
@@ -221,11 +233,15 @@ export default function PermissionForm({
       if (payload.file) formDataObj.append("file", payload.file);
       if (userId) formDataObj.append("userId", userId);
 
+      // Tambahan data delegasi ke FormData
+      if (payload.delegatedToId)
+        formDataObj.append("delegatedToId", payload.delegatedToId);
+      if (payload.taskDetail)
+        formDataObj.append("taskDetail", payload.taskDetail);
+
       const res = await fetch("/api/izin", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
         body: formDataObj,
       });
 
@@ -237,7 +253,6 @@ export default function PermissionForm({
         toast.error(data.message || "Gagal mengajukan izin.");
       }
     } catch (error) {
-      console.error("Submit error:", error);
       toast.error("Gagal memproses pengajuan. Periksa koneksi Anda.");
     } finally {
       setLoading(false);
@@ -248,48 +263,34 @@ export default function PermissionForm({
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!startDate || !endDate) {
-      toast.error("Mohon pilih tanggal mulai dan selesai.");
-      return;
-    }
-    if (calculatedDays < 0) {
-      toast.error("Tanggal selesai tidak boleh sebelum tanggal mulai.");
-      return;
-    }
-    if (!category) {
-      toast.error("Mohon pilih jenis izin.");
-      return;
-    }
-    if (category === "IzinKhusus" && !subCategory) {
-      toast.error("Mohon pilih detail izin khusus.");
-      return;
-    }
-    if ((category === "Terlambat" || category === "PulangAwal") && !timeValue) {
-      toast.error("Mohon masukkan jam/waktu yang sesuai.");
-      return;
-    }
-    if (category === "Sakit" && calculatedDays > 1 && !file) {
-      toast.error(
-        "Mohon lampirkan surat dokter/bukti untuk izin sakit lebih dari 1 hari.",
+    if (!startDate || !endDate)
+      return toast.error("Mohon pilih tanggal mulai dan selesai.");
+    if (calculatedDays < 0)
+      return toast.error("Tanggal selesai tidak boleh sebelum tanggal mulai.");
+    if (!category) return toast.error("Mohon pilih jenis izin.");
+    if (category === "IzinKhusus" && !subCategory)
+      return toast.error("Mohon pilih detail izin khusus.");
+    if ((category === "Terlambat" || category === "PulangAwal") && !timeValue)
+      return toast.error("Mohon masukkan jam/waktu yang sesuai.");
+    if (category === "Sakit" && calculatedDays > 1 && !file)
+      return toast.error(
+        "Mohon lampirkan surat dokter untuk izin sakit > 1 hari.",
       );
-      return;
-    }
-    if (!reason.trim()) {
-      toast.error("Mohon isi keterangan / alasan lengkap.");
-      return;
-    }
+    if (!reason.trim()) return toast.error("Mohon isi keterangan lengkap.");
 
     const finalData: PermissionSubmitPayload = {
       startDate: getLocalYYYYMMDD(startDate),
       endDate: getLocalYYYYMMDD(endDate),
-      reason: reason,
-      category: category,
+      reason,
+      category,
       subCategory: category === "IzinKhusus" ? subCategory : null,
       time:
         category === "Terlambat" || category === "PulangAwal"
           ? timeValue
           : null,
       file: category === "Sakit" && calculatedDays > 1 ? file : null,
+      delegatedToId: delegatedTo || null,
+      taskDetail: taskDetail || null,
     };
 
     if (category === "Izin") {
@@ -313,7 +314,7 @@ export default function PermissionForm({
 
   return (
     <>
-      <form onSubmit={handleSubmit} className="space-y-4 px-1">
+      <form onSubmit={handleSubmit} className="space-y-4 px-1 pb-4">
         <div className="bg-slate-900/50 p-3 rounded-md text-sm border border-slate-700 space-y-1 text-slate-200">
           <div className="flex justify-between items-center">
             <span className="text-slate-400">Nama:</span>
@@ -329,23 +330,21 @@ export default function PermissionForm({
           <div className="space-y-2 flex flex-col">
             <Label className="text-slate-300">Tanggal Mulai</Label>
             <Popover>
-              <PopoverTrigger>
-                <span
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
                   className={cn(
-                    "inline-flex w-full cursor-pointer items-center justify-start rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-normal text-slate-100 hover:bg-slate-800",
-                    !startDate && "text-muted-foreground",
+                    "justify-start text-left font-normal bg-slate-900 border-slate-700 text-slate-100 hover:bg-slate-800",
+                    !startDate && "text-slate-400",
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {startDate
                     ? format(startDate, "PPP", { locale: id })
                     : "Pilih tanggal"}
-                </span>
+                </Button>
               </PopoverTrigger>
-              <PopoverContent
-                className="w-auto p-0 bg-slate-900 border-slate-700"
-                align="start"
-              >
+              <PopoverContent className="w-auto p-0 bg-slate-900 border-slate-700">
                 <Calendar
                   mode="single"
                   selected={startDate}
@@ -361,26 +360,24 @@ export default function PermissionForm({
           <div className="space-y-2 flex flex-col">
             <Label className="text-slate-300">Tanggal Selesai</Label>
             <Popover>
-              <PopoverTrigger>
-                <span
+              <PopoverTrigger asChild>
+                <Button
+                  disabled={isAutoEndDate}
+                  variant="outline"
                   className={cn(
-                    "inline-flex w-full cursor-pointer items-center justify-start rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-normal text-slate-100 hover:bg-slate-800",
-                    !endDate && "text-muted-foreground",
-                    isAutoEndDate &&
-                      "pointer-events-none opacity-50 cursor-not-allowed",
+                    "justify-start text-left font-normal bg-slate-900 border-slate-700 text-slate-100 hover:bg-slate-800",
+                    !endDate && "text-slate-400",
+                    isAutoEndDate && "opacity-50",
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {endDate
                     ? format(endDate, "PPP", { locale: id })
                     : "Pilih tanggal"}
-                </span>
+                </Button>
               </PopoverTrigger>
               {!isAutoEndDate && (
-                <PopoverContent
-                  className="w-auto p-0 bg-slate-900 border-slate-700"
-                  align="start"
-                >
+                <PopoverContent className="w-auto p-0 bg-slate-900 border-slate-700">
                   <Calendar
                     mode="single"
                     selected={endDate}
@@ -419,12 +416,6 @@ export default function PermissionForm({
                 )}
               </span>
             </div>
-            {isAutoEndDate && (
-              <p className="text-xs text-blue-400/80 mt-1 italic ml-6">
-                *Tanggal selesai diatur otomatis berdasarkan kebijakan izin
-                khusus.
-              </p>
-            )}
           </div>
         )}
 
@@ -433,11 +424,9 @@ export default function PermissionForm({
           <Select
             value={category}
             onValueChange={(val) => {
-              const safeVal = val ?? "";
-              setCategory(safeVal);
-              if (safeVal !== "IzinKhusus") setSubCategory("");
-              if (safeVal !== "Terlambat" && safeVal !== "PulangAwal")
-                setTimeValue("");
+              setCategory(val);
+              if (val !== "IzinKhusus") setSubCategory("");
+              if (val !== "Terlambat" && val !== "PulangAwal") setTimeValue("");
             }}
             required
           >
@@ -455,11 +444,64 @@ export default function PermissionForm({
           </Select>
         </div>
 
+        {/* ================= BAGIAN BARU: PENYERAHAN TUGAS ================= */}
+        {category !== "Terlambat" && category !== "PulangAwal" && (
+          <div className="p-3 bg-slate-900/50 rounded-md border border-slate-700 space-y-4">
+            <div className="space-y-2">
+              <Label className="text-slate-300">
+                Tugas Diserahkan Kepada (Opsional)
+              </Label>
+              <Select value={delegatedTo} onValueChange={setDelegatedTo}>
+                <SelectTrigger className="bg-slate-900 border-slate-700 text-slate-200">
+                  <SelectValue placeholder="Pilih Rekan Pengganti" />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-800 border-slate-700">
+                  <SelectGroup>
+                    {filteredSubstitutes.length === 0 ? (
+                      <SelectItem
+                        value="empty"
+                        disabled
+                        className="text-slate-500"
+                      >
+                        Tidak ada rekan satu divisi
+                      </SelectItem>
+                    ) : (
+                      filteredSubstitutes.map((sub) => (
+                        <SelectItem
+                          key={sub.id}
+                          value={sub.id}
+                          className="text-slate-200"
+                        >
+                          {sub.name}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+            {delegatedTo && (
+              <div className="space-y-2">
+                <Label className="text-slate-300">
+                  Rincian Tugas untuk Pengganti
+                </Label>
+                <Textarea
+                  value={taskDetail}
+                  onChange={(e) => setTaskDetail(e.target.value)}
+                  placeholder="Jelaskan apa yang harus dikerjakan pengganti Anda..."
+                  className="bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500"
+                />
+              </div>
+            )}
+          </div>
+        )}
+        {/* ================================================================ */}
+
+        {/* ... (BAGIAN KONDISI SAKIT, TERLAMBAT, IZIN KHUSUS TETAP SAMA) ... */}
         {category === "Sakit" && calculatedDays > 1 && (
           <div className="space-y-2 p-3 bg-slate-900/50 rounded border border-slate-700">
             <Label className="text-amber-400 flex items-center gap-2">
-              <UploadCloud className="h-4 w-4" />
-              Upload Surat Dokter / Bukti Sakit
+              <UploadCloud className="h-4 w-4" /> Upload Surat Dokter
             </Label>
             <Input
               type="file"
@@ -468,17 +510,13 @@ export default function PermissionForm({
               className="bg-slate-900 border-slate-700 text-slate-100 file:text-slate-100"
               required
             />
-            <p className="text-xs text-amber-500/80">
-              *Wajib melampirkan surat dokter karena izin sakit melebihi 1 hari
-              kerja.
-            </p>
           </div>
         )}
 
         {(category === "Terlambat" || category === "PulangAwal") && (
           <div className="space-y-2 p-3 bg-blue-950/30 rounded border border-blue-900/50">
             <Label className="text-blue-400 flex items-center gap-2">
-              <Clock className="h-4 w-4" />
+              <Clock className="h-4 w-4" />{" "}
               {category === "Terlambat"
                 ? "Jam Perkiraan Tiba"
                 : "Jam Rencana Keluar"}
@@ -487,14 +525,9 @@ export default function PermissionForm({
               type="time"
               value={timeValue}
               onChange={(e) => setTimeValue(e.target.value)}
-              className="w-full bg-slate-900 border-slate-700 text-slate-100 dark:[color-scheme:dark]"
+              className="w-full bg-slate-900 border-slate-700 text-slate-100"
               required
             />
-            <p className="text-xs text-blue-300/80">
-              {category === "Terlambat"
-                ? "Masukkan estimasi jam Anda akan sampai di kantor."
-                : "Masukkan jam Anda berencana untuk meninggalkan kantor."}
-            </p>
           </div>
         )}
 
@@ -503,7 +536,7 @@ export default function PermissionForm({
             <Label className="text-slate-300">Detail Izin Khusus</Label>
             <Select
               value={subCategory}
-              onValueChange={(val) => setSubCategory(val ?? "")}
+              onValueChange={(val) => setSubCategory(val)}
             >
               <SelectTrigger className="bg-slate-900 border-slate-700 text-slate-100">
                 <SelectValue placeholder="Pilih alasan khusus" />
@@ -534,19 +567,14 @@ export default function PermissionForm({
           <Textarea
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            placeholder={
-              category === "Sakit"
-                ? "Sakit apa? (Lampirkan surat dokter jika > 1 hari)"
-                : "Jelaskan alasan pengajuan secara detail..."
-            }
             required
-            className="bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500 min-h-[100px]"
+            className="bg-slate-900 border-slate-700 text-slate-100 min-h-[80px]"
           />
         </div>
 
         <Button
           type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white border-none"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white"
           disabled={loading || calculatedDays <= 0}
         >
           {loading ? (
@@ -554,7 +582,7 @@ export default function PermissionForm({
               <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Mengirim...
             </>
           ) : (
-            "Kirim Pengajuan Izin"
+            "Kirim Pengajuan"
           )}
         </Button>
       </form>
@@ -563,8 +591,7 @@ export default function PermissionForm({
         <AlertDialogContent className="bg-slate-900 border-slate-700 text-slate-100">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-red-500">
-              <AlertTriangle className="h-5 w-5" />
-              Peringatan Pemotongan
+              <AlertTriangle className="h-5 w-5" /> Peringatan Pemotongan
             </AlertDialogTitle>
             <AlertDialogDescription className="text-slate-300 mt-2">
               Pengajuan <b>Izin Pribadi</b> akan mengakibatkan{" "}
@@ -572,22 +599,19 @@ export default function PermissionForm({
                 pemotongan Gaji Pokok, Tunjangan Konsumsi, dan Tunjangan
                 Transportasi
               </b>{" "}
-              sesuai dengan jumlah hari yang Anda ajukan ({calculatedDays}{" "}
-              hari).
-              <br />
-              <br />
-              Apakah Anda yakin ingin melanjutkan pengajuan ini?
+              sesuai dengan jumlah hari yang diajukan ({calculatedDays} hari).
+              Yakin melanjutkan?
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="mt-4">
+          <AlertDialogFooter>
             <AlertDialogCancel
-              className="bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700 hover:text-white"
+              className="bg-slate-800 border-slate-700 text-slate-200"
               onClick={() => setPendingPayload(null)}
             >
               Batal
             </AlertDialogCancel>
             <AlertDialogAction
-              className="bg-red-600 hover:bg-red-700 text-white border-none"
+              className="bg-red-600 hover:bg-red-700 text-white"
               onClick={() => pendingPayload && processSubmit(pendingPayload)}
             >
               Ya, Lanjutkan
