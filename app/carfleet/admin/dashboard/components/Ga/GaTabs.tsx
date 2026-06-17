@@ -1,3 +1,5 @@
+import React, { useState, useEffect } from "react";
+import { toast } from "sonner";
 import {
   Check,
   X,
@@ -12,6 +14,7 @@ import {
   FileClock,
   KeyRound,
   Activity,
+  Loader2, // Tambahan icon loading
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,8 +26,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
+import { VehicleFormModal } from "./GaModal";
 
+
+// ==========================================
 // TAB 1: DASHBOARD
+// ==========================================
 export function DashboardTab({
   pendingCount,
   returnCount,
@@ -135,7 +142,9 @@ export function DashboardTab({
   );
 }
 
+// ==========================================
 // TAB 2: PERSETUJUAN
+// ==========================================
 export function ApprovalTab({ requests, onApprove, onReject }: any) {
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
@@ -216,7 +225,9 @@ export function ApprovalTab({ requests, onApprove, onReject }: any) {
   );
 }
 
+// ==========================================
 // TAB 3: PENGEMBALIAN & VALIDASI
+// ==========================================
 export function ReturnTab({ returns, onValidate }: any) {
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
@@ -287,22 +298,17 @@ export function ReturnTab({ returns, onValidate }: any) {
   );
 }
 
+// ==========================================
 // TAB 4: PERAWATAN (Servis & BBM)
+// ==========================================
 export function MaintenanceTab({ history, onOpenService, onOpenFuel }: any) {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* KARTU SERVIS */}
         <div
           className="cursor-pointer"
           onClick={() => {
-            if (onOpenService) {
-              onOpenService();
-            } else {
-              alert(
-                "❌ ERROR: Fungsi onOpenService belum dikirim dari GaDashboardView!",
-              );
-            }
+            if (onOpenService) onOpenService();
           }}
         >
           <Card className="hover:-translate-y-1 transition-transform border-slate-200 shadow-sm hover:shadow-md h-full">
@@ -320,17 +326,10 @@ export function MaintenanceTab({ history, onOpenService, onOpenFuel }: any) {
           </Card>
         </div>
 
-        {/* KARTU BBM */}
         <div
           className="cursor-pointer"
           onClick={() => {
-            if (onOpenFuel) {
-              onOpenFuel();
-            } else {
-              alert(
-                "❌ ERROR: Fungsi onOpenFuel belum dikirim dari GaDashboardView!",
-              );
-            }
+            if (onOpenFuel) onOpenFuel();
           }}
         >
           <Card className="hover:-translate-y-1 transition-transform border-slate-200 shadow-sm hover:shadow-md h-full">
@@ -349,7 +348,6 @@ export function MaintenanceTab({ history, onOpenService, onOpenFuel }: any) {
         </div>
       </div>
 
-      {/* TABEL RIWAYAT */}
       <Card className="border-slate-200 shadow-sm overflow-hidden">
         <div className="p-4 border-b bg-slate-50 flex items-center">
           <History className="w-5 h-5 mr-2 text-slate-700" />
@@ -387,7 +385,11 @@ export function MaintenanceTab({ history, onOpenService, onOpenFuel }: any) {
                   </TableCell>
                   <TableCell>
                     <span
-                      className={`px-2.5 py-1 rounded-md text-[10px] font-bold ${h.type.includes("BBM") ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}
+                      className={`px-2.5 py-1 rounded-md text-[10px] font-bold ${
+                        h.type.includes("BBM")
+                          ? "bg-emerald-100 text-emerald-700"
+                          : "bg-red-100 text-red-700"
+                      }`}
                     >
                       {h.type}
                     </span>
@@ -413,18 +415,60 @@ export function MaintenanceTab({ history, onOpenService, onOpenFuel }: any) {
   );
 }
 
-// TAB 5: MASTER DATA
+// ==========================================
+// TAB 5: MASTER DATA (KINI TERHUBUNG DATABASE)
+// ==========================================
 export function MasterTab({
-  vehicles,
   routines,
-  onAddVehicle,
   onAddRoutine,
-  onDeleteVehicle,
   onDeleteRoutine,
 }: any) {
+  // STATE
+  const [vehicles, setVehicles] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // FETCH DARI API NEXT.JS / NEST.JS
+  const fetchVehicles = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/ga/vehicles");
+      const result = await res.json();
+      if (result.success) {
+        setVehicles(result.data);
+      }
+    } catch (error) {
+      toast.error("Gagal memuat data kendaraan dari server.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchVehicles();
+  }, []);
+
+  // HAPUS DARI DATABASE
+  const handleDeleteVehicle = async (id: string) => {
+    if (!window.confirm("Yakin ingin menghapus kendaraan ini secara permanen?")) return;
+    
+    try {
+      const res = await fetch(`/api/ga/vehicles/${id}`, { method: "DELETE" });
+      const result = await res.json();
+      if (result.success) {
+        toast.success("Kendaraan berhasil dihapus!");
+        fetchVehicles(); // Refresh data di tabel otomatis
+      } else {
+        toast.error(result.message);
+      }
+    } catch (error) {
+      toast.error("Terjadi kesalahan jaringan saat menghapus.");
+    }
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
-      {/* BAGIAN 1: MASTER KENDARAAN */}
+      {/* BAGIAN 1: DAFTAR KENDARAAN (DATABASE) */}
       <Card className="border-slate-200 shadow-sm overflow-hidden relative z-10">
         <div className="p-5 border-b bg-slate-50 flex justify-between items-center">
           <div className="flex items-center gap-2">
@@ -435,12 +479,13 @@ export function MasterTab({
           </div>
           <Button
             size="sm"
-            onClick={onAddVehicle}
+            onClick={() => setIsModalOpen(true)}
             className="bg-slate-900 hover:bg-slate-800 text-white relative z-50"
           >
             <Plus className="w-4 h-4 mr-1" /> Tambah Kendaraan
           </Button>
         </div>
+        
         <Table>
           <TableHeader>
             <TableRow>
@@ -451,13 +496,20 @@ export function MasterTab({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {vehicles.length === 0 ? (
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={4} className="text-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-slate-400 mx-auto" />
+                  <p className="text-sm font-medium text-slate-500 mt-3">Mengambil data dari database...</p>
+                </TableCell>
+              </TableRow>
+            ) : vehicles.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={4}
-                  className="text-center py-6 text-slate-400"
+                  className="text-center py-10 text-slate-400"
                 >
-                  Belum ada data kendaraan.
+                  Belum ada data kendaraan yang terdaftar.
                 </TableCell>
               </TableRow>
             ) : (
@@ -467,18 +519,24 @@ export function MasterTab({
                     <strong className="block text-sm text-slate-800">
                       {v.name}
                     </strong>
-                    <span className="text-xs text-slate-500 font-medium bg-slate-100 px-2 py-0.5 rounded border mt-1 inline-block">
-                      {v.plat}
+                    <span className="text-xs text-slate-500 font-medium bg-slate-100 px-2 py-0.5 rounded border mt-1 inline-block uppercase tracking-wide">
+                      {v.platNumber}
                     </span>
                   </TableCell>
                   <TableCell>
                     <span className="text-sm text-slate-700">
-                      {v.kapasitas || "-"} Orang
+                      {v.capacity || "-"} Orang
                     </span>
                   </TableCell>
                   <TableCell>
                     <span
-                      className={`px-2.5 py-1 rounded-md text-[10px] font-bold ${v.status === "Tersedia" ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}
+                      className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                        v.status === "Tersedia"
+                          ? "bg-emerald-100 text-emerald-700"
+                          : v.status === "Dipinjam"
+                          ? "bg-amber-100 text-amber-700"
+                          : "bg-red-100 text-red-700"
+                      }`}
                     >
                       {v.status || "Tersedia"}
                     </span>
@@ -487,7 +545,7 @@ export function MasterTab({
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => onDeleteVehicle(v.id)}
+                      onClick={() => handleDeleteVehicle(v.id)}
                       className="text-red-500 hover:text-red-700 hover:bg-red-50"
                     >
                       Hapus
@@ -500,6 +558,7 @@ export function MasterTab({
         </Table>
       </Card>
 
+      {/* BAGIAN 2: JADWAL RUTIN (MOCKUP SEMENTARA) */}
       <Card className="border-slate-200 shadow-sm overflow-hidden relative z-10">
         <div className="p-5 border-b bg-slate-50 flex justify-between items-center">
           <div className="flex items-center gap-2">
@@ -526,7 +585,7 @@ export function MasterTab({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {routines.length === 0 ? (
+            {routines?.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={4}
@@ -536,7 +595,7 @@ export function MasterTab({
                 </TableCell>
               </TableRow>
             ) : (
-              routines.map((r: any) => (
+              routines?.map((r: any) => (
                 <TableRow key={r.id}>
                   <TableCell>
                     <strong className="block text-sm text-slate-800">
@@ -552,6 +611,7 @@ export function MasterTab({
                   </TableCell>
                   <TableCell>
                     <span className="text-sm font-semibold text-slate-700">
+                      {/* Mengambil nama kendaraan dari state local yang sudah difetch */}
                       {vehicles.find((v: any) => v.id === r.vehicleId)?.name ||
                         "Kendaraan Dihapus"}
                     </span>
@@ -572,6 +632,13 @@ export function MasterTab({
           </TableBody>
         </Table>
       </Card>
+
+      {/* MODAL TAMBAH KENDARAAN (Disembunyikan jika isModalOpen = false) */}
+      <VehicleFormModal  
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onRefresh={fetchVehicles} 
+      />
     </div>
   );
 }

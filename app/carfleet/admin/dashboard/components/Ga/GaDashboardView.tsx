@@ -17,7 +17,7 @@ import {
   ReturnValidationModal,
   RoutineScheduleFormModal,
   ServiceFormModal,
-  VehicleFormModal,
+  // VehicleFormModal dihapus dari import karena sudah dipakai di GaTabs
 } from "./GaModal";
 
 export default function GaDashboardView() {
@@ -34,7 +34,6 @@ export default function GaDashboardView() {
   const [returnModalOpen, setReturnModalOpen] = useState(false);
   const [serviceModalOpen, setServiceModalOpen] = useState(false);
   const [fuelModalOpen, setFuelModalOpen] = useState(false);
-  const [vehicleModalOpen, setVehicleModalOpen] = useState(false);
   const [routineModalOpen, setRoutineModalOpen] = useState(false);
 
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
@@ -219,45 +218,7 @@ export default function GaDashboardView() {
     }
   };
 
-  // --- Handler Master Data (Kendaraan & Jadwal) ---
-  const submitAddVehicle = async (payload: any) => {
-    try {
-      const res = await fetch("/api/ga/vehicles", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (res.ok) {
-        setVehicleModalOpen(false);
-        toast.success("Kendaraan baru berhasil ditambahkan!");
-        fetchVehicles();
-      } else {
-        toast.error("Gagal menyimpan kendaraan baru.");
-      }
-    } catch {
-      toast.error("Terjadi kesalahan koneksi server.");
-    }
-  };
-
-  const deleteVehicle = async (id: string) => {
-    if (!confirm("Yakin ingin menghapus kendaraan ini?")) return;
-    try {
-      const res = await fetch(`/api/ga/vehicles?id=${id}`, {
-        method: "DELETE",
-      });
-
-      if (res.ok) {
-        toast.success("Kendaraan berhasil dihapus.");
-        fetchVehicles();
-      } else {
-        toast.error("Gagal menghapus data kendaraan.");
-      }
-    } catch {
-      toast.error("Terjadi kesalahan koneksi server.");
-    }
-  };
-
+  // --- Handler Master Data (Jadwal Rutin Saja) ---
   const submitAddRoutine = async (payload: any) => {
     try {
       const res = await fetch("/api/ga/routines", {
@@ -359,11 +320,8 @@ export default function GaDashboardView() {
 
               {activeTab === "master" && (
                 <MasterTab
-                  vehicles={masterVehicles}
                   routines={routineSchedules}
-                  onAddVehicle={() => setVehicleModalOpen(true)}
                   onAddRoutine={() => setRoutineModalOpen(true)}
-                  onDeleteVehicle={deleteVehicle}
                   onDeleteRoutine={deleteRoutine}
                 />
               )}
@@ -402,12 +360,6 @@ export default function GaDashboardView() {
         onClose={() => setFuelModalOpen(false)}
         onSubmit={submitFuel}
         vehicles={masterVehicles}
-      />
-
-      <VehicleFormModal
-        isOpen={vehicleModalOpen}
-        onClose={() => setVehicleModalOpen(false)}
-        onSubmit={submitAddVehicle}
       />
 
       <RoutineScheduleFormModal

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -19,8 +20,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Loader2 } from "lucide-react";
 
+// ==========================================
 // MODAL TOLAK
+// ==========================================
 export function RejectModal({ isOpen, onClose, onSubmit, requestData }: any) {
   const [reason, setReason] = useState("");
 
@@ -65,7 +69,9 @@ export function RejectModal({ isOpen, onClose, onSubmit, requestData }: any) {
   );
 }
 
+// ==========================================
 // MODAL VALIDASI PENGEMBALIAN
+// ==========================================
 export function ReturnValidationModal({
   isOpen,
   onClose,
@@ -247,9 +253,10 @@ export function ServiceFormModal({ isOpen, onClose, onSubmit, vehicles }: any) {
                 <SelectValue placeholder="Pilih Kendaraan" />
               </SelectTrigger>
               <SelectContent>
-                {vehicles.map((v: any) => (
+                {/* Diperbaiki: Defensive array dan platNumber */}
+                {(vehicles || []).map((v: any) => (
                   <SelectItem key={v.id} value={v.id}>
-                    {v.name} ({v.plat})
+                    {v.name} ({v.platNumber || v.plat})
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -403,9 +410,10 @@ export function FuelFormModal({ isOpen, onClose, onSubmit, vehicles }: any) {
                 <SelectValue placeholder="Pilih Kendaraan" />
               </SelectTrigger>
               <SelectContent>
-                {vehicles.map((v: any) => (
+                {/* Diperbaiki: Defensive array dan platNumber */}
+                {(vehicles || []).map((v: any) => (
                   <SelectItem key={v.id} value={v.id}>
-                    {v.name} ({v.plat})
+                    {v.name} ({v.platNumber || v.plat})
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -488,7 +496,6 @@ export function FuelFormModal({ isOpen, onClose, onSubmit, vehicles }: any) {
               type="file"
               accept="image/*"
               className="cursor-pointer"
-              required
             />
           </div>
           <DialogFooter>
@@ -509,24 +516,59 @@ export function FuelFormModal({ isOpen, onClose, onSubmit, vehicles }: any) {
 }
 
 // ==========================================
-// MODAL FORM KENDARAAN BARU
+// MODAL FORM KENDARAAN BARU (KINI TERHUBUNG API)
 // ==========================================
-export function VehicleFormModal({ isOpen, onClose, onSubmit }: any) {
+export function VehicleFormModal({ isOpen, onClose, onRefresh }: any) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
-    plat: "",
-    kapasitas: "",
-    status: "Tersedia",
+    platNumber: "",
+    capacity: "",
+    type: "Standard Operasional",
   });
 
   useEffect(() => {
     if (isOpen)
-      setFormData({ name: "", plat: "", kapasitas: "", status: "Tersedia" });
+      setFormData({
+        name: "",
+        platNumber: "",
+        capacity: "",
+        type: "Standard Operasional",
+      });
   }, [isOpen]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({ ...formData, id: `v${Date.now()}` }); // ID dummy
+    setIsSubmitting(true);
+
+    try {
+      const payload = {
+        name: formData.name,
+        platNumber: formData.platNumber.toUpperCase(), // Pastikan huruf kapital
+        capacity: parseInt(formData.capacity),
+        type: formData.type,
+      };
+
+      const res = await fetch("/api/ga/vehicles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await res.json();
+
+      if (result.success) {
+        toast.success("Kendaraan berhasil ditambahkan ke database!");
+        if (onRefresh) onRefresh(); // Panggil fungsi fetch dari GaTabs agar tabel ter-update
+        onClose();
+      } else {
+        toast.error(result.message || "Gagal menyimpan kendaraan.");
+      }
+    } catch (error) {
+      toast.error("Terjadi kesalahan jaringan.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -555,10 +597,11 @@ export function VehicleFormModal({ isOpen, onClose, onSubmit }: any) {
               <Label>Plat Nomor</Label>
               <Input
                 required
+                className="uppercase"
                 placeholder="Cth: B 1234 SCH"
-                value={formData.plat}
+                value={formData.platNumber}
                 onChange={(e) =>
-                  setFormData({ ...formData, plat: e.target.value })
+                  setFormData({ ...formData, platNumber: e.target.value })
                 }
               />
             </div>
@@ -568,34 +611,48 @@ export function VehicleFormModal({ isOpen, onClose, onSubmit }: any) {
                 type="number"
                 required
                 placeholder="Cth: 15"
-                value={formData.kapasitas}
+                value={formData.capacity}
                 onChange={(e) =>
-                  setFormData({ ...formData, kapasitas: e.target.value })
+                  setFormData({ ...formData, capacity: e.target.value })
                 }
               />
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Status Awal</Label>
+            <Label>Tipe / Kategori</Label>
             <Select
-              value={formData.status}
-              onValueChange={(val) => setFormData({ ...formData, status: val })}
+              value={formData.type}
+              onValueChange={(val) => setFormData({ ...formData, type: val })}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Pilih Status" />
+                <SelectValue placeholder="Pilih Tipe" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Tersedia">Tersedia (Ready)</SelectItem>
-                <SelectItem value="Servis">Sedang Servis</SelectItem>
+                <SelectItem value="Standard Operasional">
+                  Standard Operasional
+                </SelectItem>
+                <SelectItem value="VIP / Eksekutif">VIP / Eksekutif</SelectItem>
+                <SelectItem value="Rombongan Besar">Rombongan Besar</SelectItem>
+                <SelectItem value="Logistik / Barang">Logistik</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <DialogFooter>
-            <Button type="button" variant="ghost" onClick={onClose}>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={onClose}
+              disabled={isSubmitting}
+            >
               Batal
             </Button>
-            <Button type="submit" className="bg-slate-900 text-white">
-              Simpan Kendaraan
+            <Button
+              type="submit"
+              className="bg-slate-900 text-white flex items-center gap-2"
+              disabled={isSubmitting}
+            >
+              {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+              {isSubmitting ? "Menyimpan..." : "Simpan Kendaraan"}
             </Button>
           </DialogFooter>
         </form>
@@ -675,9 +732,10 @@ export function RoutineScheduleFormModal({
                 <SelectValue placeholder="Pilih Kendaraan" />
               </SelectTrigger>
               <SelectContent>
-                {vehicles.map((v: any) => (
+                {/* Diperbaiki: Defensive array dan platNumber */}
+                {(vehicles || []).map((v: any) => (
                   <SelectItem key={v.id} value={v.id}>
-                    {v.name} ({v.plat})
+                    {v.name} ({v.platNumber || v.plat})
                   </SelectItem>
                 ))}
               </SelectContent>

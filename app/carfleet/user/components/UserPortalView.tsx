@@ -9,14 +9,37 @@ import { UserTopbar } from "./UserTopbar";
 import { BookingTab, NebengTab, StatusTab } from "./UserTabs";
 import { BookingModal, JoinModal, TitipModal, ReturnModal } from "./UserModals";
 
+// ==========================================
+// DEFINISI INTERFACE TYPESCRIPT
+// ==========================================
+interface Vehicle {
+  id: string;
+  name: string;
+  platNumber: string;
+}
+
+interface TripContext {
+  id: string;
+  name: string;
+}
+
+interface BookingHistory {
+  id: string;
+  destination: string;
+  date: string;
+  status: string;
+  vehicle?: {
+    name: string;
+    platNumber: string;
+  };
+}
+
 export default function UserPortalView() {
   // ==========================================
   // STATE NAVIGASI & UI
   // ==========================================
-  const [activeTab, setActiveTab] = useState<"booking" | "nebeng" | "status">(
-    "booking",
-  );
-  const [selectedFleet, setSelectedFleet] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState<"booking" | "nebeng" | "status">("booking");
+  const [selectedFleet, setSelectedFleet] = useState<number | string | null>(null);
   const [selectedDate, setSelectedDate] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -25,15 +48,19 @@ export default function UserPortalView() {
   const [isJoinOpen, setIsJoinOpen] = useState(false);
   const [isTitipOpen, setIsTitipOpen] = useState(false);
   const [isReturnOpen, setIsReturnOpen] = useState(false);
-  const [activeTripContext, setActiveTripContext] = useState<any>(null);
+  const [activeTripContext, setActiveTripContext] = useState<TripContext | null>(null);
 
   // ==========================================
   // STATE DATA (Dari API Route Next.js)
   // ==========================================
-  const [vehicles, setVehicles] = useState<any[]>([]);
-  const [nebengList, setNebengList] = useState<any[]>([]);
-  const [packageList, setPackageList] = useState<any[]>([]);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [nebengList, setNebengList] = useState<any[]>([]); // Bisa dibuatkan interface khusus nanti
+  const [packageList, setPackageList] = useState<any[]>([]); // Bisa dibuatkan interface khusus nanti
+  const [historyList, setHistoryList] = useState<BookingHistory[]>([]);
 
+  // ==========================================
+  // LOGIKA FETCH DATA
+  // ==========================================
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
@@ -44,13 +71,32 @@ export default function UserPortalView() {
         }
       } catch (error) {
         console.error("Gagal mengambil data kendaraan", error);
-        toast.error("Gagal terhubung ke server.");
+        toast.error("Gagal terhubung ke server untuk mengambil data kendaraan.");
       } finally {
         setIsLoading(false);
       }
     };
     fetchInitialData();
   }, []);
+
+  // Fetch riwayat saat tab status aktif
+  useEffect(() => {
+    if (activeTab === "status") {
+      const fetchHistory = async () => {
+        try {
+          const res = await fetch("/api/portal/bookings");
+          const json = await res.json();
+          if (json.success) {
+            setHistoryList(json.data);
+          }
+        } catch (error) {
+          console.error("Gagal mengambil riwayat", error);
+          toast.error("Gagal memuat status peminjaman.");
+        }
+      };
+      fetchHistory();
+    }
+  }, [activeTab]);
 
   // ==========================================
   // LOGIKA HANDLER (Kirim Data ke API)
@@ -69,7 +115,6 @@ export default function UserPortalView() {
     };
 
     try {
-      // Tembak ke API Route Next.js (Yang akan diteruskan ke NestJS)
       const res = await fetch("/api/portal/bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -78,7 +123,7 @@ export default function UserPortalView() {
       const result = await res.json();
 
       if (result.success) {
-        toast.success(result.message);
+        toast.success(result.message || "Pengajuan sewa armada berhasil dikirim!");
         setIsBookingOpen(false);
         setActiveTab("status"); // Pindah ke tab status setelah sukses
       } else {
@@ -89,43 +134,87 @@ export default function UserPortalView() {
     }
   };
 
-  const submitJoinRide = (e: React.FormEvent<HTMLFormElement>) => {
+  const submitJoinRide = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    setNebengList((prev) => [
-      ...prev,
-      {
-        tripName: activeTripContext?.name,
-        dropOff: formData.get("dropOff"),
-        seats: formData.get("seats"),
-        status: "Menunggu Driver",
-      },
-    ]);
-    setIsJoinOpen(false);
-    toast.success("Berhasil! Notifikasi terkirim ke supir.");
+    
+    const payload = {
+      tripId: activeTripContext?.id, 
+      dropOff: formData.get("dropOff"),
+      seats: formData.get("seats"),
+    };
+
+    try {
+      const res = await fetch("/api/portal/nebeng", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const result = await res.json();
+
+      if (result.success) {
+        toast.success(result.message || "Berhasil! Notifikasi terkirim ke supir.");
+        setIsJoinOpen(false);
+        // Pembaruan state sementara agar UI langsung reaktif
+        setNebengList((prev) => [
+          ...prev,
+          {
+            tripName: activeTripContext?.name,
+            dropOff: payload.dropOff,
+            seats: payload.seats,
+            status: "Menunggu Driver",
+          },
+        ]);
+      } else {
+        toast.error(result.message || "Gagal mengajukan nebeng.");
+      }
+    } catch (error) {
+      toast.error("Terjadi kesalahan jaringan.");
+    }
   };
 
-  const submitTitipBarang = (e: React.FormEvent<HTMLFormElement>) => {
+  const submitTitipBarang = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    setPackageList((prev) => [
-      ...prev,
-      {
-        tripName: activeTripContext?.name,
-        description: formData.get("itemDesc"),
-        receiver: formData.get("receiver"),
-        status: "Di Tangan Driver",
-      },
-    ]);
-    setIsTitipOpen(false);
-    toast.success("Barang tercatat di log penitipan armada.");
+    
+    const payload = {
+      tripId: activeTripContext?.id,
+      itemDesc: formData.get("itemDesc"),
+      receiver: formData.get("receiver"),
+    };
+
+    try {
+      const res = await fetch("/api/portal/titip", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const result = await res.json();
+
+      if (result.success) {
+        toast.success(result.message || "Barang tercatat di log penitipan armada.");
+        setIsTitipOpen(false);
+        // Pembaruan state sementara agar UI langsung reaktif
+        setPackageList((prev) => [
+          ...prev,
+          {
+            tripName: activeTripContext?.name,
+            description: payload.itemDesc,
+            receiver: payload.receiver,
+            status: "Di Tangan Driver",
+          },
+        ]);
+      } else {
+        toast.error(result.message || "Gagal mencatat titipan barang.");
+      }
+    } catch (error) {
+      toast.error("Terjadi kesalahan jaringan.");
+    }
   };
 
   const confirmReturn = () => {
     setIsReturnOpen(false);
-    toast.success(
-      "Pengembalian dilaporkan! Menunggu verifikasi fisik oleh GA.",
-    );
+    toast.success("Pengembalian dilaporkan! Menunggu verifikasi fisik oleh GA.");
   };
 
   // ==========================================
@@ -139,9 +228,6 @@ export default function UserPortalView() {
     );
   }
 
-  // ==========================================
-  // RENDER UTAMA
-  // ==========================================
   return (
     <div className="bg-[#fcfbf9] text-slate-800 min-h-screen flex flex-col font-sans selection:bg-teal-100">
       {/* HEADER / NAVIGASI */}
@@ -181,6 +267,7 @@ export default function UserPortalView() {
         {/* PENYUNTIKAN TAB DINAMIS */}
         {activeTab === "booking" && (
           <BookingTab
+            vehicles={vehicles} // Memasukkan data armada dari API
             selectedFleet={selectedFleet}
             setSelectedFleet={setSelectedFleet}
             selectedDate={selectedDate}
@@ -193,11 +280,11 @@ export default function UserPortalView() {
           <NebengTab
             nebengList={nebengList}
             packageList={packageList}
-            onOpenJoinModal={(trip: any) => {
+            onOpenJoinModal={(trip: TripContext) => {
               setActiveTripContext(trip);
               setIsJoinOpen(true);
             }}
-            onOpenTitipModal={(trip: any) => {
+            onOpenTitipModal={(trip: TripContext) => {
               setActiveTripContext(trip);
               setIsTitipOpen(true);
             }}
@@ -205,7 +292,10 @@ export default function UserPortalView() {
         )}
 
         {activeTab === "status" && (
-          <StatusTab onOpenReturnModal={() => setIsReturnOpen(true)} />
+          <StatusTab 
+            historyList={historyList} // Melempar data riwayat peminjaman
+            onOpenReturnModal={() => setIsReturnOpen(true)} 
+          />
         )}
       </main>
 

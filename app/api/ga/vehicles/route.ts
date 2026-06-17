@@ -1,77 +1,50 @@
-import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(req: NextRequest) {
+import { NextResponse } from 'next/server';
+
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3434';
+
+export async function GET() {
   try {
-    const token = req.cookies.get("access_token")?.value;
-    if (!token) {
-      return NextResponse.json(
-        { success: false, error: "Tidak terautentikasi" },
-        { status: 401 },
-      );
-    }
-
-    const backendUrl = process.env.BACKEND_API_URL;
-    if (!backendUrl) {
-      return NextResponse.json(
-        { success: false, error: "Backend URL not configured" },
-        { status: 500 },
-      );
-    }
-
-    // Mengambil data kendaraan dari NestJS
-    const res = await fetch(`${backendUrl}/ga/vehicles`, {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: "no-store",
+    // Meneruskan request GET ke NestJS
+    const res = await fetch(`${BACKEND_URL}/vehicles`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      cache: 'no-store', // Agar data selalu up-to-date
     });
 
     const data = await res.json();
-    return NextResponse.json(data, { status: res.status });
+    
+    if (!res.ok) {
+      return NextResponse.json({ success: false, message: data.message || 'Gagal mengambil data' }, { status: res.status });
+    }
+
+    return NextResponse.json(data);
   } catch (error) {
-    console.error("❌ ERROR API GET VEHICLES:", error);
-    return NextResponse.json(
-      { success: false, error: "Terjadi kesalahan server" },
-      { status: 500 },
-    );
+    console.error("BFF Error (GET Vehicles):", error);
+    return NextResponse.json({ success: false, message: 'Internal Server Error (BFF)' }, { status: 500 });
   }
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(request: Request) {
   try {
-    const token = req.cookies.get("access_token")?.value;
-    if (!token) {
-      return NextResponse.json(
-        { success: false, error: "Tidak terautentikasi" },
-        { status: 401 },
-      );
-    }
+    const body = await request.json();
 
-    const backendUrl = process.env.BACKEND_API_URL;
-    if (!backendUrl) {
-      return NextResponse.json(
-        { success: false, error: "Backend URL not configured" },
-        { status: 500 },
-      );
-    }
-
-    const body = await req.json();
-
-    // Mengirim data kendaraan baru ke NestJS
-    const res = await fetch(`${backendUrl}/ga/vehicles`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
+    // Meneruskan payload POST ke NestJS
+    const res = await fetch(`${BACKEND_URL}/vehicles`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
 
     const data = await res.json();
-    return NextResponse.json(data, { status: res.status });
+
+    if (!res.ok) {
+      return NextResponse.json({ success: false, message: data.message || 'Gagal menambah data' }, { status: res.status });
+    }
+
+    return NextResponse.json(data);
   } catch (error) {
-    console.error("❌ ERROR API POST VEHICLES:", error);
-    return NextResponse.json(
-      { success: false, error: "Terjadi kesalahan server" },
-      { status: 500 },
-    );
+    console.error("BFF Error (POST Vehicles):", error);
+    return NextResponse.json({ success: false, message: 'Internal Server Error (BFF)' }, { status: 500 });
   }
 }
