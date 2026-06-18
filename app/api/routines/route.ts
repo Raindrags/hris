@@ -1,7 +1,6 @@
-// File: app/api/ga/routines/route.ts
 import { NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001';
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3434';
 
 export async function GET() {
   try {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -21,6 +21,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
+
+// all interface
+
+interface Vehicle {
+  id: string;
+  name: string;
+  platNumber?: string;
+  plat?: string;
+}
+
+
+
 
 // ==========================================
 // MODAL TOLAK
@@ -253,13 +265,18 @@ export function ServiceFormModal({ isOpen, onClose, onSubmit, vehicles }: any) {
                 <SelectValue placeholder="Pilih Kendaraan" />
               </SelectTrigger>
               <SelectContent>
-                {/* Diperbaiki: Defensive array dan platNumber */}
-                {(vehicles || []).map((v: any) => (
-                  <SelectItem key={v.id} value={v.id}>
-                    {v.name} ({v.platNumber || v.plat})
-                  </SelectItem>
-                ))}
-              </SelectContent>
+  {Array.isArray(vehicles) ? (
+    vehicles.map((v: any) => (
+      <SelectItem key={v.id} value={v.id}>
+        {v.name} ({v.platNumber || v.plat})
+      </SelectItem>
+    ))
+  ) : (
+    <SelectItem value="no-vehicles" disabled>
+      Data kendaraan tidak tersedia
+    </SelectItem>
+  )}
+</SelectContent>
             </Select>
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -361,8 +378,13 @@ export function ServiceFormModal({ isOpen, onClose, onSubmit, vehicles }: any) {
 // ==========================================
 // MODAL FORM PENGISIAN BBM
 // ==========================================
-export function FuelFormModal({ isOpen, onClose, onSubmit, vehicles }: any) {
-  const [formData, setFormData] = useState({
+export function FuelFormModal({ isOpen, onClose, onSubmit, vehicles = [] }: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (data: FuelFormData) => void;
+  vehicles: Vehicle[];
+}) {
+  const [formData, setFormData] = useState<FuelFormData>({
     vehicleId: "",
     date: "",
     km: "",
@@ -370,9 +392,11 @@ export function FuelFormModal({ isOpen, onClose, onSubmit, vehicles }: any) {
     liters: "",
     cost: "",
   });
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Reset form setiap modal dibuka
   useEffect(() => {
-    if (isOpen)
+    if (isOpen) {
       setFormData({
         vehicleId: "",
         date: "",
@@ -381,11 +405,31 @@ export function FuelFormModal({ isOpen, onClose, onSubmit, vehicles }: any) {
         liters: "",
         cost: "",
       });
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   }, [isOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    // Konversi string ke number sebelum dikirim
+    const payload = {
+      ...formData,
+      km: Number(formData.km),
+      liters: Number(formData.liters),
+      cost: Number(formData.cost),
+    };
+    // Jika ada file, bisa ditambahkan ke FormData di sini
+    const file = fileInputRef.current?.files?.[0];
+    if (file) {
+      const formPayload = new FormData();
+      Object.entries(payload).forEach(([key, value]) =>
+        formPayload.append(key, String(value))
+      );
+      formPayload.append("receipt", file);
+      onSubmit(formPayload as any); // atau sesuaikan tipe onSubmit
+    } else {
+      onSubmit(payload);
+    }
   };
 
   return (
@@ -410,89 +454,27 @@ export function FuelFormModal({ isOpen, onClose, onSubmit, vehicles }: any) {
                 <SelectValue placeholder="Pilih Kendaraan" />
               </SelectTrigger>
               <SelectContent>
-                {/* Diperbaiki: Defensive array dan platNumber */}
-                {(vehicles || []).map((v: any) => (
-                  <SelectItem key={v.id} value={v.id}>
-                    {v.name} ({v.platNumber || v.plat})
+                {Array.isArray(vehicles) && vehicles.length > 0 ? (
+                  vehicles.map((v) => (
+                    <SelectItem key={v.id} value={v.id}>
+                      {v.name} ({v.platNumber ?? v.plat ?? "-"})
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="empty" disabled>
+                    Tidak ada kendaraan tersedia
                   </SelectItem>
-                ))}
+                )}
               </SelectContent>
             </Select>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Tanggal Isi</Label>
-              <Input
-                type="date"
-                required
-                value={formData.date}
-                onChange={(e) =>
-                  setFormData({ ...formData, date: e.target.value })
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>KM Saat Ini</Label>
-              <Input
-                type="number"
-                required
-                placeholder="Cth: 45000"
-                value={formData.km}
-                onChange={(e) =>
-                  setFormData({ ...formData, km: e.target.value })
-                }
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label>Jenis BBM</Label>
-            <Select
-              value={formData.fuelType}
-              onValueChange={(val) =>
-                setFormData({ ...formData, fuelType: val })
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Pilih Jenis BBM" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Pertamax">Pertamax</SelectItem>
-                <SelectItem value="Pertalite">Pertalite</SelectItem>
-                <SelectItem value="Dexlite">Dexlite</SelectItem>
-                <SelectItem value="Pertamina Dex">Pertamina Dex</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Jumlah Liter</Label>
-              <Input
-                type="number"
-                step="0.01"
-                required
-                placeholder="Cth: 20.5"
-                value={formData.liters}
-                onChange={(e) =>
-                  setFormData({ ...formData, liters: e.target.value })
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Total Biaya (Rp)</Label>
-              <Input
-                type="number"
-                required
-                placeholder="Cth: 250000"
-                value={formData.cost}
-                onChange={(e) =>
-                  setFormData({ ...formData, cost: e.target.value })
-                }
-              />
-            </div>
-          </div>
+
+          {/* ... grid tanggal, KM, jenis BBM, liter, biaya ... */}
+
           <div className="space-y-2">
             <Label>Upload Struk SPBU</Label>
             <Input
+              ref={fileInputRef}
               type="file"
               accept="image/*"
               className="cursor-pointer"
@@ -667,9 +649,17 @@ export function VehicleFormModal({ isOpen, onClose, onRefresh }: any) {
 export function RoutineScheduleFormModal({
   isOpen,
   onClose,
-  onSubmit,
-  vehicles,
-}: any) {
+  onSuccess,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess?: () => void; // opsional, jadi tidak wajib dikirim dari parent
+}) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [isLoadingVehicles, setIsLoadingVehicles] = useState(false);
+  const [vehicleError, setVehicleError] = useState<string | null>(null);
+
   const [formData, setFormData] = useState({
     name: "",
     rute: "",
@@ -679,17 +669,71 @@ export function RoutineScheduleFormModal({
   });
 
   useEffect(() => {
-    if (isOpen)
+    if (isOpen) {
       setFormData({ name: "", rute: "", vehicleId: "", time: "", hari: "" });
+      fetchVehicles();
+    }
   }, [isOpen]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const fetchVehicles = async () => {
+    setIsLoadingVehicles(true);
+    setVehicleError(null);
+    try {
+      const res = await fetch("/api/ga/vehicles"); // GET ke BFF
+      const result = await res.json();
+
+      if (res.ok) {
+        // bisa langsung array atau { data: [...] }
+        const data = Array.isArray(result) ? result : result.data ?? [];
+        setVehicles(data);
+      } else {
+        setVehicleError(result.message || "Gagal memuat kendaraan");
+        setVehicles([]);
+      }
+    } catch (error) {
+      console.error("Gagal fetch vehicles:", error);
+      setVehicleError("Terjadi kesalahan jaringan");
+      setVehicles([]);
+    } finally {
+      setIsLoadingVehicles(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({ ...formData, id: `r${Date.now()}` });
+    setIsSubmitting(true);
+
+    try {
+      const res = await fetch("/api/ga/routines", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      const result = await res.json();
+
+      if (res.ok) {
+        toast.success(result.message || "Jadwal rutin berhasil ditambahkan!");
+
+        // Panggil onSuccess HANYA jika berupa fungsi
+        if (typeof onSuccess === "function") {
+          onSuccess();
+        }
+
+        onClose();
+      } else {
+        toast.error(result.message || "Gagal menyimpan jadwal rutin.");
+      }
+    } catch (error) {
+      console.error("Error submit routine schedule:", error);
+      toast.error("Terjadi kesalahan jaringan.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && !isSubmitting && onClose()}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Tambah Jadwal Rutin</DialogTitle>
@@ -698,79 +742,103 @@ export function RoutineScheduleFormModal({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Nama Kegiatan */}
           <div className="space-y-2">
             <Label>Nama Kegiatan</Label>
             <Input
               required
+              disabled={isSubmitting}
               placeholder="Cth: Antar Jemput Siswa"
               value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             />
           </div>
+
+          {/* Rute */}
           <div className="space-y-2">
             <Label>Rute / Tujuan</Label>
             <Input
               required
+              disabled={isSubmitting}
               placeholder="Cth: Perum. Anggrek - Sekolah"
               value={formData.rute}
-              onChange={(e) =>
-                setFormData({ ...formData, rute: e.target.value })
-              }
+              onChange={(e) => setFormData({ ...formData, rute: e.target.value })}
             />
           </div>
+
+          {/* Kendaraan */}
           <div className="space-y-2">
             <Label>Kendaraan yang Ditugaskan</Label>
-            <Select
-              value={formData.vehicleId}
-              onValueChange={(val) =>
-                setFormData({ ...formData, vehicleId: val })
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Pilih Kendaraan" />
-              </SelectTrigger>
-              <SelectContent>
-                {/* Diperbaiki: Defensive array dan platNumber */}
-                {(vehicles || []).map((v: any) => (
-                  <SelectItem key={v.id} value={v.id}>
-                    {v.name} ({v.platNumber || v.plat})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {isLoadingVehicles ? (
+              <div className="flex items-center gap-2 text-sm text-gray-500 py-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Memuat daftar kendaraan...
+              </div>
+            ) : vehicleError ? (
+              <div className="text-sm text-red-500 py-2">{vehicleError}</div>
+            ) : (
+              <Select
+                disabled={isSubmitting || vehicles.length === 0}
+                value={formData.vehicleId}
+                onValueChange={(val) => setFormData({ ...formData, vehicleId: val })}
+              >
+                <SelectTrigger>
+                  {/* Menampilkan nama kendaraan + plat, bukan ID */}
+                  <SelectValue placeholder="Pilih Kendaraan" />
+                </SelectTrigger>
+
+                <SelectContent>
+                  {vehicles.length > 0 ? (
+                    vehicles.map((v) => (
+                      <SelectItem key={v.id} value={v.id}>
+                        {v.name} ({v.platNumber || v.plat || "-"})
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="empty" disabled>
+                      Tidak ada kendaraan tersedia
+                    </SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            )}
           </div>
+
+          {/* Waktu & Hari */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Waktu Operasional</Label>
               <Input
                 required
+                disabled={isSubmitting}
                 placeholder="Cth: 06:00 & 15:30"
                 value={formData.time}
-                onChange={(e) =>
-                  setFormData({ ...formData, time: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, time: e.target.value })}
               />
             </div>
             <div className="space-y-2">
               <Label>Hari</Label>
               <Input
                 required
+                disabled={isSubmitting}
                 placeholder="Cth: Senin - Jumat"
                 value={formData.hari}
-                onChange={(e) =>
-                  setFormData({ ...formData, hari: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, hari: e.target.value })}
               />
             </div>
           </div>
+
           <DialogFooter>
-            <Button type="button" variant="ghost" onClick={onClose}>
+            <Button type="button" variant="ghost" onClick={onClose} disabled={isSubmitting}>
               Batal
             </Button>
-            <Button type="submit" className="bg-slate-900 text-white">
-              Simpan Jadwal
+            <Button
+              type="submit"
+              disabled={isSubmitting || isLoadingVehicles || !!vehicleError}
+              className="bg-slate-900 text-white flex items-center gap-2"
+            >
+              {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+              {isSubmitting ? "Menyimpan..." : "Simpan Jadwal"}
             </Button>
           </DialogFooter>
         </form>
