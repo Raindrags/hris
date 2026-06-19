@@ -1,36 +1,42 @@
-import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { decodeJwt } from "jose";
+import { NextResponse } from 'next/server';
+import jwt from 'jsonwebtoken';
 
-const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:3001";
-
-function getUserIdFromCookie() {
-  const token = cookies().get("access_token")?.value;
-  if (!token) return null;
-  try { return decodeJwt(token).sub || decodeJwt(token).userId || null; } 
-  catch { return null; }
-}
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3434';
+const JWT_SECRET = process.env.JWT_SECRET || 'rahasia_super_kuat';
 
 export async function POST(request: Request) {
-  const userId = getUserIdFromCookie();
-  if (!userId) return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
-
   try {
-    const body = await request.json();
-    const res = await fetch(`${BACKEND_URL}/bookings/titip`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-user-id": userId as string },
-      body: JSON.stringify({
-        bookingId: body.tripId, 
-        description: body.itemDesc,
-        receiver: body.receiver
-      }),
-    });
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ success: false, message: 'Token tidak ditemukan' }, { status: 401 });
+    }
+
+    const token = authHeader.split(' ')[1];
     
-    const data = await res.json();
-    if (!res.ok) return NextResponse.json(data, { status: res.status });
-    return NextResponse.json(data);
-  } catch (error) {
-    return NextResponse.json({ success: false, message: "BFF Error" }, { status: 500 });
+    let userId: string;
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+      userId = decoded.userId;
+    } catch (err) {
+      return NextResponse.json({ success: false, message: 'Token tidak valid' }, { status: 401 });
+    }
+
+    const body = await request.json();
+
+    // Forward ke NestJS: /bookings/titip
+    const res = await fetch(`${BACKEND_URL}/bookings/titip`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-user-id': userId,
+      },
+      body: JSON.stringify(body),
+    });
+
+    const result = await res.json();
+    return NextResponse.json(result, { status: res.status });
+
+  } catch (error: any) {
+    return NextResponse.json({ success: false, message: 'BFF Error' }, { status: 500 });
   }
 }

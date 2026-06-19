@@ -46,7 +46,6 @@ export default function UserPortalView() {
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        // Ambil token dari URL Browser (contoh: domain.com/?token=xyz)
         const urlParams = new URLSearchParams(window.location.search);
         const magicToken = urlParams.get('token');
         
