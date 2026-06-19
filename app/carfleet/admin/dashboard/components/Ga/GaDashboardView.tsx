@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { GaSidebar } from "./SideBar";
 import { GaTopbar } from "./TopBar";
@@ -17,67 +17,141 @@ import {
   ReturnValidationModal,
   RoutineScheduleFormModal,
   ServiceFormModal,
-  // VehicleFormModal dihapus dari import karena sudah dipakai di GaTabs
 } from "./GaModal";
+
+// ==========================================
+// 1. TYPESCRIPT INTERFACES
+// ==========================================
+export interface Vehicle {
+  id: string;
+  plateNumber: string;
+  brand: string;
+  model: string;
+  type: string;
+  status: "AVAILABLE" | "IN_USE" | "MAINTENANCE";
+}
+
+export interface VehicleRequest {
+  id: string;
+  vehicleId: string;
+  employeeName: string;
+  department: string;
+  startDate: string | Date;
+  endDate: string | Date;
+  purpose: string;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  vehicle?: Vehicle;
+}
+
+export interface VehicleReturn {
+  id: string;
+  requestId: string;
+  vehicleId: string;
+  returnDate: string | Date;
+  conditionNote: string;
+  status: "PENDING" | "VALIDATED";
+  request?: VehicleRequest;
+}
+
+export interface RoutineSchedule {
+  id: string;
+  vehicleId: string;
+  taskName: string;
+  dueDate: string | Date;
+  status: "UPCOMING" | "DONE" | "OVERDUE";
+  vehicle?: Vehicle;
+}
+
+export interface MaintenanceRecord {
+  id: string;
+  vehicleId: string;
+  entryType: "SERVIS" | "BBM";
+  date: string | Date;
+  cost: number;
+  description: string;
+  odometer?: number;
+}
+
+export interface DashboardActivity {
+  id: string;
+  title: string;
+  description: string;
+  timestamp: string | Date;
+  type: "INFO" | "WARNING" | "SUCCESS";
+}
+
+// Payload Types
+type ServicePayload = Omit<MaintenanceRecord, "id" | "entryType">;
+type FuelPayload = Omit<MaintenanceRecord, "id" | "entryType">;
+type RoutinePayload = Omit<RoutineSchedule, "id" | "status">;
+type ReturnPayload = Omit<VehicleReturn, "id" | "status">;
 
 export default function GaDashboardView() {
   // ==========================================
-  // 1. STATE NAVIGASI TAB & LOADING
+  // 2. STATE NAVIGASI TAB & LOADING AWAL
   // ==========================================
-  const [activeTab, setActiveTab] = useState("dashboard");
-  const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<string>("dashboard");
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // ==========================================
-  // 2. STATE KONTROL MODAL (Pop-up)
+  // 3. STATE KONTROL MODAL & SELECTED DATA
   // ==========================================
-  const [rejectModalOpen, setRejectModalOpen] = useState(false);
-  const [returnModalOpen, setReturnModalOpen] = useState(false);
-  const [serviceModalOpen, setServiceModalOpen] = useState(false);
-  const [fuelModalOpen, setFuelModalOpen] = useState(false);
-  const [routineModalOpen, setRoutineModalOpen] = useState(false);
+  const [rejectModalOpen, setRejectModalOpen] = useState<boolean>(false);
+  const [returnModalOpen, setReturnModalOpen] = useState<boolean>(false);
+  const [serviceModalOpen, setServiceModalOpen] = useState<boolean>(false);
+  const [fuelModalOpen, setFuelModalOpen] = useState<boolean>(false);
+  const [routineModalOpen, setRoutineModalOpen] = useState<boolean>(false);
 
-  const [selectedRequest, setSelectedRequest] = useState<any>(null);
-
-  // ==========================================
-  // 3. STATE DATA BACKEND (Dikosongkan di awal)
-  // ==========================================
-  const [masterVehicles, setMasterVehicles] = useState<any[]>([]);
-  const [routineSchedules, setRoutineSchedules] = useState<any[]>([]);
-  const [pendingRequests, setPendingRequests] = useState<any[]>([]);
-  const [pendingReturns, setPendingReturns] = useState<any[]>([]);
-  const [dashboardActivities, setDashboardActivities] = useState<any[]>([]);
-  const [historyData, setHistoryData] = useState<any[]>([]);
+  const [selectedRequest, setSelectedRequest] = useState<VehicleRequest | VehicleReturn | null>(null);
+  
+  // Menambahkan state khusus untuk menyimpan data jadwal yang akan diedit
+  const [selectedRoutine, setSelectedRoutine] = useState<RoutineSchedule | null>(null);
 
   // ==========================================
-  // 4. LOGIKA AMBIL DATA (READ)
+  // 4. SUBMITTING STATE (Pencegah Double Click)
   // ==========================================
-  const fetchVehicles = async () => {
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [processingId, setProcessingId] = useState<string | null>(null);
+
+  // ==========================================
+  // 5. STATE DATA BACKEND
+  // ==========================================
+  const [masterVehicles, setMasterVehicles] = useState<Vehicle[]>([]);
+  const [routineSchedules, setRoutineSchedules] = useState<RoutineSchedule[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<VehicleRequest[]>([]);
+  const [pendingReturns, setPendingReturns] = useState<VehicleReturn[]>([]);
+  const [dashboardActivities, setDashboardActivities] = useState<DashboardActivity[]>([]);
+  const [historyData, setHistoryData] = useState<MaintenanceRecord[]>([]);
+
+  // ==========================================
+  // 6. LOGIKA AMBIL DATA (READ)
+  // ==========================================
+  const fetchVehicles = useCallback(async () => {
     try {
       const res = await fetch("/api/ga/vehicles");
       if (res.ok) setMasterVehicles(await res.json());
     } catch (err) {
       console.error("Gagal menarik data master kendaraan:", err);
     }
-  };
+  }, []);
 
-  const fetchMaintenance = async () => {
+  const fetchMaintenance = useCallback(async () => {
     try {
       const res = await fetch("/api/ga/maintenance");
       if (res.ok) setHistoryData(await res.json());
     } catch (err) {
       console.error("Gagal menarik data perawatan:", err);
     }
-  };
+  }, []);
 
-  const fetchOperationalData = async () => {
+  const fetchOperationalData = useCallback(async () => {
     try {
-      const [resRoutines, resRequests, resReturns, resActivities] =
-        await Promise.all([
-          fetch("/api/ga/routines"),
-          fetch("/api/ga/requests"),
-          fetch("/api/ga/returns"),
-          fetch("/api/ga/activities"),
-        ]);
+      const [resRoutines, resRequests, resReturns, resActivities] = await Promise.all([
+        fetch("/api/ga/routines"),
+        fetch("/api/ga/requests"),
+        fetch("/api/ga/returns"),
+        fetch("/api/ga/activities"),
+      ]);
 
       if (resRoutines.ok) setRoutineSchedules(await resRoutines.json());
       if (resRequests.ok) setPendingRequests(await resRequests.json());
@@ -86,9 +160,8 @@ export default function GaDashboardView() {
     } catch (err) {
       console.error("Gagal menarik data operasional:", err);
     }
-  };
+  }, []);
 
-  // Muat semua data saat komponen pertama kali di-render
   useEffect(() => {
     const loadAllData = async () => {
       setIsLoading(true);
@@ -100,14 +173,14 @@ export default function GaDashboardView() {
       setIsLoading(false);
     };
     loadAllData();
-  }, []);
+  }, [fetchVehicles, fetchMaintenance, fetchOperationalData]);
 
   // ==========================================
-  // 5. LOGIKA HANDLER (AKSI MUTASI API)
+  // 7. LOGIKA HANDLER (AKSI MUTASI API)
   // ==========================================
 
-  // --- Handler Peminjaman ---
   const handleApprove = async (id: string) => {
+    setProcessingId(id); 
     try {
       const res = await fetch("/api/ga/requests", {
         method: "PATCH",
@@ -117,21 +190,24 @@ export default function GaDashboardView() {
 
       if (res.ok) {
         toast.success("Peminjaman disetujui! Notifikasi WA terkirim.");
-        fetchOperationalData(); // Segarkan data
+        await fetchOperationalData();
       } else {
         toast.error("Gagal menyetujui peminjaman.");
       }
     } catch {
       toast.error("Terjadi kesalahan koneksi server.");
+    } finally {
+      setProcessingId(null); 
     }
   };
 
-  const handleOpenReject = (req: any) => {
+  const handleOpenReject = (req: VehicleRequest) => {
     setSelectedRequest(req);
     setRejectModalOpen(true);
   };
 
   const submitReject = async (id: string, reason: string) => {
+    setIsSubmitting(true);
     try {
       const res = await fetch("/api/ga/requests", {
         method: "PATCH",
@@ -142,22 +218,24 @@ export default function GaDashboardView() {
       if (res.ok) {
         setRejectModalOpen(false);
         toast.error("Peminjaman ditolak. Alasan terkirim ke WhatsApp.");
-        fetchOperationalData();
+        await fetchOperationalData();
       } else {
         toast.error("Gagal memproses penolakan.");
       }
     } catch {
       toast.error("Terjadi kesalahan koneksi server.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  // --- Handler Pengembalian ---
-  const handleOpenReturn = (ret: any) => {
+  const handleOpenReturn = (ret: VehicleReturn) => {
     setSelectedRequest(ret);
     setReturnModalOpen(true);
   };
 
-  const submitReturn = async (payload: any) => {
+  const submitReturn = async (payload: ReturnPayload) => {
+    setIsSubmitting(true);
     try {
       const res = await fetch("/api/ga/returns", {
         method: "POST",
@@ -168,17 +246,19 @@ export default function GaDashboardView() {
       if (res.ok) {
         setReturnModalOpen(false);
         toast.success("Validasi Fisik Kendaraan berhasil disimpan.");
-        fetchOperationalData();
+        await fetchOperationalData();
       } else {
         toast.error("Gagal memproses pengembalian.");
       }
     } catch {
       toast.error("Terjadi kesalahan koneksi server.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  // --- Handler Servis & BBM ---
-  const submitService = async (payload: any) => {
+  const submitService = async (payload: ServicePayload) => {
+    setIsSubmitting(true);
     try {
       const res = await fetch("/api/ga/maintenance", {
         method: "POST",
@@ -189,16 +269,19 @@ export default function GaDashboardView() {
       if (res.ok) {
         setServiceModalOpen(false);
         toast.success("Riwayat Servis berhasil dicatat!");
-        fetchMaintenance();
+        await fetchMaintenance();
       } else {
         toast.error("Gagal menyimpan catatan servis.");
       }
     } catch {
       toast.error("Terjadi kesalahan koneksi server.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const submitFuel = async (payload: any) => {
+  const submitFuel = async (payload: FuelPayload) => {
+    setIsSubmitting(true);
     try {
       const res = await fetch("/api/ga/maintenance", {
         method: "POST",
@@ -209,38 +292,63 @@ export default function GaDashboardView() {
       if (res.ok) {
         setFuelModalOpen(false);
         toast.success("Pengisian BBM berhasil dicatat!");
-        fetchMaintenance();
+        await fetchMaintenance();
       } else {
         toast.error("Gagal menyimpan data pengisian BBM.");
       }
     } catch {
       toast.error("Terjadi kesalahan koneksi server.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  // --- Handler Master Data (Jadwal Rutin Saja) ---
-  const submitAddRoutine = async (payload: any) => {
+  // HANDLER UNTUK TAMBAH RUTINITAS BARU
+  const handleAddRoutine = () => {
+    setSelectedRoutine(null); // Pastikan data kosong saat tambah baru
+    setRoutineModalOpen(true);
+  };
+
+  // HANDLER UNTUK EDIT RUTINITAS
+  const handleEditRoutine = (routine: RoutineSchedule) => {
+    setSelectedRoutine(routine); // Masukkan data rutin yang diklik ke state
+    setRoutineModalOpen(true);
+  };
+
+  // HANDLER SUBMIT RUTINITAS (BISA POST/TAMBAH ATAU PUT/EDIT)
+  const submitRoutine = async (payload: RoutinePayload) => {
+    setIsSubmitting(true);
     try {
+      const isEdit = !!selectedRoutine;
+      const method = isEdit ? "PUT" : "POST"; // Jika edit gunakan PUT/PATCH
+      
+      // Jika edit, sisipkan ID ke dalam payload
+      const bodyData = isEdit ? { ...payload, id: selectedRoutine.id } : payload;
+
       const res = await fetch("/api/ga/routines", {
-        method: "POST",
+        method: method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(bodyData),
       });
 
       if (res.ok) {
         setRoutineModalOpen(false);
-        toast.success("Jadwal Rutin berhasil ditambahkan!");
-        fetchOperationalData();
+        setSelectedRoutine(null); // Bersihkan state setelah berhasil
+        toast.success(`Jadwal Rutin berhasil ${isEdit ? "diperbarui" : "ditambahkan"}!`);
+        await fetchOperationalData();
       } else {
-        toast.error("Gagal menyimpan jadwal rutin.");
+        toast.error(`Gagal ${isEdit ? "memperbarui" : "menyimpan"} jadwal rutin.`);
       }
     } catch {
       toast.error("Terjadi kesalahan koneksi server.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const deleteRoutine = async (id: string) => {
     if (!confirm("Yakin ingin menghapus jadwal ini?")) return;
+    setProcessingId(id);
     try {
       const res = await fetch(`/api/ga/routines?id=${id}`, {
         method: "DELETE",
@@ -248,21 +356,22 @@ export default function GaDashboardView() {
 
       if (res.ok) {
         toast.success("Jadwal rutin berhasil dihapus.");
-        fetchOperationalData();
+        await fetchOperationalData();
       } else {
         toast.error("Gagal menghapus jadwal rutin.");
       }
     } catch {
       toast.error("Terjadi kesalahan koneksi server.");
+    } finally {
+      setProcessingId(null);
     }
   };
 
   // ==========================================
-  // 6. RENDER UI UTAMA
+  // 8. RENDER UI UTAMA
   // ==========================================
   return (
-    <div className="flex min-h-screen bg-slate-50 text-slate-800 font-sans">
-      {/* SIDEBAR COMPONENT */}
+    <div className="flex min-h-screen font-sans bg-slate-50 text-slate-800">
       <GaSidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -270,17 +379,14 @@ export default function GaDashboardView() {
         returnCount={pendingReturns.length}
       />
 
-      {/* MAIN CONTENT AREA */}
       <main className="flex-1 ml-[260px] flex flex-col min-h-screen relative z-0">
-        {/* TOPBAR COMPONENT */}
         <GaTopbar activeTab={activeTab} />
 
-        {/* KONTEN TAB DINAMIS */}
-        <div className="p-8 max-w-6xl mx-auto w-full">
+        <div className="w-full max-w-6xl p-8 mx-auto">
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-32 space-y-4">
-              <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-              <p className="text-slate-500 font-medium text-sm">
+            <div className="flex flex-col items-center justify-center space-y-4 py-32">
+              <div className="w-8 h-8 border-4 border-t-transparent rounded-full border-indigo-600 animate-spin"></div>
+              <p className="font-medium text-sm text-slate-500">
                 Menyinkronkan data dengan server...
               </p>
             </div>
@@ -300,6 +406,7 @@ export default function GaDashboardView() {
                   requests={pendingRequests}
                   onApprove={handleApprove}
                   onReject={handleOpenReject}
+                  processingId={processingId}
                 />
               )}
 
@@ -321,8 +428,10 @@ export default function GaDashboardView() {
               {activeTab === "master" && (
                 <MasterTab
                   routines={routineSchedules}
-                  onAddRoutine={() => setRoutineModalOpen(true)}
+                  onAddRoutine={handleAddRoutine}      // Berubah
+                  onEditRoutine={handleEditRoutine}    // Ditambahkan
                   onDeleteRoutine={deleteRoutine}
+                  processingId={processingId}
                 />
               )}
             </>
@@ -330,22 +439,21 @@ export default function GaDashboardView() {
         </div>
       </main>
 
-      {/* ==========================================
-          RENDER SEMUA MODAL (Di Root Level)
-          ========================================== */}
-
+      {/* MODALS */}
       <RejectModal
         isOpen={rejectModalOpen}
         onClose={() => setRejectModalOpen(false)}
         onSubmit={submitReject}
-        requestData={selectedRequest}
+        requestData={selectedRequest as VehicleRequest}
+        isSubmitting={isSubmitting}
       />
 
       <ReturnValidationModal
         isOpen={returnModalOpen}
         onClose={() => setReturnModalOpen(false)}
         onSubmit={submitReturn}
-        vehicleData={selectedRequest}
+        vehicleData={selectedRequest as VehicleReturn}
+        isSubmitting={isSubmitting}
       />
 
       <ServiceFormModal
@@ -353,6 +461,7 @@ export default function GaDashboardView() {
         onClose={() => setServiceModalOpen(false)}
         onSubmit={submitService}
         vehicles={masterVehicles}
+        isSubmitting={isSubmitting}
       />
 
       <FuelFormModal
@@ -360,13 +469,19 @@ export default function GaDashboardView() {
         onClose={() => setFuelModalOpen(false)}
         onSubmit={submitFuel}
         vehicles={masterVehicles}
+        isSubmitting={isSubmitting}
       />
 
       <RoutineScheduleFormModal
         isOpen={routineModalOpen}
-        onClose={() => setRoutineModalOpen(false)}
-        onSubmit={submitAddRoutine}
+        onClose={() => {
+          setRoutineModalOpen(false);
+          setSelectedRoutine(null); // Bersihkan state saat modal ditutup
+        }}
+        onSubmit={submitRoutine} // Berubah untuk mengakomodir Create/Edit
         vehicles={masterVehicles}
+        isSubmitting={isSubmitting}
+        initialData={selectedRoutine} // Kirim data jadwal yang sedang diedit
       />
     </div>
   );

@@ -14,7 +14,9 @@ import {
   FileClock,
   KeyRound,
   Activity,
-  Loader2, // Tambahan icon loading
+  Loader2,
+  Pencil, // Tambahan icon Pencil untuk Edit
+  Trash2, // Tambahan icon Trash untuk Hapus
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,6 +30,95 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { VehicleFormModal } from "./GaModal";
 
+// ==========================================
+// TYPES & INTERFACES
+// ==========================================
+
+export interface ActivityItem {
+  type: string;
+  initials?: string;
+  name: string;
+  desc: string;
+  vehicle: string;
+  date: string;
+  time: string;
+  status: string;
+  statusColor: string;
+}
+
+export interface RequestItem {
+  id: string;
+  userInitials: string;
+  userName: string;
+  destination: string;
+  vehicleName: string;
+  date: string;
+  time: string;
+}
+
+export interface ReturnItem {
+  id: string;
+  vehicleName: string;
+  userName: string;
+  timeReturned: string;
+}
+
+export interface MaintenanceHistoryItem {
+  vehicle: string;
+  plat: string;
+  type: string;
+  date: string;
+  km: number | string;
+  cost: number | string;
+}
+
+export interface RoutineItem {
+  id: string;
+  name: string;
+  rute: string;
+  hari: string;
+  time: string;
+  vehicleId: string;
+}
+
+export interface VehicleItem {
+  id: string;
+  name: string;
+  platNumber: string;
+  capacity?: number;
+  status?: string;
+}
+
+interface DashboardTabProps {
+  pendingCount: number;
+  returnCount: number;
+  activities: ActivityItem[];
+  setTab: (tab: string) => void;
+}
+
+interface ApprovalTabProps {
+  requests: RequestItem[];
+  onApprove: (id: string) => void;
+  onReject: (req: RequestItem) => void;
+}
+
+interface ReturnTabProps {
+  returns: ReturnItem[];
+  onValidate: (ret: ReturnItem) => void;
+}
+
+interface MaintenanceTabProps {
+  history: MaintenanceHistoryItem[];
+  onOpenService?: () => void;
+  onOpenFuel?: () => void;
+}
+
+interface MasterTabProps {
+  routines: RoutineItem[];
+  onAddRoutine: () => void;
+  onEditRoutine?: (routine: RoutineItem) => void; // Tambahan prop untuk Edit Routine
+  onDeleteRoutine: (id: string) => void;
+}
 
 // ==========================================
 // TAB 1: DASHBOARD
@@ -37,7 +128,7 @@ export function DashboardTab({
   returnCount,
   activities,
   setTab,
-}: any) {
+}: DashboardTabProps) {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -96,7 +187,7 @@ export function DashboardTab({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {activities.map((act: any, i: number) => (
+            {activities.map((act, i) => (
               <TableRow key={i}>
                 <TableCell>
                   <div className="flex items-center gap-3">
@@ -145,7 +236,7 @@ export function DashboardTab({
 // ==========================================
 // TAB 2: PERSETUJUAN
 // ==========================================
-export function ApprovalTab({ requests, onApprove, onReject }: any) {
+export function ApprovalTab({ requests, onApprove, onReject }: ApprovalTabProps) {
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
       <Card className="border-slate-200 shadow-sm overflow-hidden">
@@ -169,7 +260,7 @@ export function ApprovalTab({ requests, onApprove, onReject }: any) {
                 </TableCell>
               </TableRow>
             ) : (
-              requests.map((req: any) => (
+              requests.map((req) => (
                 <TableRow key={req.id}>
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -228,7 +319,7 @@ export function ApprovalTab({ requests, onApprove, onReject }: any) {
 // ==========================================
 // TAB 3: PENGEMBALIAN & VALIDASI
 // ==========================================
-export function ReturnTab({ returns, onValidate }: any) {
+export function ReturnTab({ returns, onValidate }: ReturnTabProps) {
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
       <Card className="border-slate-200 shadow-sm overflow-hidden">
@@ -252,7 +343,7 @@ export function ReturnTab({ returns, onValidate }: any) {
                 </TableCell>
               </TableRow>
             ) : (
-              returns.map((ret: any) => (
+              returns.map((ret) => (
                 <TableRow key={ret.id}>
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -301,7 +392,7 @@ export function ReturnTab({ returns, onValidate }: any) {
 // ==========================================
 // TAB 4: PERAWATAN (Servis & BBM)
 // ==========================================
-export function MaintenanceTab({ history, onOpenService, onOpenFuel }: any) {
+export function MaintenanceTab({ history, onOpenService, onOpenFuel }: MaintenanceTabProps) {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -365,7 +456,7 @@ export function MaintenanceTab({ history, onOpenService, onOpenFuel }: any) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {history?.length === 0 ? (
+            {!history || history.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={4}
@@ -375,7 +466,7 @@ export function MaintenanceTab({ history, onOpenService, onOpenFuel }: any) {
                 </TableCell>
               </TableRow>
             ) : (
-              history?.map((h: any, i: number) => (
+              history.map((h, i) => (
                 <TableRow key={i}>
                   <TableCell>
                     <strong className="block text-sm text-slate-800">
@@ -416,19 +507,48 @@ export function MaintenanceTab({ history, onOpenService, onOpenFuel }: any) {
 }
 
 // ==========================================
-// TAB 5: MASTER DATA (KINI TERHUBUNG DATABASE)
+// TAB 5: MASTER DATA
 // ==========================================
+
+export interface RoutineItem {
+  id: string;
+  name: string;
+  rute: string;
+  hari: string;
+  time: string;
+  vehicleId: string;
+}
+
+export interface VehicleItem {
+  id: string;
+  name: string;
+  platNumber: string;
+  capacity?: number;
+  status?: string;
+}
+
+interface MasterTabProps {
+  routines: RoutineItem[];
+  onAddRoutine: () => void;
+  onEditRoutine: (routine: RoutineItem) => void;
+  onDeleteRoutine: (id: string) => void;
+}
+
 export function MasterTab({
   routines,
   onAddRoutine,
+  onEditRoutine,
   onDeleteRoutine,
-}: any) {
-  // STATE
-  const [vehicles, setVehicles] = useState<any[]>([]);
+}: MasterTabProps) {
+  // STATE KENDARAAN
+  const [vehicles, setVehicles] = useState<VehicleItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // STATE MODAL KENDARAAN
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedVehicle, setSelectedVehicle] = useState<VehicleItem | null>(null);
 
-  // FETCH DARI API NEXT.JS / NEST.JS
+  // FETCH DARI API
   const fetchVehicles = async () => {
     setIsLoading(true);
     try {
@@ -448,16 +568,29 @@ export function MasterTab({
     fetchVehicles();
   }, []);
 
-  // HAPUS DARI DATABASE
+  // HANDLER TAMBAH MOBIL
+  const handleAddVehicle = () => {
+    setSelectedVehicle(null);
+    setIsModalOpen(true);
+  };
+
+  // HANDLER EDIT MOBIL
+  const handleEditVehicle = (vehicle: VehicleItem) => {
+    setSelectedVehicle(vehicle);
+    setIsModalOpen(true);
+  };
+
+  // HANDLER HAPUS MOBIL
   const handleDeleteVehicle = async (id: string) => {
-    if (!window.confirm("Yakin ingin menghapus kendaraan ini secara permanen?")) return;
-    
+    if (!window.confirm("Yakin ingin menghapus kendaraan ini secara permanen?"))
+      return;
+
     try {
       const res = await fetch(`/api/ga/vehicles/${id}`, { method: "DELETE" });
       const result = await res.json();
       if (result.success) {
         toast.success("Kendaraan berhasil dihapus!");
-        fetchVehicles(); // Refresh data di tabel otomatis
+        fetchVehicles();
       } else {
         toast.error(result.message);
       }
@@ -479,13 +612,13 @@ export function MasterTab({
           </div>
           <Button
             size="sm"
-            onClick={() => setIsModalOpen(true)}
+            onClick={handleAddVehicle}
             className="bg-slate-900 hover:bg-slate-800 text-white relative z-50"
           >
             <Plus className="w-4 h-4 mr-1" /> Tambah Kendaraan
           </Button>
         </div>
-        
+
         <Table>
           <TableHeader>
             <TableRow>
@@ -500,7 +633,9 @@ export function MasterTab({
               <TableRow>
                 <TableCell colSpan={4} className="text-center py-12">
                   <Loader2 className="w-8 h-8 animate-spin text-slate-400 mx-auto" />
-                  <p className="text-sm font-medium text-slate-500 mt-3">Mengambil data dari database...</p>
+                  <p className="text-sm font-medium text-slate-500 mt-3">
+                    Mengambil data dari database...
+                  </p>
                 </TableCell>
               </TableRow>
             ) : vehicles.length === 0 ? (
@@ -513,7 +648,7 @@ export function MasterTab({
                 </TableCell>
               </TableRow>
             ) : (
-              vehicles.map((v: any) => (
+              vehicles.map((v) => (
                 <TableRow key={v.id}>
                   <TableCell>
                     <strong className="block text-sm text-slate-800">
@@ -542,14 +677,24 @@ export function MasterTab({
                     </span>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeleteVehicle(v.id)}
-                      className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                    >
-                      Hapus
-                    </Button>
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEditVehicle(v)}
+                        className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-2"
+                      >
+                        <Pencil className="w-4 h-4 mr-1" /> Edit
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteVehicle(v.id)}
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50 px-2"
+                      >
+                        <Trash2 className="w-4 h-4 mr-1" /> Hapus
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
@@ -558,7 +703,7 @@ export function MasterTab({
         </Table>
       </Card>
 
-      {/* BAGIAN 2: JADWAL RUTIN (MOCKUP SEMENTARA) */}
+      {/* BAGIAN 2: JADWAL RUTIN */}
       <Card className="border-slate-200 shadow-sm overflow-hidden relative z-10">
         <div className="p-5 border-b bg-slate-50 flex justify-between items-center">
           <div className="flex items-center gap-2">
@@ -585,7 +730,7 @@ export function MasterTab({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {routines?.length === 0 ? (
+            {!routines || routines.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={4}
@@ -595,7 +740,7 @@ export function MasterTab({
                 </TableCell>
               </TableRow>
             ) : (
-              routines?.map((r: any) => (
+              routines.map((r) => (
                 <TableRow key={r.id}>
                   <TableCell>
                     <strong className="block text-sm text-slate-800">
@@ -611,20 +756,31 @@ export function MasterTab({
                   </TableCell>
                   <TableCell>
                     <span className="text-sm font-semibold text-slate-700">
-                      {/* Mengambil nama kendaraan dari state local yang sudah difetch */}
-                      {vehicles.find((v: any) => v.id === r.vehicleId)?.name ||
+                      {vehicles.find((v) => v.id === r.vehicleId)?.name ||
                         "Kendaraan Dihapus"}
                     </span>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onDeleteRoutine(r.id)}
-                      className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                    >
-                      Hapus
-                    </Button>
+                    <div className="flex justify-end gap-2">
+                      {/* TOMBOL EDIT RUTINITAS */}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onEditRoutine(r)}
+                        className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-2"
+                      >
+                        <Pencil className="w-4 h-4 mr-1" /> Edit
+                      </Button>
+                      {/* TOMBOL HAPUS RUTINITAS */}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onDeleteRoutine(r.id)}
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50 px-2"
+                      >
+                        <Trash2 className="w-4 h-4 mr-1" /> Hapus
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
@@ -632,12 +788,16 @@ export function MasterTab({
           </TableBody>
         </Table>
       </Card>
-
-      {/* MODAL TAMBAH KENDARAAN (Disembunyikan jika isModalOpen = false) */}
-      <VehicleFormModal  
+      
+      {/* MODAL KENDARAAN (Hanya untuk mengurus Data Kendaraan) */}
+      <VehicleFormModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onRefresh={fetchVehicles} 
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedVehicle(null);
+        }}
+        onRefresh={fetchVehicles}
+        initialData={selectedVehicle}
       />
     </div>
   );
