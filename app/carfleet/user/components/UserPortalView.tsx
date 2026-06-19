@@ -34,6 +34,9 @@ export default function UserPortalView() {
   const [isTitipOpen, setIsTitipOpen] = useState(false);
   const [isReturnOpen, setIsReturnOpen] = useState(false);
   const [activeTripContext, setActiveTripContext] = useState<TripContext | null>(null);
+  
+  // State untuk menyimpan ID Booking yang mau dikembalikan
+  const [activeReturnId, setActiveReturnId] = useState<string | null>(null);
 
   // States Data dari API
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -195,10 +198,36 @@ export default function UserPortalView() {
     }
   };
 
+  // Handler Pengembalian Kendaraan
   const confirmReturn = async () => {
-    setIsReturnOpen(false);
-    toast.success("Pengembalian dilaporkan! Menunggu verifikasi fisik oleh GA.");
-    // Catatan: Anda bisa menambahkan blok fetch ke "/api/portal/bookings/return" di sini jika endpoint-nya sudah siap.
+    if (!activeReturnId) return;
+
+    try {
+      const headers: HeadersInit = { "Content-Type": "application/json" };
+      if (authToken) headers["Authorization"] = `Bearer ${authToken}`;
+
+      // Mengirim POST ke BFF endpoint untuk update status ke COMPLETED
+      const res = await fetch("/api/ga/bookings/return", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ bookingId: activeReturnId }),
+      });
+      const result = await res.json();
+
+      if (result.success) {
+        toast.success("Pengembalian dilaporkan! Menunggu verifikasi fisik oleh GA.");
+        setIsReturnOpen(false);
+        
+        // Update state lokal historyList secara reaktif (tanpa perlu reload)
+        setHistoryList(prev => prev.map(item => 
+          item.id === activeReturnId ? { ...item, status: 'COMPLETED' } : item
+        ));
+      } else {
+        toast.error(result.message || "Gagal melaporkan pengembalian.");
+      }
+    } catch (error) {
+      toast.error("Terjadi kesalahan jaringan saat mengembalikan armada.");
+    }
   };
 
   if (isLoading) {
@@ -246,7 +275,14 @@ export default function UserPortalView() {
           <NebengTab nebengList={nebengList} packageList={packageList} onOpenJoinModal={(trip: TripContext) => { setActiveTripContext(trip); setIsJoinOpen(true); }} onOpenTitipModal={(trip: TripContext) => { setActiveTripContext(trip); setIsTitipOpen(true); }} />
         )}
         {activeTab === "status" && (
-          <StatusTab historyList={historyList} onOpenReturnModal={() => setIsReturnOpen(true)} />
+          <StatusTab 
+            historyList={historyList} 
+            // Kirimkan ID booking ke dalam state saat tombol kembalikan diklik
+            onOpenReturnModal={(id: string) => { 
+              setActiveReturnId(id); 
+              setIsReturnOpen(true); 
+            }} 
+          />
         )}
       </main>
 
