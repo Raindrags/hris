@@ -1,0 +1,296 @@
+import React, { useState } from "react";
+import {
+  X,
+  Loader2,
+  MapPin,
+  Calendar,
+  Clock,
+  Users,
+  FileText,
+  User,
+  Phone,
+  SteeringWheel,
+} from "lucide-react";
+import { useUserBooking } from "@/app/carfleet/context/UserBookingContext";
+
+export default function BookingModal({
+  isOpen,
+  onClose,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+}) {
+  const { submitBooking, isLoading } = useUserBooking();
+
+  // State yang mencakup SEMUA field di database Prisma kita
+  const [formData, setFormData] = useState({
+    picName: "",
+    contactNumber: "",
+    driverName: "",
+    purpose: "",
+    destination: "",
+    date: "",
+    timeOut: "",
+    timeIn: "",
+    passengers: 1,
+  });
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const success = await submitBooking(formData);
+
+    if (success) {
+      alert("Permohonan peminjaman armada berhasil dikirim!");
+      // Reset form setelah sukses
+      setFormData({
+        picName: "",
+        contactNumber: "",
+        driverName: "",
+        purpose: "",
+        destination: "",
+        date: "",
+        timeOut: "",
+        timeIn: "",
+        passengers: 1,
+      });
+      onClose();
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white rounded-3xl w-full max-w-3xl max-h-[90vh] overflow-y-auto relative shadow-2xl">
+        {/* HEADER MODAL */}
+        <div className="sticky top-0 bg-white border-b border-slate-100 p-6 flex justify-between items-center z-10 rounded-t-3xl">
+          <div>
+            <h2 className="text-2xl font-extrabold text-[#1a365d]">
+              Ajukan Peminjaman Armada
+            </h2>
+            <p className="text-sm text-slate-500 mt-1">
+              Lengkapi data perjalanan Anda di bawah ini.
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        {/* BODY FORM */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* SECTION 1: Informasi Penanggung Jawab */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b pb-2">
+              Informasi Pemohon
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-500">
+                  Nama PIC (Penanggung Jawab)
+                </label>
+                <div className="relative">
+                  <User className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
+                  <input
+                    required
+                    type="text"
+                    name="picName"
+                    value={formData.picName}
+                    onChange={handleChange}
+                    placeholder="Contoh: Bpk. Ahmad"
+                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-500">
+                  Nomor HP/WA Aktif
+                </label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
+                  <input
+                    required
+                    type="tel"
+                    name="contactNumber"
+                    value={formData.contactNumber}
+                    onChange={handleChange}
+                    placeholder="Contoh: 08123456789"
+                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION 2: Detail Perjalanan */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b pb-2">
+              Detail Perjalanan
+            </h3>
+
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-slate-500">
+                Tujuan Perjalanan
+              </label>
+              <div className="relative">
+                <MapPin className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
+                <input
+                  required
+                  type="text"
+                  name="destination"
+                  value={formData.destination}
+                  onChange={handleChange}
+                  placeholder="Contoh: Dinas Pendidikan Kota"
+                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-500">
+                  Tanggal
+                </label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
+                  <input
+                    required
+                    type="date"
+                    name="date"
+                    value={formData.date}
+                    onChange={handleChange}
+                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-500">
+                  Jam Keluar
+                </label>
+                <div className="relative">
+                  <Clock className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
+                  <input
+                    required
+                    type="time"
+                    name="timeOut"
+                    value={formData.timeOut}
+                    onChange={handleChange}
+                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-500">
+                  Estimasi Jam Kembali
+                </label>
+                <div className="relative">
+                  <Clock className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
+                  <input
+                    required
+                    type="time"
+                    name="timeIn"
+                    value={formData.timeIn}
+                    onChange={handleChange}
+                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-500">
+                  Supir (Opsional / Jika Bawa Sendiri)
+                </label>
+                <div className="relative">
+                  <User className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
+                  <input
+                    required
+                    type="text"
+                    name="driverName"
+                    value={formData.driverName}
+                    onChange={handleChange}
+                    placeholder="Nama Supir / Bawa Sendiri"
+                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-500">
+                  Jumlah Penumpang
+                </label>
+                <div className="relative">
+                  <Users className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
+                  <input
+                    required
+                    type="number"
+                    min="1"
+                    name="passengers"
+                    value={formData.passengers}
+                    onChange={handleChange}
+                    placeholder="Termasuk supir"
+                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION 3: Keperluan */}
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-slate-500">
+              Keperluan / Keterangan
+            </label>
+            <div className="relative">
+              <FileText className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
+              <textarea
+                required
+                name="purpose"
+                value={formData.purpose}
+                onChange={handleChange}
+                placeholder="Jelaskan secara singkat keperluan perjalanan ini..."
+                rows={3}
+                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-none"
+              ></textarea>
+            </div>
+          </div>
+
+          {/* FOOTER BUTTON */}
+          <div className="pt-4 border-t border-slate-100 flex gap-3 justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isLoading}
+              className="px-6 py-3 font-bold text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="px-8 py-3 bg-[#1a365d] text-white rounded-xl font-bold hover:bg-[#12284a] shadow-lg shadow-blue-900/20 flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed transition-all"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                  Memproses...
+                </>
+              ) : (
+                "Kirim Permohonan"
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}

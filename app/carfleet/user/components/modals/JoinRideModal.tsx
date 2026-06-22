@@ -1,49 +1,138 @@
-import { UserPlus, X } from 'lucide-react';
-import { useState } from 'react';
+import React, { useState } from "react";
+import { X, Loader2, MapPin, Users, Car } from "lucide-react";
+import { useUserBooking } from "@/app/carfleet/context/UserBookingContext";
 
 interface JoinRideModalProps {
-  target: string;
-  vehicle: string;
+  isOpen: boolean;
   onClose: () => void;
-  onSubmit: (dropoff: string) => void;
+  bookingId: string; // ID perjalanan yang akan ditebeng
 }
 
-export default function JoinRideModal({ target, vehicle, onClose, onSubmit }: JoinRideModalProps) {
-  const [dropoff, setDropoff] = useState('');
+export default function JoinRideModal({
+  isOpen,
+  onClose,
+  bookingId,
+}: JoinRideModalProps) {
+  const { submitRideShare, isLoading } = useUserBooking();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit(dropoff);
+  const [formData, setFormData] = useState({
+    dropOff: "",
+    seats: 1,
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: name === "seats" ? parseInt(value) || 1 : value,
+    });
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const success = await submitRideShare({ bookingId, ...formData });
+
+    if (success) {
+      alert("Permintaan nebeng berhasil dikirim!");
+      setFormData({ dropOff: "", seats: 1 }); // Reset form
+      onClose();
+    }
+  };
+
+  if (!isOpen) return null;
+
   return (
-    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex justify-center items-center p-4">
-      <div className="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
-        <div className="flex justify-between items-center mb-4">
-          <h4 className="font-black text-lg text-slate-900 flex items-center gap-2">
-            <UserPlus className="w-5 h-5 text-teal-600" /> Ajukan Ikut Tumpangan
-          </h4>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200">
-            <X className="w-4 h-4" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white rounded-3xl w-full max-w-md relative shadow-2xl overflow-hidden">
+        {/* HEADER MODAL */}
+        <div className="bg-slate-50 border-b border-slate-100 p-6 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 text-blue-600 rounded-xl">
+              <Car className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-xl font-extrabold text-[#1a365d]">
+                Ikut Nebeng
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Pesan kursi pada perjalanan ini
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-full transition-colors"
+          >
+            <X className="w-5 h-5" />
           </button>
         </div>
-        <p className="text-xs text-slate-500 font-medium mb-4">Rute: {target} menggunakan {vehicle}</p>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Titik Turun / Lokasi Anda</label>
-            <input 
-              type="text" 
-              required 
-              value={dropoff}
-              onChange={(e) => setDropoff(e.target.value)}
-              placeholder="Contoh: Samping Pos Satpam Gedung 2" 
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-teal-500 font-medium" 
-            />
+
+        {/* BODY FORM */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-slate-500">
+              Titik Turun (Drop-off)
+            </label>
+            <div className="relative">
+              <MapPin className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
+              <input
+                required
+                type="text"
+                name="dropOff"
+                value={formData.dropOff}
+                onChange={handleChange}
+                placeholder="Contoh: Gerbang Tol Pasteur"
+                className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+              />
+            </div>
+            <p className="text-[11px] text-slate-400 ml-1">
+              Pastikan titik turun searah dengan tujuan utama.
+            </p>
           </div>
-          <button type="submit" className="w-full bg-teal-600 hover:bg-teal-700 text-white font-extrabold py-3.5 rounded-2xl shadow-md transition">
-            Kirim Permintaan Tumpangan
-          </button>
+
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-slate-500">
+              Jumlah Kursi yang Dibutuhkan
+            </label>
+            <div className="relative">
+              <Users className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
+              <input
+                required
+                type="number"
+                min="1"
+                name="seats"
+                value={formData.seats}
+                onChange={handleChange}
+                className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+              />
+            </div>
+          </div>
+
+          {/* FOOTER BUTTON */}
+          <div className="pt-4 mt-2 flex gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isLoading}
+              className="w-1/3 py-3 font-bold text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-2/3 py-3 bg-[#1a365d] text-white rounded-xl font-bold hover:bg-[#12284a] shadow-lg shadow-blue-900/20 flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed transition-all"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                  Memproses...
+                </>
+              ) : (
+                "Kirim Permintaan"
+              )}
+            </button>
+          </div>
         </form>
       </div>
     </div>

@@ -1,61 +1,134 @@
-import { PackagePlus, X } from 'lucide-react';
-import { useState } from 'react';
+import React, { useState } from "react";
+import { X, Loader2, Package, FileText, UserCheck } from "lucide-react";
+import { useUserBooking } from "@/app/carfleet/context/UserBookingContext";
 
 interface PackageModalProps {
-  target: string;
-  vehicle: string;
+  isOpen: boolean;
   onClose: () => void;
-  onSubmit: (desc: string, receiver: string) => void;
+  bookingId: string; // ID perjalanan
 }
 
-export default function PackageModal({ target, vehicle, onClose, onSubmit }: PackageModalProps) {
-  const [desc, setDesc] = useState('');
-  const [receiver, setReceiver] = useState('');
+export default function PackageModal({
+  isOpen,
+  onClose,
+  bookingId,
+}: PackageModalProps) {
+  const { submitPackage, isLoading } = useUserBooking();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit(desc, receiver);
+  const [formData, setFormData] = useState({
+    description: "",
+    receiver: "",
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const success = await submitPackage({ bookingId, ...formData });
+
+    if (success) {
+      alert("Permintaan titip barang/dokumen berhasil dikirim!");
+      setFormData({ description: "", receiver: "" }); // Reset form
+      onClose();
+    }
+  };
+
+  if (!isOpen) return null;
+
   return (
-    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex justify-center items-center p-4">
-      <div className="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
-        <div className="flex justify-between items-center mb-4">
-          <h4 className="font-black text-lg text-slate-900 flex items-center gap-2">
-            <PackagePlus className="w-5 h-5 text-slate-900" /> Delegasi Titip Barang
-          </h4>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200">
-            <X className="w-4 h-4" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white rounded-3xl w-full max-w-md relative shadow-2xl overflow-hidden">
+        {/* HEADER MODAL */}
+        <div className="bg-slate-50 border-b border-slate-100 p-6 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-amber-100 text-amber-600 rounded-xl">
+              <Package className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-xl font-extrabold text-[#1a365d]">
+                Titip Barang
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Kirim dokumen/barang via armada
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-full transition-colors"
+          >
+            <X className="w-5 h-5" />
           </button>
         </div>
-        <p className="text-xs text-slate-500 font-medium mb-4">Dititipkan pada perjalanan: {target}</p>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Nama / Deskripsi Paket</label>
-            <input 
-              type="text" 
-              required 
-              value={desc}
-              onChange={(e) => setDesc(e.target.value)}
-              placeholder="Contoh: 1 Kardus Dokumen Rapor Siswa" 
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-teal-500 font-medium" 
-            />
+
+        {/* BODY FORM */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-slate-500">
+              Deskripsi Barang / Dokumen
+            </label>
+            <div className="relative">
+              <FileText className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
+              <input
+                required
+                type="text"
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                placeholder="Contoh: Map Merah SPJ Bos"
+                className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all"
+              />
+            </div>
           </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Nama Penerima di Tujuan</label>
-            <input 
-              type="text" 
-              required 
-              value={receiver}
-              onChange={(e) => setReceiver(e.target.value)}
-              placeholder="Contoh: Ibu Linda (Staf Tata Usaha)" 
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-teal-500 font-medium" 
-            />
+
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-slate-500">
+              Penerima & Lokasi
+            </label>
+            <div className="relative">
+              <UserCheck className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
+              <input
+                required
+                type="text"
+                name="receiver"
+                value={formData.receiver}
+                onChange={handleChange}
+                placeholder="Contoh: Bpk. Budi (Diknas Lt. 2)"
+                className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all"
+              />
+            </div>
+            <p className="text-[11px] text-slate-400 ml-1">
+              Pastikan nama penerima dan detail lokasi jelas untuk supir.
+            </p>
           </div>
-          <button type="submit" className="w-full bg-slate-900 hover:bg-slate-800 text-white font-extrabold py-3.5 rounded-2xl shadow-md transition">
-            Simpan Manifest Titipan
-          </button>
+
+          {/* FOOTER BUTTON */}
+          <div className="pt-4 mt-2 flex gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isLoading}
+              className="w-1/3 py-3 font-bold text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-2/3 py-3 bg-[#1a365d] text-white rounded-xl font-bold hover:bg-[#12284a] shadow-lg shadow-blue-900/20 flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed transition-all"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                  Memproses...
+                </>
+              ) : (
+                "Titipkan Barang"
+              )}
+            </button>
+          </div>
         </form>
       </div>
     </div>
