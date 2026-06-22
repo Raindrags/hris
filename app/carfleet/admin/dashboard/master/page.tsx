@@ -1,136 +1,212 @@
-"use client";
+// src/app/dashboard/master/page.tsx
+'use client';
 
-import { useState } from "react";
-import { CalendarClock, Plus, CarFront, CheckCircle2, AlertCircle, Wrench } from "lucide-react";
-import { Card } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { mockKendaraan } from "../../lib/mockdata";
-import { FormTambahKendaraan } from "../modals/FormTambahKendaraan";
-import { FormTambahJadwal } from "../modals/FormTambahJadwal";
-import { useDashboard } from "@/app/carfleet/context/DashboardContext";
+import { useState } from 'react';
+import { Car, Route, Plus, Power, PowerOff } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { useDashboard } from '@/app/carfleet/context/DashboardContext';
+import { Button } from '@/components/ui/button';
 
-// Import mock data dan form
+export default function MasterDataPage() {
+  const { kendaraan, rutin, addVehicle, addRoutine, toggleRoutine } = useDashboard();
+  
+  // State untuk form Tambah Kendaraan
+  const [showFormMobil, setShowFormMobil] = useState(false);
+  const [formMobil, setFormMobil] = useState({ name: '', platNumber: '', capacity: 4, type: 'MPV' });
 
-export default function MasterPage() {
-  // State untuk Kendaraan
- const { kendaraan: kendaraanList, setKendaraan: setKendaraanList } = useDashboard();
-  const [isKendaraanOpen, setIsKendaraanOpen] = useState(false);
+  // State untuk form Tambah Jadwal Rutin
+  const [showFormRutin, setShowFormRutin] = useState(false);
+  const [formRutin, setFormRutin] = useState({ vehicleId: '', route: '', days: '1,2,3,4,5', departure: '06:00' });
 
-  // State untuk Jadwal
-  const [isJadwalOpen, setIsJadwalOpen] = useState(false);
-
-  // Handler submit kendaraan
-  const handleKendaraanAdded = (newData: any) => {
-    setKendaraanList([newData, ...kendaraanList]);
-    alert(`${newData.nama} berhasil ditambahkan ke database kendaraan!`);
+  const handleSimpanMobil = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await addVehicle(formMobil);
+      alert('Kendaraan berhasil ditambahkan!');
+      setShowFormMobil(false);
+      setFormMobil({ name: '', platNumber: '', capacity: 4, type: 'MPV' });
+    } catch (error: any) {
+      alert(error.message);
+    }
   };
 
-  // Handler submit jadwal
-  const handleJadwalAdded = () => {
-    alert("Jadwal rutin berhasil ditambahkan ke dalam database!");
-  };
-
-  // Helper untuk warna badge status kendaraan
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "Tersedia":
-        return <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-0 flex items-center gap-1"><CheckCircle2 size={12}/> Tersedia</Badge>;
-      case "Servis":
-        return <Badge className="bg-red-100 text-red-700 hover:bg-red-100 border-0 flex items-center gap-1"><Wrench size={12}/> Servis</Badge>;
-      default:
-        return <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-0 flex items-center gap-1"><AlertCircle size={12}/> {status}</Badge>;
+  const handleSimpanRutin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await addRoutine(formRutin);
+      alert('Jadwal rutin berhasil ditambahkan!');
+      setShowFormRutin(false);
+      setFormRutin({ vehicleId: '', route: '', days: '1,2,3,4,5', departure: '06:00' });
+    } catch (error: any) {
+      alert(error.message);
     }
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-300">
+    <div className="p-6 flex flex-col gap-12">
       
       {/* SECTION 1: MASTER KENDARAAN */}
-      <Card className="border-slate-200 shadow-sm rounded-2xl overflow-hidden">
-        <div className="px-6 py-5 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-          <h2 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
-            <CarFront size={20} className="text-slate-900" />
-            Master Data Kendaraan
+      <section className="w-full">
+        <div className="flex items-center justify-between mb-6"> 
+          <h2 className="text-2xl font-bold flex items-center gap-2">
+            <Car className="text-blue-600" /> Master Kendaraan
           </h2>
-          <Button
-            onClick={() => setIsKendaraanOpen(true)}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-9 px-4 rounded-lg flex items-center gap-1.5 transition-all shadow-sm"
+          <button 
+            onClick={() => setShowFormMobil(!showFormMobil)}
+            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors"
           >
             <Plus size={16} /> Tambah Kendaraan
-          </Button>
+          </button>
         </div>
 
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wide py-4 px-6">Kendaraan</TableHead>
-              <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wide py-4 px-6">Plat Nomor</TableHead>
-              <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wide py-4 px-6">Tipe & Kapasitas</TableHead>
-              <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wide py-4 px-6">Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {kendaraanList.map((item) => (
-              <TableRow key={item.id} className="hover:bg-slate-50">
-                <TableCell className="px-6 py-4">
-                  <strong className="block text-slate-900 font-bold text-[15px]">{item.nama}</strong>
-                </TableCell>
-                <TableCell className="px-6 py-4">
-                  <div className="inline-block bg-slate-900 text-white font-bold tracking-widest px-3 py-1 rounded-md text-sm">
-                    {item.plat}
-                  </div>
-                </TableCell>
-                <TableCell className="px-6 py-4">
-                  <strong className="block text-slate-900 text-[14px]">{item.tipe}</strong>
-                  <span className="text-slate-500 text-xs">{item.kapasitas}</span>
-                </TableCell>
-                <TableCell className="px-6 py-4">
-                  {getStatusBadge(item.status)}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </Card>
+        {/* Form Tambah Mobil */}
+        {showFormMobil && (
+          <form onSubmit={handleSimpanMobil} className="bg-blue-50 p-4 rounded-lg border border-blue-100 mb-6 grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+            <div>
+              <label className="block text-xs font-medium mb-1 text-slate-700">Nama Mobil</label>
+              <input required type="text" className="w-full border p-2 rounded text-sm bg-white" placeholder="Avanza" value={formMobil.name} onChange={e => setFormMobil({...formMobil, name: e.target.value})} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1 text-slate-700">Plat Nomor</label>
+              <input required type="text" className="w-full border p-2 rounded text-sm bg-white" placeholder="B 1234 CD" value={formMobil.platNumber} onChange={e => setFormMobil({...formMobil, platNumber: e.target.value})} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1 text-slate-700">Tipe</label>
+              <select className="w-full border p-2 rounded text-sm bg-white" value={formMobil.type} onChange={e => setFormMobil({...formMobil, type: e.target.value})}>
+                <option value="MPV">MPV</option>
+                <option value="Minibus">Minibus</option>
+                <option value="Pickup">Pickup</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1 text-slate-700">Kapasitas Kursi</label>
+              <input required type="number" min="1" className="w-full border p-2 rounded text-sm bg-white" value={formMobil.capacity} onChange={e => setFormMobil({...formMobil, capacity: parseInt(e.target.value)})} />
+            </div>
+            <div className="flex justify-end">
+              <Button type="submit" variant="default" className="w-full">
+                Simpan
+              </Button>
+            </div>
+          </form>
+        )}
+
+        <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
+        <table className="w-full text-left text-sm">
+            <thead className="bg-slate-50 border-b">
+              <tr>
+                <th className="p-4 font-semibold text-slate-700">Nama Kendaraan</th>
+                <th className="p-4 font-semibold text-slate-700">Plat Nomor</th>
+                <th className="p-4 font-semibold text-slate-700">Spesifikasi</th>
+                <th className="p-4 font-semibold text-slate-700">Status Saat Ini</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(!kendaraan || kendaraan.length === 0) ? (
+                <tr><td colSpan={4} className="p-4 text-center text-slate-500">Belum ada data kendaraan</td></tr>
+              ) : kendaraan.map(k => (
+                <tr key={k.id} className="border-b hover:bg-slate-50/50 transition-colors">
+                  <td className="p-4 font-medium text-slate-900">{k.name}</td>
+                  <td className="p-4"><Badge variant="outline">{k.platNumber}</Badge></td>
+                  <td className="p-4 text-slate-500">{k.type} • {k.capacity} Seat</td>
+                  <td className="p-4">
+                    <span className={`px-2.5 py-1 rounded-md text-xs font-bold ${
+                      k.status === 'Tersedia' ? 'bg-green-100 text-green-700' :
+                      k.status === 'Dipakai' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'
+                    }`}>
+                      {k.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
       {/* SECTION 2: JADWAL RUTIN */}
-      <Card className="border-slate-200 shadow-sm rounded-2xl overflow-hidden">
-        <div className="px-6 py-5 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-          <h2 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
-            <CalendarClock size={20} className="text-slate-900" />
-            Jadwal Pemakaian Rutin
+      <section className="w-full">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold flex items-center gap-2">
+            <Route className="text-indigo-600" /> Jadwal Rutin Operasional
           </h2>
-          <Button
-            onClick={() => setIsJadwalOpen(true)}
-            className="bg-slate-900 hover:bg-slate-800 text-white font-bold h-9 px-4 rounded-lg flex items-center gap-1.5 transition-all shadow-sm"
+          <button 
+            onClick={() => setShowFormRutin(!showFormRutin)}
+            className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 text-sm font-medium transition-colors"
           >
-            <Plus size={16} /> Tambah Jadwal
-          </Button>
+            <Plus size={16} /> Buat Jadwal Rutin
+          </button>
         </div>
 
-        <div className="p-12 text-center text-slate-500 flex flex-col items-center justify-center bg-white">
-          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-            <CalendarClock size={32} className="text-slate-400" />
-          </div>
-          <p className="text-base font-medium text-slate-900">Belum ada jadwal yang ditampilkan.</p>
-          <p className="text-sm mt-1">Daftar jadwal shuttle bus atau operasional rutin akan tampil di sini.</p>
-        </div>
-      </Card>
+        {/* Form Tambah Jadwal */}
+        {showFormRutin && (
+          <form onSubmit={handleSimpanRutin} className="bg-indigo-50 p-4 rounded-lg border border-indigo-100 mb-6 grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+            <div>
+              <label className="block text-xs font-medium mb-1 text-slate-700">Rute / Kegiatan</label>
+              <input required type="text" className="w-full border p-2 rounded text-sm bg-white" placeholder="Antar Jemput Rute A" value={formRutin.route} onChange={e => setFormRutin({...formRutin, route: e.target.value})} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1 text-slate-700">Pilih Mobil</label>
+              <select required className="w-full border p-2 rounded text-sm bg-white" value={formRutin.vehicleId} onChange={e => setFormRutin({...formRutin, vehicleId: e.target.value})}>
+                <option value="">-- Pilih --</option>
+                {kendaraan && kendaraan.map(k => <option key={k.id} value={k.id}>{k.name} ({k.platNumber})</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1 text-slate-700">Hari (1=Senin, 5=Jumat)</label>
+              <input required type="text" className="w-full border p-2 rounded text-sm bg-white" placeholder="1,2,3,4,5" value={formRutin.days} onChange={e => setFormRutin({...formRutin, days: e.target.value})} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1 text-slate-700">Jam Berangkat</label>
+              <input required type="time" className="w-full border p-2 rounded text-sm bg-white" value={formRutin.departure} onChange={e => setFormRutin({...formRutin, departure: e.target.value})} />
+            </div>
+            <div className="flex justify-end">
+              <Button type="submit" variant="default" className="w-full">
+                Simpan
+              </Button>
+            </div>
+          </form>
+        )}
 
-      {/* Panggil Modals */}
-      <FormTambahKendaraan 
-        isOpen={isKendaraanOpen} 
-        onClose={() => setIsKendaraanOpen(false)} 
-        onConfirm={handleKendaraanAdded}
-      />
-      
-      <FormTambahJadwal 
-        isOpen={isJadwalOpen} 
-        onClose={() => setIsJadwalOpen(false)} 
-        onConfirm={handleJadwalAdded}
-      />
+        <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-slate-50 border-b">
+              <tr>
+                <th className="p-4 font-semibold text-slate-700">Rute Operasional</th>
+                <th className="p-4 font-semibold text-slate-700">Kendaraan</th>
+                <th className="p-4 font-semibold text-slate-700">Hari & Jam</th>
+                <th className="p-4 font-semibold text-slate-700">Status</th>
+                <th className="p-4 font-semibold text-center text-slate-700">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(!rutin || rutin.length === 0) ? (
+                <tr><td colSpan={5} className="p-8 text-center text-slate-500 bg-slate-50/50">Belum ada jadwal rutin yang terdaftar</td></tr>
+              ) : rutin.map(r => (
+                <tr key={r.id} className="border-b hover:bg-slate-50/50 transition-colors">
+                  <td className="p-4 font-medium text-slate-900">{r.route}</td>
+                  <td className="p-4 text-slate-700">{r.vehicle?.name} <span className="text-xs text-slate-500 ml-1">({r.vehicle?.platNumber})</span></td>
+                  <td className="p-4 text-slate-700">Hari: {r.days} <br/><span className="text-amber-600 font-bold">{r.departure} WIB</span></td>
+                  <td className="p-4">
+                    <span className={`px-2.5 py-1 rounded-md text-xs font-bold ${r.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
+                      {r.status === 'ACTIVE' ? 'Aktif' : 'Nonaktif'}
+                    </span>
+                  </td>
+                  <td className="p-4 text-center">
+                    <button 
+                      onClick={() => toggleRoutine(r.id)}
+                      className={`p-2 rounded-full transition-colors ${r.status === 'ACTIVE' ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-green-50 text-green-600 hover:bg-green-100'}`}
+                      title={r.status === 'ACTIVE' ? 'Nonaktifkan' : 'Aktifkan'}
+                    >
+                      {r.status === 'ACTIVE' ? <PowerOff size={16} /> : <Power size={16} />}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
     </div>
   );
 }

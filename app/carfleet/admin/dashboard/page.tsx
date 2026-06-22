@@ -1,149 +1,183 @@
 // src/app/dashboard/page.tsx
-"use client";
+'use client';
 
-import Link from "next/link";
-import { FileClock, KeyRound, Activity, BusFront, Car } from "lucide-react";
-import { Card } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { useDashboard } from "../../context/DashboardContext";
-import { mockAktivitas } from "../lib/mockdata";
+import { useEffect, useState } from 'react';
+import { 
+  FileClock, 
+  KeyRound, 
+  CarFront, 
+  Wrench, 
+  CalendarDays, 
+  ArrowRight,
+  RefreshCw
+} from 'lucide-react';
+import Link from 'next/link';
+import { apiFetch } from '../../lib/utils/api';
 
-export default function DashboardPage() {
-  // Ambil state global dari Context
-  const { persetujuan, pengembalian } = useDashboard();
+export default function DashboardUtamaPage() {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const res = await apiFetch('/api/v1/dashboard/stats');
+      setData(res);
+    } catch (error) {
+      console.error('Gagal mengambil data dashboard:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="p-6 flex flex-col items-center justify-center min-h-[60vh] gap-3">
+        <RefreshCw className="w-8 h-8 text-blue-600 animate-spin" />
+        <p className="text-sm font-medium text-slate-500">Memuat statistik sistem GA...</p>
+      </div>
+    );
+  }
+
+  const stats = data?.stats || {
+    pendingApprovals: 0,
+    activeReturns: 0,
+    availableVehicles: 0,
+    vehiclesInMaintenance: 0,
+  };
+
+  const activities = data?.upcomingActivities || [];
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-300">
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        
-        {/* Card Menunggu Persetujuan */}
-        <Link href="/carfleet/admin/dashboard/persetujuan">
-          <Card className="p-6 border-slate-200 shadow-sm hover:-translate-y-1 transition-transform duration-200 cursor-pointer flex items-center gap-4 rounded-2xl">
-            <div className="w-[54px] h-[54px] rounded-2xl flex items-center justify-center shrink-0 bg-amber-100 text-amber-600">
-              <FileClock size={28} />
-            </div>
-            <div>
-              <p className="text-[13px] font-semibold text-slate-500 mb-1 uppercase tracking-wide">
-                Menunggu Persetujuan
-              </p>
-              <h3 className="text-2xl font-extrabold text-slate-900">
-                {persetujuan.length} Pengajuan {/* <-- Angka Dinamis */}
-              </h3>
-            </div>
-          </Card>
-        </Link>
-
-        {/* Card Menunggu Validasi Kembali */}
-        <Link href="/carfleet/admin/dashboard/pengembalian">
-          <Card className="p-6 border-slate-200 shadow-sm hover:-translate-y-1 transition-transform duration-200 cursor-pointer flex items-center gap-4 rounded-2xl">
-            <div className="w-[54px] h-[54px] rounded-2xl flex items-center justify-center shrink-0 bg-emerald-100 text-emerald-600">
-              <KeyRound size={28} />
-            </div>
-            <div>
-              <p className="text-[13px] font-semibold text-slate-500 mb-1 uppercase tracking-wide">
-                Menunggu Validasi (Kembali)
-              </p>
-              <h3 className="text-2xl font-extrabold text-slate-900">
-                {pengembalian.length} Unit {/* <-- Angka Dinamis */}
-              </h3>
-            </div>
-          </Card>
-        </Link>
+    <div className="p-6 space-y-8">
+      {/* HEADER */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Dashboard General Affairs</h1>
+          <p className="text-sm text-slate-500 mt-1">Sistem Manajemen Kendaraan Operasional Sekolah</p>
+        </div>
+        <button 
+          onClick={loadData}
+          className="flex items-center gap-2 border px-3 py-2 rounded-lg bg-white text-sm font-medium hover:bg-slate-50 transition shadow-sm text-slate-700"
+        >
+          <RefreshCw size={14} /> Refresh Data
+        </button>
       </div>
 
-      {/* Tabel Aktivitas & Jadwal (Tetap Statis Sementara) */}
-      <Card className="border-slate-200 shadow-sm rounded-2xl overflow-hidden">
-        <div className="px-6 py-5 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-          <h2 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
-            <Activity size={20} className="text-slate-900" />
-            Aktivitas & Jadwal Terdekat
-          </h2>
-        </div>
+      {/* METRIC GRID CARD */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wide py-4 px-6">
-                Agenda / Pengguna
-              </TableHead>
-              <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wide py-4 px-6">
-                Kendaraan
-              </TableHead>
-              <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wide py-4 px-6">
-                Jadwal
-              </TableHead>
-              <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wide py-4 px-6">
-                Status
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {mockAktivitas.map((item) => (
-              <TableRow key={item.id} className="hover:bg-slate-50">
-                <TableCell className="px-6 py-5">
-                  <div className="flex items-center gap-3">
-                    {item.tipeKendaraan === "bus" ? (
-                      <div className="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
-                        <BusFront size={18} />
-                      </div>
-                    ) : (
-                      <div className="w-9 h-9 rounded-xl bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-xs shrink-0">
-                        {item.pengguna.substring(0, 2).toUpperCase()}
-                      </div>
-                    )}
-                    
-                    <div>
-                      <strong className="block text-slate-900 font-bold text-[15px]">
-                        {item.pengguna}
-                      </strong>
-                      <span className="text-slate-500 text-xs">
-                        {item.tipeKendaraan === "bus" ? "Rute: " : ""}
-                        {item.rute}
+        {/* CARD 1 */}
+        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Menunggu Persetujuan</span>
+            <h3 className="text-3xl font-extrabold text-slate-900">{stats.pendingApprovals}</h3>
+            <Link href="/dashboard/persetujuan" className="text-xs text-blue-600 font-medium hover:underline inline-flex items-center gap-1 mt-1">
+              Lihat antrean <ArrowRight size={12} />
+            </Link>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shadow-inner">
+            <FileClock size={24} />
+          </div>
+        </div>
+
+        {/* CARD 2 */}
+        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Menunggu Kunci</span>
+            <h3 className="text-3xl font-extrabold text-slate-900">{stats.activeReturns}</h3>
+            <Link href="/dashboard/pengembalian" className="text-xs text-indigo-600 font-medium hover:underline inline-flex items-center gap-1 mt-1">
+              Validasi pengembalian <ArrowRight size={12} />
+            </Link>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-inner">
+            <KeyRound size={24} />
+          </div>
+        </div>
+
+        {/* CARD 3 */}
+        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Unit Tersedia</span>
+            <h3 className="text-3xl font-extrabold text-emerald-600">{stats.availableVehicles}</h3>
+            <Link href="/dashboard/master" className="text-xs text-slate-500 font-medium hover:underline inline-flex items-center gap-1 mt-1">
+              Cek master data <ArrowRight size={12} />
+            </Link>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shadow-inner">
+            <CarFront size={24} />
+          </div>
+        </div>
+
+        {/* CARD 4 */}
+        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Sedang Diservis</span>
+            <h3 className="text-3xl font-extrabold text-red-600">{stats.vehiclesInMaintenance}</h3>
+            <Link href="/dashboard/perawatan" className="text-xs text-red-600 font-medium hover:underline inline-flex items-center gap-1 mt-1">
+              Pantau bengkel <ArrowRight size={12} />
+            </Link>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-red-50 text-red-600 flex items-center justify-center shadow-inner">
+            <Wrench size={24} />
+          </div>
+        </div>
+
+      </div>
+
+      {/* RECENT ACTIVITY TABLE */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="p-5 border-b border-slate-100 flex items-center gap-2">
+          <CalendarDays className="text-blue-600 w-5 h-5" />
+          <div>
+            <h2 className="font-bold text-slate-900 text-base">Jadwal Aktivitas Terdekat</h2>
+            <p className="text-xs text-slate-500 mt-0.5">Daftar agenda peminjaman kendaraan operasional yang telah disetujui</p>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          {activities.length === 0 ? (
+            <div className="p-10 text-center text-sm text-slate-400">
+              Belum ada aktivitas terjadwal untuk beberapa waktu ke depan.
+            </div>
+          ) : (
+            <table className="w-full text-left text-sm">
+              <thead className="bg-slate-50/70 text-slate-600 font-medium border-b border-slate-100">
+                <tr>
+                  <th className="p-4 pl-6">Tanggal Pakai</th>
+                  <th className="p-4">Peminjam</th>
+                  <th className="p-4">Kendaraan Terpilih</th>
+                  <th className="p-4">Tujuan Destinasi</th>
+                  <th className="p-4 pr-6">Durasi Waktu</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {activities.map((act: any) => (
+                  <tr key={act.id} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="p-4 pl-6 font-semibold text-slate-900">
+                      {new Date(act.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </td>
+                    <td className="p-4 text-slate-700 font-medium">{act.user?.name}</td>
+                    <td className="p-4">
+                      <span className="inline-flex bg-slate-100 text-slate-800 text-xs px-2.5 py-1 rounded-md font-medium">
+                        {act.vehicle?.name}
                       </span>
-                    </div>
-                  </div>
-                </TableCell>
-
-                <TableCell className="px-6 py-5">
-                  <div className="inline-flex items-center gap-1.5 bg-slate-100 px-2.5 py-1.5 rounded-lg text-sm font-semibold text-slate-800 border border-slate-200">
-                    <Car size={14} />
-                    {item.kendaraan}
-                  </div>
-                </TableCell>
-
-                <TableCell className="px-6 py-5">
-                  <strong className="block text-slate-900 text-[14px]">
-                    {item.jadwal}
-                  </strong>
-                  <span className="text-slate-500 text-xs">{item.waktu}</span>
-                </TableCell>
-
-                <TableCell className="px-6 py-5">
-                  <Badge
-                    variant="outline"
-                    className={`px-3 py-1 font-bold text-xs uppercase tracking-wide border-transparent ${
-                      item.status === "Jadwal Rutin"
-                        ? "bg-indigo-100 text-indigo-700 hover:bg-indigo-100"
-                        : "bg-amber-100 text-amber-700 hover:bg-amber-100"
-                    }`}
-                  >
-                    {item.status}
-                  </Badge>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </Card>
+                    </td>
+                    <td className="p-4 text-slate-600 font-medium">{act.destination}</td>
+                    <td className="p-4 pr-6 text-amber-600 font-bold">
+                      {act.timeOut} - {act.timeIn} WIB
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,104 +1,90 @@
-"use client";
+// src/app/dashboard/pengembalian/page.tsx
+'use client';
 
-import { useState } from "react";
-import { KeyRound, ShieldAlert, CheckCircle2, Inbox } from "lucide-react";
-import { Card } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { mockPengembalian } from "../../lib/mockdata";
-import { FormValidasiPengembalian } from "../modals/FormValidasiPengembalian";
-import { useDashboard } from "@/app/carfleet/context/DashboardContext";
+import { useState } from 'react';
+import { KeyRound, CarFront } from 'lucide-react';
+import { useDashboard } from '@/app/carfleet/context/DashboardContext';
 
 export default function PengembalianPage() {
-  const { pengembalian: returns, setPengembalian: setReturns } = useDashboard();
-  
-  // State untuk Modal Validasi
-  const [isValidasiOpen, setIsValidasiOpen] = useState(false);
-  const [selectedKendaraan, setSelectedKendaraan] = useState<{id: string, nama: string} | null>(null);
+  const { pengembalian, returnVehicle } = useDashboard();
+  const [loadingId, setLoadingId] = useState<string | null>(null);
 
-  // Buka Modal
-  const openValidasiModal = (id: string, namaKendaraan: string) => {
-    setSelectedKendaraan({ id, nama: namaKendaraan });
-    setIsValidasiOpen(true);
-  };
-
-  // Submit Modal
-  const handleValidasiConfirm = () => {
-    if (selectedKendaraan) {
-      setReturns(returns.filter((ret) => ret.id !== selectedKendaraan.id));
-      alert(`Validasi untuk ${selectedKendaraan.nama} berhasil disimpan! Mobil siap digunakan kembali.`);
+  const handleReturn = async (id: string, namaMobil: string) => {
+    const jamAktual = prompt(`Jam berapa mobil ${namaMobil} dikembalikan? (Format: HH:MM, contoh: 15:30)`);
+    
+    if (jamAktual) {
+      try {
+        setLoadingId(id);
+        await returnVehicle(id, jamAktual);
+        alert('Pengembalian berhasil divalidasi! Mobil kini tersedia kembali.');
+      } catch (error: any) {
+        alert(error.message);
+      } finally {
+        setLoadingId(null);
+      }
     }
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
-      <Card className="border-slate-200 shadow-sm rounded-2xl overflow-hidden">
-        <div className="px-6 py-5 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-          <h2 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
-            <KeyRound size={20} className="text-slate-900" />
-            Validasi Pengembalian Kunci & Kendaraan
-          </h2>
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-6 flex items-center gap-2">
+        <KeyRound className="w-6 h-6 text-indigo-500" /> Validasi Pengembalian
+      </h1>
+
+      {pengembalian.length === 0 ? (
+        <div className="bg-gray-50 p-8 text-center text-gray-500 rounded-lg border border-dashed">
+          Tidak ada kendaraan yang sedang menunggu validasi pengembalian.
         </div>
-
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wide py-4 px-6">Kendaraan / Unit</TableHead>
-              <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wide py-4 px-6">Peminjam</TableHead>
-              <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wide py-4 px-6">Waktu Kembali</TableHead>
-              <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wide py-4 px-6">Status</TableHead>
-              <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-wide py-4 px-6 text-right">Aksi</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {returns.length > 0 ? (
-              returns.map((item) => (
-                <TableRow key={item.id} className="hover:bg-slate-50">
-                  <TableCell className="px-6 py-5">
-                    <strong className="block text-slate-900 font-bold text-[15px]">{item.kendaraan}</strong>
-                  </TableCell>
-                  <TableCell className="px-6 py-5 text-slate-700 font-medium">{item.peminjam}</TableCell>
-                  <TableCell className="px-6 py-5 text-slate-600 text-sm">{item.waktuKembali}</TableCell>
-                  <TableCell className="px-6 py-5">
-                    <Badge variant="outline" className="px-3 py-1 font-bold text-xs uppercase tracking-wide border-transparent bg-emerald-100 text-emerald-700 flex items-center gap-1 w-fit">
-                      <CheckCircle2 size={12} /> {item.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="px-6 py-5 text-right">
-                    <Button onClick={() => openValidasiModal(item.id, item.kendaraan)} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-9 px-4 rounded-lg flex items-center gap-1.5 ml-auto">
-                      <ShieldAlert size={16} /> Validasi Fisik
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={5} className="h-48 text-center text-slate-500">
-                  <div className="flex flex-col items-center justify-center gap-2">
-                    <Inbox size={32} className="opacity-50 mb-2" />
-                    <p>Semua kendaraan telah divalidasi dan aman di garasi.</p>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {pengembalian.map((item) => (
+            <div key={item.id} className="bg-white border rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                    <CarFront size={20} />
                   </div>
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </Card>
+                  <div>
+                    <h3 className="font-bold text-slate-800 text-sm">
+                      {item.vehicle?.name || 'Mobil'}
+                    </h3>
+                    <p className="text-xs font-semibold text-slate-500">
+                      {item.vehicle?.platNumber || '-'}
+                    </p>
+                  </div>
+                </div>
+              </div>
 
-      <FormValidasiPengembalian 
-        isOpen={isValidasiOpen}
-        onClose={() => setIsValidasiOpen(false)}
-        kendaraan={selectedKendaraan?.nama || ""}
-        onConfirm={handleValidasiConfirm}
-      />
+              <div className="space-y-2 mb-5 text-sm">
+                <div className="flex justify-between border-b pb-2">
+                  <span className="text-slate-500">Peminjam:</span>
+                  <span className="font-medium">{item.user?.name}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                  <span className="text-slate-500">Tujuan:</span>
+                  <span className="font-medium">{item.destination}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                  <span className="text-slate-500">Rencana Kembali:</span>
+                  <span className="font-medium text-amber-600">{item.timeIn}</span>
+                </div>
+              </div>
+
+              <button
+                onClick={() => handleReturn(item.id, item.vehicle?.name || 'Kendaraan')}
+                disabled={loadingId === item.id}
+                className="w-full bg-indigo-600 text-white font-medium py-2.5 rounded-lg hover:bg-indigo-700 transition flex items-center justify-center gap-2 text-sm disabled:opacity-60"
+              >
+                {loadingId === item.id ? 'Memproses...' : (
+                  <>
+                    <KeyRound size={16} /> Terima Kunci
+                  </>
+                )}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
