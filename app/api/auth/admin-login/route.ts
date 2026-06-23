@@ -32,14 +32,14 @@ export async function POST(request: Request) {
     const cookieStore = await cookies();
 
     cookieStore.set("access_token", data.access_token, {
-      httpOnly: true,
+      httpOnly: false,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
       maxAge: 60 * 60 * 24, // 1 hari
     });
     cookieStore.set("role", "ADMIN", {
-      httpOnly: true,
+      httpOnly: false,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",

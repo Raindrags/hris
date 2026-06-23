@@ -1,10 +1,9 @@
-// src/context/DashboardContext.tsx
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { apiFetch } from '../lib/utils/api';
 
-// Definisikan tipe data sesuai dengan Schema Prisma & UI Anda
+// --- INTERFACES (Tetap Sama) ---
 interface Vehicle {
   id: string;
   name: string;
@@ -12,6 +11,20 @@ interface Vehicle {
   capacity: number;
   type: string;
   status: 'Tersedia' | 'Dipakai' | 'Servis';
+}
+
+interface RideShare {
+  id: string;
+  seats: number;
+  dropOff: string;
+  status: string;
+}
+
+interface Package {
+  id: string;
+  description: string;
+  receiver: string;
+  status: string;
 }
 
 interface Booking {
@@ -25,22 +38,11 @@ interface Booking {
   status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'COMPLETED';
   user: { name: string; phone?: string };
   vehicle?: Vehicle;
+  rejectionReason?: string;
+  rideShares?: RideShare[];
+  packages?: Package[];
 }
 
-interface DashboardContextType {
-  persetujuan: Booking[];
-  pengembalian: Booking[];
-  kendaraan: Vehicle[];
-  isLoading: boolean;
-  refreshAllData: () => Promise<void>;
-  approveBooking: (id: string, vehicleId: string) => Promise<void>;
-  rejectBooking: (id: string, reason: string) => Promise<void>;
-  returnVehicle: (id: string, actualTimeIn: string) => Promise<void>;
-  addVehicle: (data: Omit<Vehicle, 'id' | 'status'>) => Promise<void>;
-  rutin: Routine[];
-  addRoutine: (data: Omit<Routine, 'id' | 'status' | 'vehicle' | 'user'>) => Promise<void>;
-  toggleRoutine: (id: string) => Promise<void>;
-}
 interface Routine {
   id: string;
   vehicleId: string;
@@ -52,24 +54,61 @@ interface Routine {
   user?: { name: string };
 }
 
-interface DashboardStats {
-  stats: {
-    pendingApprovals: number;
-    activeReturns: number;
-    availableVehicles: number;
-    vehiclesInMaintenance: number;
+export interface RideSharePending {
+  id: string;
+  seats: number;
+  dropOff: string;
+  status: string;
+  user?: { name: string };
+  booking?: { 
+    destination: string; 
+    date: string | Date;
+    vehicle?: { name: string; platNumber: string };
   };
-  upcomingActivities: Array<{
-    id: string;
-    destination: string;
-    date: string;
-    timeOut: string;
-    timeIn: string;
-    user: { name: string };
-    vehicle: { name: string };
-  }>;
 }
 
+export interface PackagePending {
+  id: string;
+  description: string;
+  receiver: string;
+  status: string;
+  user?: { name: string };
+  booking?: { 
+    destination: string; 
+    date: string | Date;
+    vehicle?: { name: string; platNumber: string };
+  };
+}
+
+interface DashboardContextType {
+  persetujuan: Booking[];
+  pengembalian: Booking[];
+  kendaraan: Vehicle[];
+  rutin: Routine[];
+  isLoading: boolean;
+  
+  allBookings: Booking[];
+  bookingDetail: Booking | null;
+  isDetailLoading: boolean;
+
+  refreshAllData: () => Promise<void>;
+  approveBooking: (id: string, vehicleId: string) => Promise<void>;
+  rejectBooking: (id: string, reason: string) => Promise<void>;
+  returnVehicle: (id: string, actualTimeIn: string) => Promise<void>;
+  addVehicle: (data: Omit<Vehicle, 'id' | 'status'>) => Promise<void>;
+  addRoutine: (data: Omit<Routine, 'id' | 'status' | 'vehicle' | 'user'>) => Promise<void>;
+  toggleRoutine: (id: string) => Promise<void>;
+  fetchAllBookings: () => Promise<void>;
+  fetchBookingDetail: (id: string) => Promise<void>;
+  clearBookingDetail: () => void;
+
+  persetujuanNebeng: RideSharePending[];
+  persetujuanTitipan: PackagePending[];
+  approveRideShare: (id: string) => Promise<void>;
+  rejectRideShare: (id: string, reason: string) => Promise<void>;
+  approvePackage: (id: string) => Promise<void>;
+  rejectPackage: (id: string, reason: string) => Promise<void>;
+}
 
 const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
 
@@ -79,23 +118,43 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [kendaraan, setKendaraan] = useState<Vehicle[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [rutin, setRutin] = useState<Routine[]>([]);
-  const [dashboardData, setDashboardData] = useState<DashboardStats | null>(null);
 
-  // Fungsi untuk menarik semua data terbaru dari Backend
+  const [allBookings, setAllBookings] = useState<Booking[]>([]);
+  const [bookingDetail, setBookingDetail] = useState<Booking | null>(null);
+  const [isDetailLoading, setIsDetailLoading] = useState<boolean>(false);
+  
+  const [persetujuanNebeng, setPersetujuanNebeng] = useState<RideSharePending[]>([]);
+  const [persetujuanTitipan, setPersetujuanTitipan] = useState<PackagePending[]>([]);
+
+  // ✨ HELPER UNTUK OTORISASI TOKEN (Sama seperti User Context)
+  const getAuthHeaders = () => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
+    return { Authorization: `Bearer ${token}` };
+  };
+
+  // ==========================================
+  // FETCH ALL DATA
+  // ==========================================
   const refreshAllData = async () => {
     try {
       setIsLoading(true);
-      const [pendingData, activeData, vehicleData,routineData] = await Promise.all([
-        apiFetch('/api/v1/bookings/pending'),
-        apiFetch('/api/v1/bookings/active'),
-        apiFetch('/api/v1/vehicles'),
-        apiFetch('/api/v1/routines'),
+      const headers = getAuthHeaders();
+      
+      const [pendingData, activeData, vehicleData, routineData, nebengData, titipanData] = await Promise.all([
+        apiFetch('/api/v1/bookings/pending', { headers }),
+        apiFetch('/api/v1/bookings/active', { headers }),
+        apiFetch('/api/v1/vehicles', { headers }),
+        apiFetch('/api/v1/routines', { headers }),
+        apiFetch('/api/admin/bookings/rideshares/pending', { headers }), 
+        apiFetch('/api/admin/bookings/packages/pending', { headers }),   
       ]);
 
-      setPersetujuan(pendingData);
-      setPengembalian(activeData);
-      setKendaraan(vehicleData);
-      setRutin(routineData);
+      setPersetujuan(pendingData || []);
+      setPengembalian(activeData || []);
+      setKendaraan(vehicleData || []);
+      setRutin(routineData || []);
+      setPersetujuanNebeng(nebengData || []);     
+      setPersetujuanTitipan(titipanData || []);   
     } catch (error) {
       console.error('Gagal mengambil data GA:', error);
     } finally {
@@ -103,32 +162,35 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Ambil data pertama kali saat aplikasi dibuka
   useEffect(() => {
     refreshAllData();
   }, []);
 
-  // --- FUNGSI AKSI (MUTASI DATA KE BACKEND) ---
-
+  // ==========================================
+  // FUNGSI AKSI ARMADA UTAMA & KENDARAAN
+  // ==========================================
   const approveBooking = async (id: string, vehicleId: string) => {
-    await apiFetch(`/api/v1/bookings/${id}/approve`, {
+    await apiFetch(`/api/admin/bookings/${id}/approve`, {
       method: 'PATCH',
+      headers: getAuthHeaders(),
       body: JSON.stringify({ vehicleId }),
     });
-    await refreshAllData(); // Otomatis sync ulang state, badge di sidebar ikut berkurang!
+    await refreshAllData();
   };
 
   const rejectBooking = async (id: string, reason: string) => {
-    await apiFetch(`/api/v1/bookings/${id}/reject`, {
+    await apiFetch(`/api/admin/bookings/${id}/reject`, {
       method: 'PATCH',
+      headers: getAuthHeaders(),
       body: JSON.stringify({ reason }),
     });
     await refreshAllData();
   };
 
   const returnVehicle = async (id: string, actualTimeIn: string) => {
-    await apiFetch(`/api/v1/bookings/${id}/return`, {
+    await apiFetch(`/api/admin/bookings/${id}/return`, {
       method: 'PATCH',
+      headers: getAuthHeaders(),
       body: JSON.stringify({ actualTimeIn }),
     });
     await refreshAllData();
@@ -137,49 +199,96 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const addVehicle = async (data: Omit<Vehicle, 'id' | 'status'>) => {
     await apiFetch('/api/v1/vehicles', {
       method: 'POST',
+      headers: getAuthHeaders(),
       body: JSON.stringify(data),
     });
     await refreshAllData();
   };
 
-  // Tambahkan 2 fungsi ini di dalam DashboardProvider
-
-
-  const startService = async (vehicleId: string, expectedDate: string, complaint: string) => {
-    await apiFetch('/api/v1/maintenance/service/start', {
-      method: 'POST',
-      body: JSON.stringify({ vehicleId, date: expectedDate, complaint }),
+  const addRoutine = async (data: Omit<Routine, 'id' | 'status' | 'vehicle' | 'user'>) => {
+    await apiFetch('/api/v1/routines', { 
+      method: 'POST', 
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data) 
     });
-    await refreshAllData(); 
-  };
-
-  const completeService = async (logId: string, data: { kilometer: number; cost: number; description: string; type: 'SERVIS' | 'BBM' }) => {
-    await apiFetch(`/api/v1/maintenance/service/${logId}/complete`, {
-      method: 'PATCH',
-      body: JSON.stringify(data),
-    });
-    await refreshAllData(); 
-  };
-
-  const addRoutine = async (data: any) => {
-    await apiFetch('/api/v1/routines', { method: 'POST', body: JSON.stringify(data) });
     await refreshAllData();
   };
 
   const toggleRoutine = async (id: string) => {
-    await apiFetch(`/api/v1/routines/${id}/toggle`, { method: 'PATCH' });
+    await apiFetch(`/api/v1/routines/${id}/toggle`, { 
+      method: 'PATCH',
+      headers: getAuthHeaders() 
+    });
     await refreshAllData(); 
   };
 
-  const fetchDashboardStats = async () => {
+  // ==========================================
+  // FUNGSI AKSI: NEBENG & TITIPAN
+  // ==========================================
+  const approveRideShare = async (id: string) => {
+    await apiFetch(`/api/admin/bookings/rideshares/${id}/approve`, { 
+      method: 'PATCH',
+      headers: getAuthHeaders() 
+    });
+    await refreshAllData();
+  };
+
+  const rejectRideShare = async (id: string, reason: string) => {
+    await apiFetch(`/api/admin/bookings/rideshares/${id}/reject`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ reason }),
+    });
+    await refreshAllData();
+  };
+
+  const approvePackage = async (id: string) => {
+    await apiFetch(`/api/admin/bookings/packages/${id}/approve`, { 
+      method: 'PATCH',
+      headers: getAuthHeaders() 
+    });
+    await refreshAllData();
+  };
+
+  const rejectPackage = async (id: string, reason: string) => {
+    await apiFetch(`/api/admin/bookings/packages/${id}/reject`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ reason }),
+    });
+    await refreshAllData();
+  };
+
+  // ==========================================
+  // FUNGSI DETAIL / MODAL
+  // ==========================================
+  const fetchAllBookings = async () => {
     try {
-      const data = await apiFetch('/api/v1/dashboard/stats');
-      setDashboardData(data);
+      setIsDetailLoading(true);
+      const data = await apiFetch('/api/admin/bookings/all', { headers: getAuthHeaders() }); 
+      setAllBookings(data || []);
     } catch (error) {
-      console.error('Gagal memuat statistik dashboard:', error);
+      console.error('Gagal mengambil semua histori permohonan:', error);
+    } finally {
+      setIsDetailLoading(false);
     }
   };
 
+  const fetchBookingDetail = async (id: string) => {
+    try {
+      setIsDetailLoading(true);
+      const data = await apiFetch(`/api/admin/bookings/${id}`, { headers: getAuthHeaders() });
+      setBookingDetail(data);
+    } catch (error) {
+      console.error(`Gagal mengambil detail booking ID ${id}:`, error);
+    } finally {
+      setIsDetailLoading(false);
+    }
+  };
+
+  const clearBookingDetail = () => {
+    setBookingDetail(null);
+  };
 
   return (
     <DashboardContext.Provider
@@ -187,15 +296,27 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         persetujuan,
         pengembalian,
         kendaraan,
-        rutin,           
+        rutin,          
         isLoading,
+        allBookings,
+        bookingDetail,
+        isDetailLoading,
+        persetujuanNebeng,
+        persetujuanTitipan,
         refreshAllData,
         approveBooking,
         rejectBooking,
         returnVehicle,
         addVehicle,
         addRoutine,      
-        toggleRoutine,   
+        toggleRoutine,
+        fetchAllBookings,
+        fetchBookingDetail,
+        clearBookingDetail,
+        approveRideShare,
+        rejectRideShare,
+        approvePackage,
+        rejectPackage,
       }}
     >
       {children}

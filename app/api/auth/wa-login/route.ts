@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     );
 
     response.cookies.set("user_data", JSON.stringify(data.user), {
-      httpOnly: true,
+      httpOnly:false,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
 
     if (data.accessToken) {
       response.cookies.set("access_token", data.accessToken, {
-        httpOnly: true,
+        httpOnly: false,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
         path: "/",

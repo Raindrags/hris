@@ -20,6 +20,7 @@ export async function middleware(request: NextRequest) {
     "/_next",
     "/favicon.ico",
     "/uploads",
+    // "/carfleet/magic" // 👈 Nanti kita buka rute ini untuk Magic Link WA
   ];
 
   if (publicPaths.some((p) => pathname.startsWith(p))) {
@@ -31,9 +32,18 @@ export async function middleware(request: NextRequest) {
   const isPegawaiRoute = pathname.startsWith("/pegawai");
   const isGaRoute = pathname.startsWith("/ga");
   const isPortalRoute = pathname.startsWith("/portal");
+  
+  // ✨ TAMBAHAN: Rute Carfleet
+  const isCarfleetAdminRoute = pathname.startsWith("/carfleet/admin");
+  const isCarfleetUserRoute = pathname.startsWith("/carfleet/user");
 
   const isProtected =
-    isAdminHrisRoute || isPegawaiRoute || isGaRoute || isPortalRoute;
+    isAdminHrisRoute || 
+    isPegawaiRoute || 
+    isGaRoute || 
+    isPortalRoute || 
+    isCarfleetAdminRoute || 
+    isCarfleetUserRoute;
 
   // 3. Check Token Existence
   if (isProtected && !token) {
@@ -43,10 +53,7 @@ export async function middleware(request: NextRequest) {
   // 4. Verify JWT and Check Role
   if (isProtected && token) {
     try {
-      // Decode the JWT using the edge-compatible 'jose' library
       const { payload } = await jwtVerify(token, SECRET_KEY);
-
-      // Extract the single role string based on your NestJS payload
       const userRole = payload.role as string;
 
       // Validate HRIS Admin Access
@@ -54,20 +61,18 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL("/unauthorized", request.url));
       }
 
-      // Validate GA Admin Access
-      if (isGaRoute && userRole !== "ADMIN_GA") {
+      if ((isGaRoute || isCarfleetAdminRoute) && userRole !== "ADMIN_GA") {
         return NextResponse.redirect(new URL("/unauthorized", request.url));
       }
 
-      // Optional: Validate Pegawai / User Portal Access
-      // Uncomment and adjust the roles if standard users need specific roles
+      // Opsional: Jika /carfleet/user hanya boleh untuk pegawai biasa
       /*
-      if ((isPegawaiRoute || isPortalRoute) && userRole !== "USER" && userRole !== "PEGAWAI") {
-         return NextResponse.redirect(new URL("/unauthorized", request.url));
+      if (isCarfleetUserRoute && userRole !== "PEGAWAI") {
+        return NextResponse.redirect(new URL("/unauthorized", request.url));
       }
       */
+
     } catch (error) {
-      // Handle expired or invalid tokens
       return NextResponse.redirect(new URL("/error?code=401", request.url));
     }
   }

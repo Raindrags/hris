@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PortalNavbar from "./components/layout/PortalNavbar";
 import UserProfile from "./components/layout/UserProfile";
 import BookingView from "./components/views/BookingView";
@@ -9,60 +9,47 @@ import JoinRideModal from "./components/modals/JoinRideModal";
 import PackageModal from "./components/modals/PackageModal";
 import BookingModal from "./components/modals/BookingModal";
 import StatusView from "./components/views/StatusView";
-import { UserBookingProvider } from "../context/UserBookingContext";
+import { UserBookingProvider, useUserBooking } from "../context/UserBookingContext";
 
-export default function PortalPage() {
-  const [activeTab, setActiveTab] = useState<"booking" | "nebeng" | "status">(
-    "booking",
-  );
+// ======================================================================
+// 1. KOMPONEN ISI HALAMAN (Mengkonsumsi Context)
+// ======================================================================
+function PortalContent() {
+  const { 
+    availableRides, 
+    myRideShares, 
+    myPackages, 
+    fetchAvailableRides, 
+    fetchMyRideShares, 
+    fetchMyPackages 
+  } = useUserBooking();
+
+  const [activeTab, setActiveTab] = useState<"booking" | "nebeng" | "status">("booking");
 
   // --- STATE UNTUK TAB 1: PEMINJAMAN ---
   const [selectedFleet, setSelectedFleet] = useState(1);
-  // PERBAIKAN: Ubah menjadi string kosong karena BookingView mengembalikan string tanggal "YYYY-MM-DD"
   const [selectedDate, setSelectedDate] = useState<string>("");
-
-  // PERBAIKAN: Tambahkan state untuk mengontrol Modal Form Peminjaman
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // --- STATE UNTUK TAB 2: NEBENG & TITIP ---
-  const [activeNebeng, setActiveNebeng] = useState<
-    { target: string; dropoff: string }[]
-  >([]);
-  const [activePackages, setActivePackages] = useState<
-    { desc: string; receiver: string; vehicle: string }[]
-  >([]);
+  // --- STATE UNTUK TAB 2: NEBENG & TITIP MODAL ---
+  // ✨ Kita cukup simpan bookingId karena modal akan menembak ke API menggunakan ID tersebut
+  const [joinModalData, setJoinModalData] = useState<{ isOpen: boolean; bookingId: string }>({ 
+    isOpen: false, 
+    bookingId: "" 
+  });
+  const [packageModalData, setPackageModalData] = useState<{ isOpen: boolean; bookingId: string }>({ 
+    isOpen: false, 
+    bookingId: "" 
+  });
 
-  const [joinModalData, setJoinModalData] = useState<{
-    isOpen: boolean;
-    target: string;
-    vehicle: string;
-  }>({ isOpen: false, target: "", vehicle: "" });
-  const [packageModalData, setPackageModalData] = useState<{
-    isOpen: boolean;
-    target: string;
-    vehicle: string;
-  }>({ isOpen: false, target: "", vehicle: "" });
+  // ✨ FETCH DATA SAAT HALAMAN DIMUAT
+  useEffect(() => {
+    fetchAvailableRides();
+    fetchMyRideShares();
+    fetchMyPackages();
+  }, []);
 
-  // --- HANDLER FUNGSI ---
-  const handleJoinSubmit = (dropoff: string) => {
-    setActiveNebeng([
-      ...activeNebeng,
-      { target: joinModalData.target, dropoff },
-    ]);
-    setJoinModalData({ ...joinModalData, isOpen: false });
-    alert("Permintaan ikut tumpangan berhasil diajukan!"); // Bisa diganti Toast custom
-  };
-
-  const handlePackageSubmit = (desc: string, receiver: string) => {
-    setActivePackages([
-      ...activePackages,
-      { desc, receiver, vehicle: packageModalData.vehicle },
-    ]);
-    setPackageModalData({ ...packageModalData, isOpen: false });
-    alert("Manifest titipan barang berhasil didaftarkan!");
-  };
-
-  // PERBAIKAN: Fungsi untuk menentukan Nama Armada
+  // --- HANDLER FUNGSI PEMINJAMAN UTAMA (Belum tersambung ke Context/API) ---
   const getFleetName = (id: number) => {
     if (id === 1) return "Toyota Hiace Commuter";
     if (id === 2) return "Kijang Innova Reborn";
@@ -70,7 +57,6 @@ export default function PortalPage() {
   };
   const fleetName = getFleetName(selectedFleet);
 
-  // PERBAIKAN: Fungsi untuk menerima data dari BookingModal (Form Peminjaman)
   const handleBookingSubmit = (formData: any) => {
     const payloadToBackend = {
       fleetId: selectedFleet,
@@ -81,81 +67,83 @@ export default function PortalPage() {
 
     console.log("Data siap kirim ke API NestJS:", payloadToBackend);
     alert("Sukses! Permohonan peminjaman berhasil dikirim ke Admin GA.");
-    setIsModalOpen(false); // Tutup modal setelah dikirim
+    setIsModalOpen(false); 
   };
 
   return (
-    <UserBookingProvider>
-      <div className="min-h-screen bg-[#fcfbf9] text-slate-800 font-sans">
-        <PortalNavbar activeTab={activeTab} setActiveTab={setActiveTab} />
+    <div className="min-h-screen bg-[#fcfbf9] text-slate-800 font-sans">
+      <PortalNavbar activeTab={activeTab} setActiveTab={setActiveTab} />
 
-        <main className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
-          <UserProfile />
+      <main className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+        <UserProfile />
 
-          {/* --- TAB 1 CONTENT --- */}
-          {activeTab === "booking" && (
-            <BookingView
-              selectedFleet={selectedFleet}
-              setSelectedFleet={setSelectedFleet}
-              selectedDate={selectedDate}
-              setSelectedDate={setSelectedDate}
-              openModal={() => setIsModalOpen(true)} // PERBAIKAN: Buka modal di sini
-            />
-          )}
-
-          {/* --- TAB 2 CONTENT --- */}
-          {activeTab === "nebeng" && (
-            <RideShareView
-              activeNebeng={activeNebeng}
-              activePackages={activePackages}
-              openJoinModal={(target, vehicle) =>
-                setJoinModalData({ isOpen: true, target, vehicle })
-              }
-              openPackageModal={(target, vehicle) =>
-                setPackageModalData({ isOpen: true, target, vehicle })
-              }
-            />
-          )}
-          {/* --- TAB 3 CONTENT: STATUS SAYA --- */}
-          {activeTab === "status" && <StatusView />}
-        </main>
-
-        {/* Render Modals Berdasarkan State */}
-
-        {/* Modal Peminjaman / Booking */}
-        {isModalOpen && (
-          <BookingModal
-            selectedFleetName={fleetName}
+        {/* --- TAB 1 CONTENT: PEMINJAMAN ARMADA --- */}
+        {activeTab === "booking" && (
+          <BookingView
+            selectedFleet={selectedFleet}
+            setSelectedFleet={setSelectedFleet}
             selectedDate={selectedDate}
-            onClose={() => setIsModalOpen(false)}
-            onSubmit={handleBookingSubmit}
+            setSelectedDate={setSelectedDate}
+            openModal={() => setIsModalOpen(true)}
           />
         )}
 
-        {/* Modal Nebeng */}
-        {joinModalData.isOpen && (
-          <JoinRideModal
-            target={joinModalData.target}
-            vehicle={joinModalData.vehicle}
-            onClose={() =>
-              setJoinModalData({ ...joinModalData, isOpen: false })
-            }
-            onSubmit={handleJoinSubmit}
+        {/* --- TAB 2 CONTENT: NEBENG & TITIP BARANG --- */}
+        {activeTab === "nebeng" && (
+          <RideShareView
+            // ✨ Berikan data asli dari database ke tampilan view
+            availableRides={availableRides}
+            activeNebeng={myRideShares}
+            activePackages={myPackages}
+            
+            // ✨ Sesuaikan handler dengan tambahan ID
+            openJoinModal={(id) => setJoinModalData({ isOpen: true, bookingId: id })}
+            openPackageModal={(id) => setPackageModalData({ isOpen: true, bookingId: id })}
           />
         )}
 
-        {/* Modal Titip Paket */}
-        {packageModalData.isOpen && (
-          <PackageModal
-            target={packageModalData.target}
-            vehicle={packageModalData.vehicle}
-            onClose={() =>
-              setPackageModalData({ ...packageModalData, isOpen: false })
-            }
-            onSubmit={handlePackageSubmit}
-          />
-        )}
-      </div>
+        {/* --- TAB 3 CONTENT: STATUS SAYA --- */}
+        {activeTab === "status" && <StatusView />}
+      </main>
+
+      {/* ================= MODALS ================= */}
+
+      {/* Modal Peminjaman / Booking Utama */}
+      {isModalOpen && (
+        <BookingModal
+          selectedFleetName={fleetName}
+          selectedDate={selectedDate}
+          onClose={() => setIsModalOpen(false)}
+          onSubmit={handleBookingSubmit}
+        />
+      )}
+
+      {/* Modal Nebeng (Submit-nya sudah di-handle di dalam komponen JoinRideModal) */}
+      {joinModalData.isOpen && (
+        <JoinRideModal
+          bookingId={joinModalData.bookingId}
+          onClose={() => setJoinModalData({ isOpen: false, bookingId: "" })}
+        />
+      )}
+
+      {/* Modal Titip Paket (Submit-nya sudah di-handle di dalam komponen PackageModal) */}
+      {packageModalData.isOpen && (
+        <PackageModal
+          bookingId={packageModalData.bookingId}
+          onClose={() => setPackageModalData({ isOpen: false, bookingId: "" })}
+        />
+      )}
+    </div>
+  );
+}
+
+// ======================================================================
+// 2. KOMPONEN PEMBUNGKUS (Memberikan Context ke Halaman)
+// ======================================================================
+export default function PortalPage() {
+  return (
+    <UserBookingProvider>
+      <PortalContent />
     </UserBookingProvider>
   );
 }

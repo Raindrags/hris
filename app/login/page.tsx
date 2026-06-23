@@ -23,28 +23,13 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleLogin = async (e: React.FormEvent) => {
+const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
     try {
-      // Simulasi delay login untuk preview Canvas, HAPUS IF INI SAAT DIPINDAHKAN KE PROJECT ASLI
-      if (
-        typeof window !== "undefined" &&
-        window.location.hostname.includes("goog")
-      ) {
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-        if (identifier === "admin" && password === "admin") {
-          alert("Login Berhasil! (Simulasi Canvas)");
-          setLoading(false);
-          return;
-        } else {
-          throw new Error(
-            "Untuk preview Canvas, gunakan username 'admin' dan password 'admin'",
-          );
-        }
-      }
+      // (BLOK SIMULASI CANVAS BISA ANDA HAPUS ATAU BIARKAN JIKA MASIH PERLU)
 
       const res = await fetch("/api/auth/admin-login", {
         method: "POST",
@@ -60,8 +45,29 @@ export default function LoginPage() {
         throw new Error(data.message || "Email/Username atau password salah");
       }
 
-      router.push("/admin/dashboard");
+      // ✨ MODIFIKASI DIMULAI DI SINI ✨
+
+      // 1. Simpan data user ke localStorage (atau state management seperti Zustand/Redux)
+      // agar komponen Dashboard tahu siapa yang sedang login (karena kita tidak pakai JWT lagi).
+      if (typeof window !== "undefined") {
+         localStorage.setItem("adminUser", JSON.stringify(data.user));
+      }
+
+      // 2. Baca role dari respons API
+      const userRole = data.user?.role;
+
+      // 3. Arahkan ke dashboard berdasarkan role
+      if (userRole === "ADMIN_GA") {
+        router.push("/admin/ga-dashboard"); // Arahkan ke Dashboard GA (Carfleet)
+      } else if (userRole === "ADMIN_HRIS") {
+        router.push("/admin/hris-dashboard"); // Arahkan ke Dashboard HRIS Utama
+      } else {
+        // Jika role tidak dikenali atau ini admin super (opsional)
+        router.push("/admin/dashboard"); 
+      }
+      
       router.refresh();
+
     } catch (err: any) {
       console.error(err);
       setError(err.message || "Terjadi kesalahan sistem.");

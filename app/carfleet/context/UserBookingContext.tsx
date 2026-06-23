@@ -123,9 +123,10 @@ export function UserBookingProvider({ children }: { children: ReactNode }) {
   };
 
   // --- B. FUNGSI NEBENG (RIDE SHARE) ---
-  const fetchMyRideShares = useCallback(async () => {
+ const fetchMyRideShares = useCallback(async () => {
     try {
-      const data = await apiFetch("/api/ride-shares/my-status", {
+      // PERBAIKAN: Sesuaikan endpoint dengan backend
+      const data = await apiFetch("/api/v1/bookings/my-rideshares", {
         headers: getAuthHeaders(),
       });
       setMyRideShares(data);
@@ -134,19 +135,20 @@ export function UserBookingProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const submitRideShare = async (data: RideShareData): Promise<boolean> => {
+  const submitRideShare = async (data: RideShareData) => { // PERBAIKAN: Gunakan tipe data yang sudah ada
     setIsLoading(true);
     try {
-      await apiFetch("/api/ride-shares", {
-        method: "POST",
-        headers: getAuthHeaders(),
-        body: JSON.stringify(data),
+      await apiFetch(`/api/v1/bookings/${data.bookingId}/rideshare`, {
+        method: 'POST',
+        headers: getAuthHeaders(), // PERBAIKAN: Tambahkan auth header
+        body: JSON.stringify({ dropOff: data.dropOff, seats: data.seats }),
       });
-      await fetchMyRideShares(); // Refresh list otomatis
+      
+      await fetchMyRideShares(); 
       return true;
     } catch (error: any) {
-      console.error("Gagal submit nebeng:", error.message);
-      alert(error.message);
+      console.error(error);
+      alert(error.message || "Gagal mengirim permohonan nebeng");
       return false;
     } finally {
       setIsLoading(false);
@@ -156,7 +158,8 @@ export function UserBookingProvider({ children }: { children: ReactNode }) {
   // --- C. FUNGSI TITIP BARANG (PACKAGE) ---
   const fetchMyPackages = useCallback(async () => {
     try {
-      const data = await apiFetch("/api/packages/my-status", {
+      // PERBAIKAN: Sesuaikan endpoint dengan backend
+      const data = await apiFetch("/api/v1/bookings/my-packages", {
         headers: getAuthHeaders(),
       });
       setMyPackages(data);
@@ -165,28 +168,30 @@ export function UserBookingProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const submitPackage = async (data: PackageData): Promise<boolean> => {
+  const submitPackage = async (data: PackageData) => { // PERBAIKAN: Gunakan tipe data yang sudah ada
     setIsLoading(true);
     try {
-      await apiFetch("/api/packages", {
-        method: "POST",
-        headers: getAuthHeaders(),
-        body: JSON.stringify(data),
+      await apiFetch(`/api/v1/bookings/${data.bookingId}/package`, {
+        method: 'POST',
+        headers: getAuthHeaders(), // PERBAIKAN: Tambahkan auth header
+        body: JSON.stringify({ description: data.description, receiver: data.receiver }),
       });
-      await fetchMyPackages(); // Refresh list otomatis
+      
+      await fetchMyPackages(); 
       return true;
     } catch (error: any) {
-      console.error("Gagal submit titipan:", error.message);
-      alert(error.message);
+      console.error(error);
+      alert(error.message || "Gagal mengirim permohonan titipan");
       return false;
     } finally {
       setIsLoading(false);
     }
   };
+
   const fetchAvailableRides = useCallback(async () => {
     try {
-      // API ini mengarah ke endpoint publik/user untuk melihat booking dengan status 'APPROVED'
-      const data = await apiFetch("/api/bookings/available", {
+      // PERBAIKAN: Sesuaikan endpoint dengan backend
+      const data = await apiFetch("/api/v1/bookings/available-rides", {
         headers: getAuthHeaders(),
       });
       setAvailableRides(data);
