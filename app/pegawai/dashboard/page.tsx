@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import ApprovalSection from "@/app/components/forms/approval-section";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +16,7 @@ import {
 import { ApprovalRequestData } from "@/app/components/forms/approval-form";
 import { ProfileForm } from "@/app/components/forms/profile-form";
 import { getDashboardData } from "@/app/actions/dashboard-action";
+import { ApprovalSection } from "@/app/components/forms/approval-section";
 
 const formatDate = (date: Date | string | null | undefined) => {
   if (!date) return "-";
