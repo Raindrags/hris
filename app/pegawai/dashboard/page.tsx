@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-
+import ApprovalSection from "@/app/components/forms/approval-section";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 
 import { ApprovalRequestData } from "@/app/components/forms/approval-form";
-import { ApprovalSection } from "@/app/components/forms/approval-section";
 import { ProfileForm } from "@/app/components/forms/profile-form";
 import { getDashboardData } from "@/app/actions/dashboard-action";
 
