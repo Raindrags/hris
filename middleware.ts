@@ -20,7 +20,7 @@ export async function middleware(request: NextRequest) {
     "/_next",
     "/favicon.ico",
     "/uploads",
-    // "/carfleet/magic" // 👈 Nanti kita buka rute ini untuk Magic Link WA
+    "/carfleet/magic" // 👈 Nanti kita buka rute ini untuk Magic Link WA
   ];
 
   if (publicPaths.some((p) => pathname.startsWith(p))) {
@@ -55,9 +55,13 @@ export async function middleware(request: NextRequest) {
     try {
       const { payload } = await jwtVerify(token, SECRET_KEY);
       const userRole = payload.role as string;
+      console.log("=== CEK ROLE DARI JWT ===");
+      console.log("Tujuan Route:", pathname);
+      console.log("Role User:", userRole);
+      console.log("=========================");
 
       // Validate HRIS Admin Access
-      if (isAdminHrisRoute && userRole !== "ADMIN_HRIS") {
+      if (isAdminHrisRoute && userRole !== "ADMIN") {
         return NextResponse.redirect(new URL("/unauthorized", request.url));
       }
 
@@ -66,13 +70,12 @@ export async function middleware(request: NextRequest) {
       }
 
       // Opsional: Jika /carfleet/user hanya boleh untuk pegawai biasa
-      /*
       if (isCarfleetUserRoute && userRole !== "PEGAWAI") {
         return NextResponse.redirect(new URL("/unauthorized", request.url));
       }
-      */
 
     } catch (error) {
+      console.log(error)
       return NextResponse.redirect(new URL("/error?code=401", request.url));
     }
   }

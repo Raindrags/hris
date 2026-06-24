@@ -18,27 +18,30 @@ export async function POST(request: Request) {
         }),
       },
     );
-
-    const data = await nestResponse.json();
+    console.log(process.env.BACKEND_API_URL)
+   const data = await nestResponse.json();
 
     if (!nestResponse.ok) {
-      // Jika login NestJS gagal (password salah, dll)
       return NextResponse.json(
         { message: data.message || "Login gagal" },
         { status: nestResponse.status },
       );
-    } // Jika sukses, atur cookie di sisi server!
+    }
 
-    const cookieStore = await cookies();
+   const response = NextResponse.json({ 
+      success: true,
+      user: data.user 
+    });
 
-    cookieStore.set("access_token", data.access_token, {
+    response.cookies.set("access_token", data.access_token, {
       httpOnly: false,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
       maxAge: 60 * 60 * 24, // 1 hari
     });
-    cookieStore.set("role", "ADMIN", {
+
+    response.cookies.set("role", "ADMIN", {
       httpOnly: false,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
@@ -46,9 +49,10 @@ export async function POST(request: Request) {
       maxAge: 60 * 60 * 24, // 1 hari
     });
 
-    return NextResponse.json({ success: true });
+    // 3. Return response yang sudah berisi instruksi set-cookie
+    return response;
   } catch (error) {
-    console.error("Login Error:", error);
+   
     return NextResponse.json(
       { message: "Terjadi kesalahan pada server" },
       { status: 500 },

@@ -140,17 +140,19 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       setIsLoading(true);
       const headers = getAuthHeaders();
       
-      const [pendingData, activeData, vehicleData, routineData, nebengData, titipanData] = await Promise.all([
-        apiFetch('/api/v1/bookings/pending', { headers }),
-        apiFetch('/api/v1/bookings/active', { headers }),
+      const [allBookingsData, vehicleData, routineData, nebengData, titipanData] = await Promise.all([
+        apiFetch('/api/admin/bookings/all', { headers }),
         apiFetch('/api/v1/vehicles', { headers }),
-        apiFetch('/api/v1/routines', { headers }),
+        apiFetch('/api/v1/vehicles', { headers }),
         apiFetch('/api/admin/bookings/rideshares/pending', { headers }), 
-        apiFetch('/api/admin/bookings/packages/pending', { headers }),   
+        apiFetch('/api/admin/bookings/packages/pending', { headers }),
       ]);
 
-      setPersetujuan(pendingData || []);
-      setPengembalian(activeData || []);
+      const pendingData = allBookingsData?.filter((b: Booking) => b.status === 'PENDING') || [];
+      const activeData = allBookingsData?.filter((b: Booking) => b.status === 'APPROVED') || [];
+
+      setPersetujuan(pendingData);
+      setPengembalian(activeData);
       setKendaraan(vehicleData || []);
       setRutin(routineData || []);
       setPersetujuanNebeng(nebengData || []);     
@@ -160,7 +162,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  };  
 
   useEffect(() => {
     refreshAllData();

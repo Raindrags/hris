@@ -44,11 +44,6 @@ const handleLogin = async (e: React.FormEvent) => {
       if (!res.ok) {
         throw new Error(data.message || "Email/Username atau password salah");
       }
-
-      // ✨ MODIFIKASI DIMULAI DI SINI ✨
-
-      // 1. Simpan data user ke localStorage (atau state management seperti Zustand/Redux)
-      // agar komponen Dashboard tahu siapa yang sedang login (karena kita tidak pakai JWT lagi).
       if (typeof window !== "undefined") {
          localStorage.setItem("adminUser", JSON.stringify(data.user));
       }
@@ -58,9 +53,9 @@ const handleLogin = async (e: React.FormEvent) => {
 
       // 3. Arahkan ke dashboard berdasarkan role
       if (userRole === "ADMIN_GA") {
-        router.push("/admin/ga-dashboard"); // Arahkan ke Dashboard GA (Carfleet)
+        router.push("/carfleet/admin/dashboard"); // Arahkan ke Dashboard GA (Carfleet)
       } else if (userRole === "ADMIN_HRIS") {
-        router.push("/admin/hris-dashboard"); // Arahkan ke Dashboard HRIS Utama
+        router.push("/admin/dashboard"); // Arahkan ke Dashboard HRIS Utama
       } else {
         // Jika role tidak dikenali atau ini admin super (opsional)
         router.push("/admin/dashboard"); 
