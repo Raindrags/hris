@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   X,
   Loader2,
@@ -12,27 +12,43 @@ import {
 } from "lucide-react";
 import { useUserBooking } from "@/app/carfleet/context/UserBookingContext";
 
-export default function BookingModal({
-  isOpen,
-  onClose,
-}: {
-  isOpen: boolean;
+// ✨ 1. Daftarkan semua props yang dikirim oleh parent ke dalam Interface
+interface BookingModalProps {
+  selectedFleetName: string;
+  selectedDate: string;
   onClose: () => void;
-}) {
-  const { submitBooking, isLoading } = useUserBooking();
+  onSubmit: (formData: any) => void;
+  isOpen?: boolean; // Dibuat opsional (?) karena parent menggunakan {isModalOpen && <BookingModal />}
+}
 
-  // State yang mencakup SEMUA field di database Prisma kita
+export default function BookingModal({
+  selectedFleetName,
+  selectedDate,
+  onClose,
+  onSubmit,
+  isOpen = true, // Beri nilai default true
+}: BookingModalProps) {
+  const { isLoading } = useUserBooking();
+
+  // State awal, langsung memanfaatkan `selectedDate` dari parent sebagai nilai default tanggal
   const [formData, setFormData] = useState({
     picName: "",
     contactNumber: "",
     driverName: "",
     purpose: "",
     destination: "",
-    date: "",
+    date: selectedDate || "", // ✨ Mengisi otomatis tanggal yang dipilih user
     timeOut: "",
     timeIn: "",
     passengers: 1,
   });
+
+  // Efek kiriman tanggal jika sewaktu-waktu berubah dari parent
+  useEffect(() => {
+    if (selectedDate) {
+      setFormData((prev) => ({ ...prev, date: selectedDate }));
+    }
+  }, [selectedDate]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -42,10 +58,11 @@ export default function BookingModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = await submitBooking(formData);
 
-    if (success) {
-      alert("Permohonan peminjaman armada berhasil dikirim!");
+    // ✨ 2. Panggil fungsi onSubmit milik parent dengan membawa data form
+    try {
+      await onSubmit(formData);
+
       // Reset form setelah sukses
       setFormData({
         picName: "",
@@ -59,6 +76,8 @@ export default function BookingModal({
         passengers: 1,
       });
       onClose();
+    } catch (error) {
+      console.error("Gagal mengirim permohonan:", error);
     }
   };
 
@@ -70,14 +89,16 @@ export default function BookingModal({
         {/* HEADER MODAL */}
         <div className="sticky top-0 bg-white border-b border-slate-100 p-6 flex justify-between items-center z-10 rounded-t-3xl">
           <div>
+            {/* ✨ 3. Tampilkan nama armada yang dipilih secara dinamis di sini */}
             <h2 className="text-2xl font-extrabold text-[#1a365d]">
-              Ajukan Peminjaman Armada
+              Ajukan Peminjaman {selectedFleetName}
             </h2>
             <p className="text-sm text-slate-500 mt-1">
               Lengkapi data perjalanan Anda di bawah ini.
             </p>
           </div>
           <button
+            type="button"
             onClick={onClose}
             className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
           >
@@ -213,7 +234,6 @@ export default function BookingModal({
                 <div className="relative">
                   <User className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
                   <input
-                    required
                     type="text"
                     name="driverName"
                     value={formData.driverName}
