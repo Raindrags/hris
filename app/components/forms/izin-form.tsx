@@ -451,7 +451,10 @@ export default function PermissionForm({
               <Label className="text-slate-300">
                 Tugas Diserahkan Kepada (Opsional)
               </Label>
-              <Select value={delegatedTo} onValueChange={setDelegatedTo}>
+              <Select
+                value={delegatedTo}
+                onValueChange={(val) => setDelegatedTo(val ?? "")}
+              >
                 <SelectTrigger className="bg-slate-900 border-slate-700 text-slate-200">
                   <SelectValue placeholder="Pilih Rekan Pengganti" />
                 </SelectTrigger>
