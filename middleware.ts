@@ -8,6 +8,13 @@ const SECRET_KEY = new TextEncoder().encode(
 );
 
 export async function middleware(request: NextRequest) {
+  console.log("=== CEK ENVIRONMENT VARIABLE ===");
+  console.log("Apakah JWT_SECRET terbaca?", !!process.env.JWT_SECRET);
+  console.log(
+    "Panjang karakter JWT_SECRET:",
+    process.env.JWT_SECRET ? process.env.JWT_SECRET.length : 0,
+  );
+  console.log("================================");
   const token = request.cookies.get("access_token")?.value;
   const pathname = request.nextUrl.pathname;
 
