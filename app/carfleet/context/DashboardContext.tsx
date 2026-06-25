@@ -118,7 +118,12 @@ interface DashboardContextType {
 
   completeService: (
     logId: string,
-    data: { kilometer: number; cost: number; description: string },
+    data: {
+      kilometer: number;
+      cost: number;
+      description: string;
+      type: string;
+    },
   ) => Promise<void>;
 
   persetujuanNebeng: RideSharePending[];
@@ -272,13 +277,19 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
   const completeService = async (
     logId: string,
-    data: { kilometer: number; cost: number; description: string },
+    data: {
+      kilometer: number;
+      cost: number;
+      description: string;
+      type: string;
+    }, // ✨ Tambahkan type: string
   ) => {
     await apiFetch(`/api/v1/vehicles/${logId}/complete-service`, {
       method: "PATCH",
       headers: getAuthHeaders(),
       body: JSON.stringify(data),
     });
+
     await refreshAllData();
   };
   // ==========================================
