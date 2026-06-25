@@ -4,7 +4,7 @@ import { jwtVerify } from "jose";
 
 // Ensure this matches the secret used in your NestJS JwtModule
 const SECRET_KEY = new TextEncoder().encode(
-  process.env.JWT_SECRET || "rahasia-negara-super-kuat-123",
+  process.env.JWT_SECRET || "Yj0hc6JnsQ9DgtiEvip60VSD0PhwhpHrM5gDmai1Hks",
 );
 
 export async function middleware(request: NextRequest) {
