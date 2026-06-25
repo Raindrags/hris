@@ -34,7 +34,7 @@ function PortalContent() {
     "booking",
   );
 
-  const [selectedFleet, setSelectedFleet] = useState<number>(0);
+  const [selectedFleet, setSelectedFleet] = useState<string | number>("");
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -94,9 +94,10 @@ function PortalContent() {
         {/* --- TAB 1 CONTENT: PEMINJAMAN ARMADA --- */}
         {activeTab === "booking" && (
           <BookingView
-            vehicles={vehicles} // ✨ Lempar data mobil dari backend ke komponen view Anda
+            vehicles={vehicles}
             selectedFleet={selectedFleet}
-            setSelectedFleet={setSelectedFleet}
+            // ✨ UBAH BARIS DI BAWAH INI
+            setSelectedFleet={(id: string | number) => setSelectedFleet(id)}
             selectedDate={selectedDate}
             setSelectedDate={setSelectedDate}
             openModal={() => {
