@@ -270,15 +270,17 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     await refreshAllData();
   };
 
- const completeService = async (
-  logId: string, 
-  data: { kilometer: number; cost: number; description: string }
-) => {
-  await apiFetch(`/api/v1/vehicles/${logId}/complete-service`, {
-    method: 'PATCH',
-    headers: getAuthHeaders(),
-    body: JSON.stringify(data),
-  });
+  const completeService = async (
+    logId: string,
+    data: { kilometer: number; cost: number; description: string },
+  ) => {
+    await apiFetch(`/api/v1/vehicles/${logId}/complete-service`, {
+      method: "PATCH",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    await refreshAllData();
+  };
   // ==========================================
   // FUNGSI AKSI: NEBENG & TITIPAN
   // ==========================================
