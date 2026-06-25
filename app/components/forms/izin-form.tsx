@@ -360,7 +360,7 @@ export default function PermissionForm({
           <div className="space-y-2 flex flex-col">
             <Label className="text-slate-300">Tanggal Selesai</Label>
             <Popover>
-              <PopoverTrigger asChild>
+              <PopoverTrigger>
                 <Button
                   disabled={isAutoEndDate}
                   variant="outline"
