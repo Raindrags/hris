@@ -34,7 +34,7 @@ function PortalContent() {
     "booking",
   );
 
-  const [selectedFleet, setSelectedFleet] = useState<string | number>("");
+  const [selectedFleet, setSelectedFleet] = useState<number>(0);
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [isModalOpen, setIsModalOpen] = useState(false);
 
