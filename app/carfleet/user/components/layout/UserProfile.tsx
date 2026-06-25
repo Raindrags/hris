@@ -1,33 +1,56 @@
+"use client";
+
 import { Contact, GraduationCap, PhoneCall } from "lucide-react";
-import { cookies } from "next/headers";
+import { useEffect, useState } from "react";
 
-export default async function UserProfile() {
-  const cookieStore = await cookies();
-  const userDataCookie = cookieStore.get("user_data")?.value;
-
-  let user = {
-    name: "Pengguna Tidak Dikenal",
+export default function UserProfile() {
+  // 1. Set state awal (default) untuk mencegah hydration mismatch
+  const [user, setUser] = useState({
+    name: "Memuat data...",
     niy: "-",
     role: "PEGAWAI",
     divisi: "-",
-  };
+  });
 
-  // Parse data JSON dari cookie
-  if (userDataCookie) {
-    try {
-      // Decode URL component jika cookie di-encode sebelumnya
-      user = JSON.parse(decodeURIComponent(userDataCookie));
-    } catch (error) {
-      console.error("Gagal membaca cookie user_data:", error);
+  // 2. Baca cookie HANYA saat komponen sudah dimuat di browser
+  useEffect(() => {
+    const getCookie = (name: string) => {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop()?.split(";").shift();
+      return null;
+    };
+
+    const userDataCookie = getCookie("user_data");
+
+    if (userDataCookie) {
+      try {
+        const parsedUser = JSON.parse(decodeURIComponent(userDataCookie));
+        setUser({
+          name: parsedUser.name || "Pengguna",
+          niy: parsedUser.niy || "-",
+          role: parsedUser.role || "PEGAWAI",
+          divisi: parsedUser.divisi || "-",
+        });
+      } catch (error) {
+        console.error("Gagal membaca cookie user_data:", error);
+        setUser((prev) => ({ ...prev, name: "Gagal memuat data" }));
+      }
+    } else {
+      setUser((prev) => ({ ...prev, name: "Guest" }));
     }
-  }
+  }, []);
 
-  // Fungsi pembuat Inisial Nama (Maksimal 2 huruf)
+  // 3. Fungsi pembuat Inisial Nama
   const getInitials = (name: string) => {
+    if (
+      name === "Memuat data..." ||
+      name === "Guest" ||
+      name === "Gagal memuat data"
+    )
+      return "?";
     const words = name.trim().split(" ");
-    if (words.length >= 2) {
-      return (words[0][0] + words[1][0]).toUpperCase();
-    }
+    if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
     return name.slice(0, 2).toUpperCase();
   };
 
@@ -69,7 +92,7 @@ export default async function UserProfile() {
           Butuh Bantuan GA?
         </p>
         <a
-          href="https://wa.me/628123456789"
+          href="https://wa.me/6282364441014"
           target="_blank"
           rel="noreferrer"
           className="inline-flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-4 py-2 rounded-xl text-sm transition-all shadow-sm"
