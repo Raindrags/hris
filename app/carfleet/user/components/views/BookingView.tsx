@@ -10,7 +10,15 @@ import {
   ChevronRight,
 } from "lucide-react";
 
+interface VehicleData {
+  id: string | number;
+  name: string;
+  licensePlate?: string;
+  capacity?: number;
+}
+
 interface BookingViewProps {
+  vehicles: VehicleData[];
   selectedFleet: string | number;
   setSelectedFleet: (id: string | number) => void;
   selectedDate: string; // Menggunakan format "YYYY-MM-DD" agar mencakup bulan & tahun
