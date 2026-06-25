@@ -2,14 +2,14 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 
-// Ensure this matches the secret used in your NestJS JwtModule
-const SECRET_KEY = new TextEncoder().encode(
-  process.env.JWT_SECRET || "rahasia-negara-super-kuat-123",
-);
-
 export async function middleware(request: NextRequest) {
+  const SECRET_KEY = new TextEncoder().encode(
+    process.env.JWT_SECRET || "rahasia-negara-super-kuat-123",
+  );
+
   console.log("Panjang Secret:", process.env.JWT_SECRET?.length || 0);
   console.log("================================");
+
   const token = request.cookies.get("access_token")?.value;
   const pathname = request.nextUrl.pathname;
 
