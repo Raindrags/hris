@@ -72,9 +72,15 @@ export async function middleware(request: NextRequest) {
       if (isCarfleetUserRoute && userRole !== "PEGAWAI") {
         return NextResponse.redirect(new URL("/unauthorized", request.url));
       }
-    } catch (error) {
-      console.log(error);
-      return NextResponse.redirect(new URL("/error?code=401", request.url));
+    } catch (error: any) {
+      console.log("JWT VERIFY ERROR:", error.message);
+
+      return NextResponse.redirect(
+        new URL(
+          `/error?code=401&err=${encodeURIComponent(error.message)}`,
+          request.url,
+        ),
+      );
     }
   }
 
