@@ -107,9 +107,11 @@ interface DashboardContextType {
   ) => Promise<void>;
   toggleRoutine: (id: string) => Promise<void>;
 
-  // ✨ BARU: Tambahkan tipe untuk startService
-  startService: (vehicleId: string) => Promise<void>;
-
+  startService: (
+    vehicleId: string,
+    date: string,
+    complaint: string,
+  ) => Promise<void>;
   fetchAllBookings: () => Promise<void>;
   fetchBookingDetail: (id: string) => Promise<void>;
   clearBookingDetail: () => void;
@@ -249,11 +251,16 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     await refreshAllData();
   };
 
-  const startService = async (vehicleId: string) => {
-    // Note: Pastikan endpoint API '/service' ini sesuai dengan backend NestJS Anda
+  const startService = async (
+    vehicleId: string,
+    date: string,
+    complaint: string,
+  ) => {
     await apiFetch(`/api/v1/vehicles/${vehicleId}/service`, {
       method: "PATCH",
       headers: getAuthHeaders(),
+      // ✨ Kita kirimkan tanggal dan keluhan ke backend dalam format JSON
+      body: JSON.stringify({ date, complaint }),
     });
     await refreshAllData();
   };
