@@ -20,7 +20,7 @@ export async function middleware(request: NextRequest) {
     "/_next",
     "/favicon.ico",
     "/uploads",
-    "/carfleet/magic" // 👈 Nanti kita buka rute ini untuk Magic Link WA
+    "/carfleet/magic",
   ];
 
   if (publicPaths.some((p) => pathname.startsWith(p))) {
@@ -32,17 +32,16 @@ export async function middleware(request: NextRequest) {
   const isPegawaiRoute = pathname.startsWith("/pegawai");
   const isGaRoute = pathname.startsWith("/ga");
   const isPortalRoute = pathname.startsWith("/portal");
-  
-  // ✨ TAMBAHAN: Rute Carfleet
+
   const isCarfleetAdminRoute = pathname.startsWith("/carfleet/admin");
   const isCarfleetUserRoute = pathname.startsWith("/carfleet/user");
 
   const isProtected =
-    isAdminHrisRoute || 
-    isPegawaiRoute || 
-    isGaRoute || 
-    isPortalRoute || 
-    isCarfleetAdminRoute || 
+    isAdminHrisRoute ||
+    isPegawaiRoute ||
+    isGaRoute ||
+    isPortalRoute ||
+    isCarfleetAdminRoute ||
     isCarfleetUserRoute;
 
   // 3. Check Token Existence
@@ -73,9 +72,8 @@ export async function middleware(request: NextRequest) {
       if (isCarfleetUserRoute && userRole !== "PEGAWAI") {
         return NextResponse.redirect(new URL("/unauthorized", request.url));
       }
-
     } catch (error) {
-      console.log(error)
+      console.log(error);
       return NextResponse.redirect(new URL("/error?code=401", request.url));
     }
   }

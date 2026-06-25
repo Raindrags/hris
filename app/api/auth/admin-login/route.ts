@@ -18,8 +18,8 @@ export async function POST(request: Request) {
         }),
       },
     );
-    console.log(process.env.BACKEND_API_URL)
-   const data = await nestResponse.json();
+    console.log(process.env.BACKEND_API_URL);
+    const data = await nestResponse.json();
 
     if (!nestResponse.ok) {
       return NextResponse.json(
@@ -28,17 +28,17 @@ export async function POST(request: Request) {
       );
     }
 
-   const response = NextResponse.json({ 
+    const response = NextResponse.json({
       success: true,
-      user: data.user 
+      user: data.user,
     });
 
     response.cookies.set("access_token", data.access_token, {
-      httpOnly: false,
+      httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
-      maxAge: 60 * 60 * 24, // 1 hari
+      maxAge: 60 * 60 * 24,
     });
 
     response.cookies.set("role", "ADMIN", {
@@ -52,7 +52,6 @@ export async function POST(request: Request) {
     // 3. Return response yang sudah berisi instruksi set-cookie
     return response;
   } catch (error) {
-   
     return NextResponse.json(
       { message: "Terjadi kesalahan pada server" },
       { status: 500 },
