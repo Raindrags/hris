@@ -424,7 +424,7 @@ export default function PermissionForm({
           <Select
             value={category}
             onValueChange={(val) => {
-              setCategory(val);
+              setCategory(val || "");
               if (val !== "IzinKhusus") setSubCategory("");
               if (val !== "Terlambat" && val !== "PulangAwal") setTimeValue("");
             }}
