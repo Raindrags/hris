@@ -116,7 +116,10 @@ interface DashboardContextType {
   fetchBookingDetail: (id: string) => Promise<void>;
   clearBookingDetail: () => void;
 
-  completeService: (vehicleId: string) => Promise<void>;
+  completeService: (
+    logId: string,
+    data: { kilometer: number; cost: number; description: string },
+  ) => Promise<void>;
 
   persetujuanNebeng: RideSharePending[];
   persetujuanTitipan: PackagePending[];
@@ -267,14 +270,15 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     await refreshAllData();
   };
 
-  const completeService = async (vehicleId: string) => {
-    await apiFetch(`/api/v1/vehicles/${vehicleId}/complete-service`, {
-      method: "PATCH",
-      headers: getAuthHeaders(),
-    });
-    await refreshAllData();
-  };
-
+ const completeService = async (
+  logId: string, 
+  data: { kilometer: number; cost: number; description: string }
+) => {
+  await apiFetch(`/api/v1/vehicles/${logId}/complete-service`, {
+    method: 'PATCH',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(data),
+  });
   // ==========================================
   // FUNGSI AKSI: NEBENG & TITIPAN
   // ==========================================
