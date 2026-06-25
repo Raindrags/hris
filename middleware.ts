@@ -32,17 +32,12 @@ export async function middleware(request: NextRequest) {
   // 2. Define Protected Routes
   const isAdminHrisRoute = pathname.startsWith("/admin");
   const isPegawaiRoute = pathname.startsWith("/pegawai");
-  const isGaRoute = pathname.startsWith("/ga");
-  const isPortalRoute = pathname.startsWith("/portal");
-
   const isCarfleetAdminRoute = pathname.startsWith("/carfleet/admin");
   const isCarfleetUserRoute = pathname.startsWith("/carfleet/user");
 
   const isProtected =
     isAdminHrisRoute ||
     isPegawaiRoute ||
-    isGaRoute ||
-    isPortalRoute ||
     isCarfleetAdminRoute ||
     isCarfleetUserRoute;
 
@@ -61,17 +56,19 @@ export async function middleware(request: NextRequest) {
       console.log("Role User:", userRole);
       console.log("=========================");
 
-      // Validate HRIS Admin Access
       if (isAdminHrisRoute && userRole !== "ADMIN") {
         return NextResponse.redirect(new URL("/unauthorized", request.url));
       }
 
-      if ((isGaRoute || isCarfleetAdminRoute) && userRole !== "ADMIN_GA") {
+      if (isCarfleetAdminRoute && userRole !== "ADMIN_GA") {
         return NextResponse.redirect(new URL("/unauthorized", request.url));
       }
 
-      // Opsional: Jika /carfleet/user hanya boleh untuk pegawai biasa
       if (isCarfleetUserRoute && userRole !== "USER") {
+        return NextResponse.redirect(new URL("/unauthorized", request.url));
+      }
+
+      if (isPegawaiRoute && userRole !== "USER") {
         return NextResponse.redirect(new URL("/unauthorized", request.url));
       }
     } catch (error: any) {
