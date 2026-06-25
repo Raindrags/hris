@@ -5,26 +5,31 @@ import PortalNavbar from "./components/layout/PortalNavbar";
 import UserProfile from "./components/layout/UserProfile";
 import BookingView from "./components/views/BookingView";
 import RideShareView from "./components/views/RideShareView";
-import JoinRideModal from "./components/modals/JoinRideModal";
 import PackageModal from "./components/modals/PackageModal";
 import BookingModal from "./components/modals/BookingModal";
 import StatusView from "./components/views/StatusView";
-import { UserBookingProvider, useUserBooking } from "../context/UserBookingContext";
+import {
+  UserBookingProvider,
+  useUserBooking,
+} from "../context/UserBookingContext";
+import JoinRideModal from "./components/modals/JoinRideModal";
 
 // ======================================================================
 // 1. KOMPONEN ISI HALAMAN (Mengkonsumsi Context)
 // ======================================================================
 function PortalContent() {
-  const { 
-    availableRides, 
-    myRideShares, 
-    myPackages, 
-    fetchAvailableRides, 
-    fetchMyRideShares, 
-    fetchMyPackages 
+  const {
+    availableRides,
+    myRideShares,
+    myPackages,
+    fetchAvailableRides,
+    fetchMyRideShares,
+    fetchMyPackages,
   } = useUserBooking();
 
-  const [activeTab, setActiveTab] = useState<"booking" | "nebeng" | "status">("booking");
+  const [activeTab, setActiveTab] = useState<"booking" | "nebeng" | "status">(
+    "booking",
+  );
 
   // --- STATE UNTUK TAB 1: PEMINJAMAN ---
   const [selectedFleet, setSelectedFleet] = useState(1);
@@ -33,13 +38,19 @@ function PortalContent() {
 
   // --- STATE UNTUK TAB 2: NEBENG & TITIP MODAL ---
   // ✨ Kita cukup simpan bookingId karena modal akan menembak ke API menggunakan ID tersebut
-  const [joinModalData, setJoinModalData] = useState<{ isOpen: boolean; bookingId: string }>({ 
-    isOpen: false, 
-    bookingId: "" 
+  const [joinModalData, setJoinModalData] = useState<{
+    isOpen: boolean;
+    bookingId: string;
+  }>({
+    isOpen: false,
+    bookingId: "",
   });
-  const [packageModalData, setPackageModalData] = useState<{ isOpen: boolean; bookingId: string }>({ 
-    isOpen: false, 
-    bookingId: "" 
+  const [packageModalData, setPackageModalData] = useState<{
+    isOpen: boolean;
+    bookingId: string;
+  }>({
+    isOpen: false,
+    bookingId: "",
   });
 
   // ✨ FETCH DATA SAAT HALAMAN DIMUAT
@@ -67,7 +78,7 @@ function PortalContent() {
 
     console.log("Data siap kirim ke API NestJS:", payloadToBackend);
     alert("Sukses! Permohonan peminjaman berhasil dikirim ke Admin GA.");
-    setIsModalOpen(false); 
+    setIsModalOpen(false);
   };
 
   return (
@@ -95,10 +106,13 @@ function PortalContent() {
             availableRides={availableRides}
             activeNebeng={myRideShares}
             activePackages={myPackages}
-            
             // ✨ Sesuaikan handler dengan tambahan ID
-            openJoinModal={(id) => setJoinModalData({ isOpen: true, bookingId: id })}
-            openPackageModal={(id) => setPackageModalData({ isOpen: true, bookingId: id })}
+            openJoinModal={(id) =>
+              setJoinModalData({ isOpen: true, bookingId: id })
+            }
+            openPackageModal={(id) =>
+              setPackageModalData({ isOpen: true, bookingId: id })
+            }
           />
         )}
 
@@ -111,6 +125,7 @@ function PortalContent() {
       {/* Modal Peminjaman / Booking Utama */}
       {isModalOpen && (
         <BookingModal
+          isOpen={isModalOpen} // ✨ Tambahkan ini
           selectedFleetName={fleetName}
           selectedDate={selectedDate}
           onClose={() => setIsModalOpen(false)}
@@ -118,17 +133,19 @@ function PortalContent() {
         />
       )}
 
-      {/* Modal Nebeng (Submit-nya sudah di-handle di dalam komponen JoinRideModal) */}
+      {/* Modal Nebeng */}
       {joinModalData.isOpen && (
         <JoinRideModal
+          isOpen={joinModalData.isOpen} // ✨ Tambahkan ini untuk menyelesaikan error
           bookingId={joinModalData.bookingId}
           onClose={() => setJoinModalData({ isOpen: false, bookingId: "" })}
         />
       )}
 
-      {/* Modal Titip Paket (Submit-nya sudah di-handle di dalam komponen PackageModal) */}
+      {/* Modal Titip Paket */}
       {packageModalData.isOpen && (
         <PackageModal
+          isOpen={packageModalData.isOpen} // ✨ Tambahkan ini untuk mencegah error selanjutnya
           bookingId={packageModalData.bookingId}
           onClose={() => setPackageModalData({ isOpen: false, bookingId: "" })}
         />
