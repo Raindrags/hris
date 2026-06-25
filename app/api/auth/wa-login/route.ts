@@ -35,17 +35,48 @@ export async function GET(request: Request) {
       throw new Error(data.message || "Verifikasi token gagal di backend");
     }
 
-    // 3. Jika sukses, buat respons redirect ke URL tujuan (misal: /carfleet/user)
+    // 3. Jika sukses, buat respons redirect ke URL tujuan
     const response = NextResponse.redirect(new URL(redirectPath, request.url));
 
     // 4. Tanamkan Token 7 Hari (dari backend) ke Cookie browser
+    // INI WAJIB HTTPONLY: TRUE (Untuk keamanan & Middleware)
     response.cookies.set("access_token", data.accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // Wajib HTTPS di Vercel
+      secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
-      maxAge: 7 * 24 * 60 * 60, // Berlaku 7 hari
+      maxAge: 7 * 24 * 60 * 60, // 7 hari
     });
+
+    if (data.user) {
+      response.cookies.set(
+        "user_data",
+        JSON.stringify({
+          name: data.user.name || "Pengguna",
+          niy: data.user.niy || "-",
+          role: data.user.role || "PEGAWAI",
+          divisi: data.user.divisi || "-",
+        }),
+        {
+          httpOnly: false, // WAJIB FALSE agar bisa dibaca oleh getCookie di React
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          path: "/",
+          maxAge: 7 * 24 * 60 * 60, // 7 hari
+        },
+      );
+    }
+
+    // ✨ 6. (Opsional tapi Penting) Tanamkan Cookie Role jika Middleware membutuhkannya
+    if (data.user?.role) {
+      response.cookies.set("role", data.user.role, {
+        httpOnly: true, // Atau false jika butuh dibaca client
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 7 * 24 * 60 * 60,
+      });
+    }
 
     return response;
   } catch (error: any) {

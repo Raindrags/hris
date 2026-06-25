@@ -123,7 +123,7 @@ export function UserBookingProvider({ children }: { children: ReactNode }) {
   };
 
   // --- B. FUNGSI NEBENG (RIDE SHARE) ---
- const fetchMyRideShares = useCallback(async () => {
+  const fetchMyRideShares = useCallback(async () => {
     try {
       // PERBAIKAN: Sesuaikan endpoint dengan backend
       const data = await apiFetch("/api/v1/bookings/my-rideshares", {
@@ -135,16 +135,17 @@ export function UserBookingProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const submitRideShare = async (data: RideShareData) => { // PERBAIKAN: Gunakan tipe data yang sudah ada
+  const submitRideShare = async (data: RideShareData) => {
+    // PERBAIKAN: Gunakan tipe data yang sudah ada
     setIsLoading(true);
     try {
       await apiFetch(`/api/v1/bookings/${data.bookingId}/rideshare`, {
-        method: 'POST',
+        method: "POST",
         headers: getAuthHeaders(), // PERBAIKAN: Tambahkan auth header
         body: JSON.stringify({ dropOff: data.dropOff, seats: data.seats }),
       });
-      
-      await fetchMyRideShares(); 
+
+      await fetchMyRideShares();
       return true;
     } catch (error: any) {
       console.error(error);
@@ -168,16 +169,20 @@ export function UserBookingProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const submitPackage = async (data: PackageData) => { // PERBAIKAN: Gunakan tipe data yang sudah ada
+  const submitPackage = async (data: PackageData) => {
+    // PERBAIKAN: Gunakan tipe data yang sudah ada
     setIsLoading(true);
     try {
       await apiFetch(`/api/v1/bookings/${data.bookingId}/package`, {
-        method: 'POST',
+        method: "POST",
         headers: getAuthHeaders(), // PERBAIKAN: Tambahkan auth header
-        body: JSON.stringify({ description: data.description, receiver: data.receiver }),
+        body: JSON.stringify({
+          description: data.description,
+          receiver: data.receiver,
+        }),
       });
-      
-      await fetchMyPackages(); 
+
+      await fetchMyPackages();
       return true;
     } catch (error: any) {
       console.error(error);
@@ -190,7 +195,6 @@ export function UserBookingProvider({ children }: { children: ReactNode }) {
 
   const fetchAvailableRides = useCallback(async () => {
     try {
-      // PERBAIKAN: Sesuaikan endpoint dengan backend
       const data = await apiFetch("/api/v1/bookings/available-rides", {
         headers: getAuthHeaders(),
       });
