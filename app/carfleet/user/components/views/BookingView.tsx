@@ -21,12 +21,13 @@ interface BookingViewProps {
   vehicles: VehicleData[];
   selectedFleet: string | number;
   setSelectedFleet: (id: string | number) => void;
-  selectedDate: string; // Menggunakan format "YYYY-MM-DD" agar mencakup bulan & tahun
+  selectedDate: string;
   setSelectedDate: (date: string) => void;
   openModal: () => void;
 }
 
 export default function BookingView({
+  vehicles, // ✨ Variabel ini sekarang KITA GUNAKAN di bawah
   selectedFleet,
   setSelectedFleet,
   selectedDate,
@@ -34,8 +35,7 @@ export default function BookingView({
   openModal,
 }: BookingViewProps) {
   // 1. STATE UNTUK BULAN DAN TAHUN AKTIF DI KALENDER
-  // Default diatur ke Juni 2026 sesuai dengan kebutuhan awal Anda
-  const [currentMonth, setCurrentMonth] = useState(5); // 0 = Januari, 5 = Juni, dst.
+  const [currentMonth, setCurrentMonth] = useState(5); // 5 = Juni
   const [currentYear, setCurrentYear] = useState(2026);
 
   const monthNames = [
@@ -53,18 +53,10 @@ export default function BookingView({
     "Desember",
   ];
 
-  // 2. LOGIK GENERATOR KALENDER DINAMIS
-  // Mendapatkan jumlah hari dalam bulan yang sedang aktif
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-
-  // Mendapatkan hari pertama jatuh di hari apa (0 = Minggu, 1 = Senin, dst.)
   const firstDayOfWeek = new Date(currentYear, currentMonth, 1).getDay();
-
-  // Menghitung slot kosong (padding) di awal kalender agar tatanan hari pas dengan "Senin - Minggu"
-  // Jika hari pertama adalah Minggu (0), diubah ke indeks 6. Jika Senin (1), diubah ke indeks 0.
   const paddingDays = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
 
-  // Fungsi navigasi bulan
   const handlePrevMonth = () => {
     if (currentMonth === 0) {
       setCurrentMonth(11);
@@ -83,12 +75,14 @@ export default function BookingView({
     }
   };
 
-  // Fungsi helper untuk memformat tampilan tanggal terpilih di Ringkasan
   const formatDisplayDate = (dateStr: string) => {
     if (!dateStr) return "Belum memilih tanggal";
     const parsedDate = new Date(dateStr);
     return `${parsedDate.getDate()} ${monthNames[parsedDate.getMonth()]} ${parsedDate.getFullYear()}`;
   };
+
+  // ✨ Helper untuk mencari nama mobil yang sedang dipilih untuk bagian Ringkasan
+  const activeVehicle = vehicles.find((v) => v.id === selectedFleet);
 
   return (
     <div className="w-full transition-all duration-300">
@@ -110,67 +104,66 @@ export default function BookingView({
             <Car className="w-4 h-4" /> Armada Sekolah Tersedia
           </h4>
 
+          {/* ✨ RENDER MOBIL DINAMIS DARI DATABASE */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* OPSI 1 */}
-            <div
-              onClick={() => setSelectedFleet(1)}
-              className={`rounded-3xl p-5 cursor-pointer transition-all relative ${
-                selectedFleet === 1
-                  ? "bg-white border-2 border-[#0d9488] shadow-[0_10px_25px_-5px_rgba(13,148,136,0.15),0_8px_10px_-6px_rgba(13,148,136,0.1)]"
-                  : "bg-white border border-slate-100 hover:border-[#0d9488]/30 shadow-sm"
-              }`}
-            >
-              {selectedFleet === 1 && (
-                <div className="absolute top-4 right-4 bg-[#0d9488] text-white w-6 h-6 rounded-full flex items-center justify-center">
-                  <Check className="w-4 h-4" />
-                </div>
-              )}
-              <div className="w-12 h-12 bg-slate-100 text-slate-400 rounded-xl flex items-center justify-center mb-4">
-                <Bus className="w-6 h-6" />
-              </div>
-              <h5 className="font-extrabold text-[#1a365d] text-base">
-                Toyota Hiace Commuter
-              </h5>
-              <p className="text-xs text-slate-400 font-bold mt-1 mb-3">
-                Plat B 1234 SCH • 15 Kursi
+            {vehicles.length === 0 ? (
+              <p className="text-sm text-slate-400 font-medium">
+                Sedang memuat armada...
               </p>
-              <span className="inline-block bg-teal-50 text-[#0d9488] text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider">
-                Pilihan Utama Rombongan
-              </span>
-            </div>
+            ) : (
+              vehicles.map((mobil) => {
+                // Menentukan icon berdasarkan kapasitas atau nama (bisa disesuaikan)
+                const isBus = mobil.capacity && mobil.capacity > 10;
+                const isSelected = selectedFleet === mobil.id;
 
-            {/* OPSI 2 */}
-            <div
-              onClick={() => setSelectedFleet(2)}
-              className={`rounded-3xl p-5 cursor-pointer transition-all relative ${
-                selectedFleet === 2
-                  ? "bg-white border-2 border-[#0d9488] shadow-[0_10px_25px_-5px_rgba(13,148,136,0.15),0_8px_10px_-6px_rgba(13,148,136,0.1)]"
-                  : "bg-white border border-slate-100 hover:border-[#0d9488]/30 shadow-sm"
-              }`}
-            >
-              {selectedFleet === 2 && (
-                <div className="absolute top-4 right-4 bg-[#0d9488] text-white w-6 h-6 rounded-full flex items-center justify-center">
-                  <Check className="w-4 h-4" />
-                </div>
-              )}
-              <div className="w-12 h-12 bg-slate-100 text-slate-400 rounded-xl flex items-center justify-center mb-4">
-                <Car className="w-6 h-6" />
-              </div>
-              <h5 className="font-extrabold text-[#1a365d] text-base">
-                Kijang Innova Reborn
-              </h5>
-              <p className="text-xs text-slate-400 font-bold mt-1 mb-3">
-                Plat B 5678 SCH • 7 Kursi
-              </p>
-              <span className="inline-block bg-slate-100 text-slate-500 text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider">
-                Perjalanan Dinas Standard
-              </span>
-            </div>
+                return (
+                  <div
+                    key={mobil.id}
+                    onClick={() => setSelectedFleet(mobil.id)}
+                    className={`rounded-3xl p-5 cursor-pointer transition-all relative ${
+                      isSelected
+                        ? "bg-white border-2 border-[#0d9488] shadow-[0_10px_25px_-5px_rgba(13,148,136,0.15),0_8px_10px_-6px_rgba(13,148,136,0.1)]"
+                        : "bg-white border border-slate-100 hover:border-[#0d9488]/30 shadow-sm"
+                    }`}
+                  >
+                    {isSelected && (
+                      <div className="absolute top-4 right-4 bg-[#0d9488] text-white w-6 h-6 rounded-full flex items-center justify-center">
+                        <Check className="w-4 h-4" />
+                      </div>
+                    )}
+                    <div className="w-12 h-12 bg-slate-100 text-slate-400 rounded-xl flex items-center justify-center mb-4">
+                      {isBus ? (
+                        <Bus className="w-6 h-6" />
+                      ) : (
+                        <Car className="w-6 h-6" />
+                      )}
+                    </div>
+                    <h5 className="font-extrabold text-[#1a365d] text-base">
+                      {mobil.name}
+                    </h5>
+                    <p className="text-xs text-slate-400 font-bold mt-1 mb-3">
+                      {mobil.licensePlate || "Plat Belum Terdaftar"} •{" "}
+                      {mobil.capacity || "-"} Kursi
+                    </p>
+                    <span
+                      className={`inline-block text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider ${
+                        isBus
+                          ? "bg-teal-50 text-[#0d9488]"
+                          : "bg-slate-100 text-slate-500"
+                      }`}
+                    >
+                      {isBus
+                        ? "Pilihan Utama Rombongan"
+                        : "Perjalanan Dinas Standard"}
+                    </span>
+                  </div>
+                );
+              })
+            )}
           </div>
 
           {/* KALENDER DINAMIS */}
           <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
-            {/* Header Kalender dengan Navigasi Bulan */}
             <div className="flex justify-between items-center mb-6">
               <div className="flex items-center gap-3">
                 <h5 className="font-extrabold text-[#1a365d] text-base">
@@ -197,7 +190,6 @@ export default function BookingView({
               </span>
             </div>
 
-            {/* Nama-Nama Hari */}
             <div className="grid grid-cols-7 gap-2 text-center text-xs font-bold text-slate-400 mb-2">
               <span>Sen</span>
               <span>Sel</span>
@@ -208,14 +200,11 @@ export default function BookingView({
               <span>Min</span>
             </div>
 
-            {/* Isi Grid Kalender */}
             <div className="grid grid-cols-7 gap-2 text-center">
-              {/* 1. Render Padding/Slot Kosong di awal bulan */}
               {Array.from({ length: paddingDays }).map((_, index) => (
                 <div key={`pad-${index}`} className="py-3"></div>
               ))}
 
-              {/* 2. Render Tanggal-Tanggal Aktif (Semua Terbuka & Bisa Diklik) */}
               {Array.from({ length: daysInMonth }).map((_, index) => {
                 const dayString = String(index + 1).padStart(2, "0");
                 const monthString = String(currentMonth + 1).padStart(2, "0");
@@ -255,10 +244,9 @@ export default function BookingView({
               <span className="text-xs font-bold text-slate-400">
                 Armada Dipilih
               </span>
+              {/* ✨ BACA NAMA DARI DATABASE */}
               <h5 className="font-extrabold text-[#1a365d] mt-0.5">
-                {selectedFleet === 1
-                  ? "Toyota Hiace Commuter"
-                  : "Kijang Innova Reborn"}
+                {activeVehicle ? activeVehicle.name : "Belum memilih armada"}
               </h5>
             </div>
 
@@ -281,9 +269,9 @@ export default function BookingView({
 
             <button
               onClick={openModal}
-              disabled={!selectedDate}
+              disabled={!selectedDate || !selectedFleet}
               className={`w-full font-extrabold py-3.5 px-6 rounded-2xl transition flex items-center justify-center gap-2 ${
-                selectedDate
+                selectedDate && selectedFleet
                   ? "bg-[#0d9488] hover:bg-[#0f766e] text-white shadow-lg shadow-teal-100 cursor-pointer"
                   : "bg-slate-200 text-slate-400 cursor-not-allowed"
               }`}
