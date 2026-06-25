@@ -19,25 +19,26 @@ import JoinRideModal from "./components/modals/JoinRideModal";
 // ======================================================================
 function PortalContent() {
   const {
+    vehicles, // ✨ Ambil data mobil dari backend melalui Context
+    fetchVehicles, // ✨ Ambil fungsi fetch data mobil
     availableRides,
     myRideShares,
     myPackages,
     fetchAvailableRides,
     fetchMyRideShares,
     fetchMyPackages,
+    submitBooking, // ✨ Ambil fungsi submit booking dari Context
   } = useUserBooking();
 
   const [activeTab, setActiveTab] = useState<"booking" | "nebeng" | "status">(
     "booking",
   );
 
-  // --- STATE UNTUK TAB 1: PEMINJAMAN ---
-  const [selectedFleet, setSelectedFleet] = useState(1);
+  const [selectedFleet, setSelectedFleet] = useState<string | number>("");
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // --- STATE UNTUK TAB 2: NEBENG & TITIP MODAL ---
-  // ✨ Kita cukup simpan bookingId karena modal akan menembak ke API menggunakan ID tersebut
   const [joinModalData, setJoinModalData] = useState<{
     isOpen: boolean;
     bookingId: string;
@@ -53,32 +54,34 @@ function PortalContent() {
     bookingId: "",
   });
 
-  // ✨ FETCH DATA SAAT HALAMAN DIMUAT
+  // ✨ FETCH SEMUA DATA SAAT HALAMAN PERTAMA KALI DIMUAT
   useEffect(() => {
+    fetchVehicles(); // ✨ Ambil data mobil dari backend
     fetchAvailableRides();
     fetchMyRideShares();
     fetchMyPackages();
-  }, []);
+  }, [fetchVehicles, fetchAvailableRides, fetchMyRideShares, fetchMyPackages]);
 
-  // --- HANDLER FUNGSI PEMINJAMAN UTAMA (Belum tersambung ke Context/API) ---
-  const getFleetName = (id: number) => {
-    if (id === 1) return "Toyota Hiace Commuter";
-    if (id === 2) return "Kijang Innova Reborn";
-    return "Armada Belum Dipilih";
-  };
-  const fleetName = getFleetName(selectedFleet);
+  // ✨ MENCARI NAMA MOBIL SECARA DINAMIS DARI DATA BACKEND
+  const selectedVehicleObj = vehicles.find((v) => v.id === selectedFleet);
+  const fleetName = selectedVehicleObj
+    ? selectedVehicleObj.name
+    : "Armada Belum Dipilih";
 
-  const handleBookingSubmit = (formData: any) => {
+  // --- HANDLER SUBMIT KE BACKEND ---
+  const handleBookingSubmit = async (formData: any) => {
     const payloadToBackend = {
-      fleetId: selectedFleet,
-      fleetName: fleetName,
-      date: selectedDate,
+      vehicleId: selectedFleet, // Mengirimkan ID asli mobil ke backend
       ...formData,
     };
 
-    console.log("Data siap kirim ke API NestJS:", payloadToBackend);
-    alert("Sukses! Permohonan peminjaman berhasil dikirim ke Admin GA.");
-    setIsModalOpen(false);
+    // ✨ Mengirim data asli lewat Context ke API NestJS
+    const isSuccess = await submitBooking(payloadToBackend);
+
+    if (isSuccess) {
+      alert("Sukses! Permohonan peminjaman berhasil dikirim ke Admin GA.");
+      setIsModalOpen(false);
+    }
   };
 
   return (
@@ -91,22 +94,27 @@ function PortalContent() {
         {/* --- TAB 1 CONTENT: PEMINJAMAN ARMADA --- */}
         {activeTab === "booking" && (
           <BookingView
+            vehicles={vehicles} // ✨ Lempar data mobil dari backend ke komponen view Anda
             selectedFleet={selectedFleet}
             setSelectedFleet={setSelectedFleet}
             selectedDate={selectedDate}
             setSelectedDate={setSelectedDate}
-            openModal={() => setIsModalOpen(true)}
+            openModal={() => {
+              if (!selectedFleet) {
+                alert("Silakan pilih armada mobil terlebih dahulu!");
+                return;
+              }
+              setIsModalOpen(true);
+            }}
           />
         )}
 
         {/* --- TAB 2 CONTENT: NEBENG & TITIP BARANG --- */}
         {activeTab === "nebeng" && (
           <RideShareView
-            // ✨ Berikan data asli dari database ke tampilan view
             availableRides={availableRides}
             activeNebeng={myRideShares}
             activePackages={myPackages}
-            // ✨ Sesuaikan handler dengan tambahan ID
             openJoinModal={(id) =>
               setJoinModalData({ isOpen: true, bookingId: id })
             }
@@ -125,7 +133,7 @@ function PortalContent() {
       {/* Modal Peminjaman / Booking Utama */}
       {isModalOpen && (
         <BookingModal
-          isOpen={isModalOpen} // ✨ Tambahkan ini
+          isOpen={isModalOpen}
           selectedFleetName={fleetName}
           selectedDate={selectedDate}
           onClose={() => setIsModalOpen(false)}
@@ -136,7 +144,7 @@ function PortalContent() {
       {/* Modal Nebeng */}
       {joinModalData.isOpen && (
         <JoinRideModal
-          isOpen={joinModalData.isOpen} // ✨ Tambahkan ini untuk menyelesaikan error
+          isOpen={joinModalData.isOpen}
           bookingId={joinModalData.bookingId}
           onClose={() => setJoinModalData({ isOpen: false, bookingId: "" })}
         />
@@ -145,7 +153,7 @@ function PortalContent() {
       {/* Modal Titip Paket */}
       {packageModalData.isOpen && (
         <PackageModal
-          isOpen={packageModalData.isOpen} // ✨ Tambahkan ini untuk mencegah error selanjutnya
+          isOpen={packageModalData.isOpen}
           bookingId={packageModalData.bookingId}
           onClose={() => setPackageModalData({ isOpen: false, bookingId: "" })}
         />
