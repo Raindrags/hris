@@ -1,16 +1,22 @@
-'use client';
+"use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { apiFetch } from '../lib/utils/api';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
+import { apiFetch } from "../lib/utils/api";
 
-// --- INTERFACES (Tetap Sama) ---
+// --- INTERFACES ---
 interface Vehicle {
   id: string;
   name: string;
   platNumber: string;
   capacity: number;
   type: string;
-  status: 'Tersedia' | 'Dipakai' | 'Servis';
+  status: "Tersedia" | "Dipakai" | "Servis";
 }
 
 interface RideShare {
@@ -35,7 +41,7 @@ interface Booking {
   timeOut: string;
   timeIn: string;
   passengers: number;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'COMPLETED';
+  status: "PENDING" | "APPROVED" | "REJECTED" | "COMPLETED";
   user: { name: string; phone?: string };
   vehicle?: Vehicle;
   rejectionReason?: string;
@@ -49,7 +55,7 @@ interface Routine {
   route: string;
   days: string;
   departure: string;
-  status: 'ACTIVE' | 'INACTIVE';
+  status: "ACTIVE" | "INACTIVE";
   vehicle?: { name: string; platNumber: string };
   user?: { name: string };
 }
@@ -60,8 +66,8 @@ export interface RideSharePending {
   dropOff: string;
   status: string;
   user?: { name: string };
-  booking?: { 
-    destination: string; 
+  booking?: {
+    destination: string;
     date: string | Date;
     vehicle?: { name: string; platNumber: string };
   };
@@ -73,8 +79,8 @@ export interface PackagePending {
   receiver: string;
   status: string;
   user?: { name: string };
-  booking?: { 
-    destination: string; 
+  booking?: {
+    destination: string;
     date: string | Date;
     vehicle?: { name: string; platNumber: string };
   };
@@ -86,7 +92,7 @@ interface DashboardContextType {
   kendaraan: Vehicle[];
   rutin: Routine[];
   isLoading: boolean;
-  
+
   allBookings: Booking[];
   bookingDetail: Booking | null;
   isDetailLoading: boolean;
@@ -95,9 +101,15 @@ interface DashboardContextType {
   approveBooking: (id: string, vehicleId: string) => Promise<void>;
   rejectBooking: (id: string, reason: string) => Promise<void>;
   returnVehicle: (id: string, actualTimeIn: string) => Promise<void>;
-  addVehicle: (data: Omit<Vehicle, 'id' | 'status'>) => Promise<void>;
-  addRoutine: (data: Omit<Routine, 'id' | 'status' | 'vehicle' | 'user'>) => Promise<void>;
+  addVehicle: (data: Omit<Vehicle, "id" | "status">) => Promise<void>;
+  addRoutine: (
+    data: Omit<Routine, "id" | "status" | "vehicle" | "user">,
+  ) => Promise<void>;
   toggleRoutine: (id: string) => Promise<void>;
+
+  // ✨ BARU: Tambahkan tipe untuk startService
+  startService: (vehicleId: string) => Promise<void>;
+
   fetchAllBookings: () => Promise<void>;
   fetchBookingDetail: (id: string) => Promise<void>;
   clearBookingDetail: () => void;
@@ -110,7 +122,9 @@ interface DashboardContextType {
   rejectPackage: (id: string, reason: string) => Promise<void>;
 }
 
-const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
+const DashboardContext = createContext<DashboardContextType | undefined>(
+  undefined,
+);
 
 export function DashboardProvider({ children }: { children: ReactNode }) {
   const [persetujuan, setPersetujuan] = useState<Booking[]>([]);
@@ -122,47 +136,56 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [allBookings, setAllBookings] = useState<Booking[]>([]);
   const [bookingDetail, setBookingDetail] = useState<Booking | null>(null);
   const [isDetailLoading, setIsDetailLoading] = useState<boolean>(false);
-  
-  const [persetujuanNebeng, setPersetujuanNebeng] = useState<RideSharePending[]>([]);
-  const [persetujuanTitipan, setPersetujuanTitipan] = useState<PackagePending[]>([]);
 
-  // ✨ HELPER UNTUK OTORISASI TOKEN (Sama seperti User Context)
+  const [persetujuanNebeng, setPersetujuanNebeng] = useState<
+    RideSharePending[]
+  >([]);
+  const [persetujuanTitipan, setPersetujuanTitipan] = useState<
+    PackagePending[]
+  >([]);
+
   const getAuthHeaders = () => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("token") : null;
     return { Authorization: `Bearer ${token}` };
   };
 
-  // ==========================================
-  // FETCH ALL DATA
-  // ==========================================
   const refreshAllData = async () => {
     try {
       setIsLoading(true);
       const headers = getAuthHeaders();
-      
-      const [allBookingsData, vehicleData, routineData, nebengData, titipanData] = await Promise.all([
-        apiFetch('/api/admin/bookings/all', { headers }),
-        apiFetch('/api/v1/vehicles', { headers }),
-        apiFetch('/api/v1/vehicles', { headers }),
-        apiFetch('/api/admin/bookings/rideshares/pending', { headers }), 
-        apiFetch('/api/admin/bookings/packages/pending', { headers }),
+
+      const [
+        allBookingsData,
+        vehicleData,
+        routineData,
+        nebengData,
+        titipanData,
+      ] = await Promise.all([
+        apiFetch("/api/admin/bookings/all", { headers }),
+        apiFetch("/api/v1/vehicles", { headers }),
+        apiFetch("/api/v1/vehicles", { headers }),
+        apiFetch("/api/admin/bookings/rideshares/pending", { headers }),
+        apiFetch("/api/admin/bookings/packages/pending", { headers }),
       ]);
 
-      const pendingData = allBookingsData?.filter((b: Booking) => b.status === 'PENDING') || [];
-      const activeData = allBookingsData?.filter((b: Booking) => b.status === 'APPROVED') || [];
+      const pendingData =
+        allBookingsData?.filter((b: Booking) => b.status === "PENDING") || [];
+      const activeData =
+        allBookingsData?.filter((b: Booking) => b.status === "APPROVED") || [];
 
       setPersetujuan(pendingData);
       setPengembalian(activeData);
       setKendaraan(vehicleData || []);
       setRutin(routineData || []);
-      setPersetujuanNebeng(nebengData || []);     
-      setPersetujuanTitipan(titipanData || []);   
+      setPersetujuanNebeng(nebengData || []);
+      setPersetujuanTitipan(titipanData || []);
     } catch (error) {
-      console.error('Gagal mengambil data GA:', error);
+      console.error("Gagal mengambil data GA:", error);
     } finally {
       setIsLoading(false);
     }
-  };  
+  };
 
   useEffect(() => {
     refreshAllData();
@@ -173,7 +196,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   // ==========================================
   const approveBooking = async (id: string, vehicleId: string) => {
     await apiFetch(`/api/admin/bookings/${id}/approve`, {
-      method: 'PATCH',
+      method: "PATCH",
       headers: getAuthHeaders(),
       body: JSON.stringify({ vehicleId }),
     });
@@ -182,7 +205,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
   const rejectBooking = async (id: string, reason: string) => {
     await apiFetch(`/api/admin/bookings/${id}/reject`, {
-      method: 'PATCH',
+      method: "PATCH",
       headers: getAuthHeaders(),
       body: JSON.stringify({ reason }),
     });
@@ -191,53 +214,64 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
   const returnVehicle = async (id: string, actualTimeIn: string) => {
     await apiFetch(`/api/admin/bookings/${id}/return`, {
-      method: 'PATCH',
+      method: "PATCH",
       headers: getAuthHeaders(),
       body: JSON.stringify({ actualTimeIn }),
     });
     await refreshAllData();
   };
 
-  const addVehicle = async (data: Omit<Vehicle, 'id' | 'status'>) => {
-    await apiFetch('/api/v1/vehicles', {
-      method: 'POST',
+  const addVehicle = async (data: Omit<Vehicle, "id" | "status">) => {
+    await apiFetch("/api/v1/vehicles", {
+      method: "POST",
       headers: getAuthHeaders(),
       body: JSON.stringify(data),
     });
     await refreshAllData();
   };
 
-  const addRoutine = async (data: Omit<Routine, 'id' | 'status' | 'vehicle' | 'user'>) => {
-    await apiFetch('/api/v1/routines', { 
-      method: 'POST', 
+  const addRoutine = async (
+    data: Omit<Routine, "id" | "status" | "vehicle" | "user">,
+  ) => {
+    await apiFetch("/api/v1/routines", {
+      method: "POST",
       headers: getAuthHeaders(),
-      body: JSON.stringify(data) 
+      body: JSON.stringify(data),
     });
     await refreshAllData();
   };
 
   const toggleRoutine = async (id: string) => {
-    await apiFetch(`/api/v1/routines/${id}/toggle`, { 
-      method: 'PATCH',
-      headers: getAuthHeaders() 
+    await apiFetch(`/api/v1/routines/${id}/toggle`, {
+      method: "PATCH",
+      headers: getAuthHeaders(),
     });
-    await refreshAllData(); 
+    await refreshAllData();
+  };
+
+  const startService = async (vehicleId: string) => {
+    // Note: Pastikan endpoint API '/service' ini sesuai dengan backend NestJS Anda
+    await apiFetch(`/api/v1/vehicles/${vehicleId}/service`, {
+      method: "PATCH",
+      headers: getAuthHeaders(),
+    });
+    await refreshAllData();
   };
 
   // ==========================================
   // FUNGSI AKSI: NEBENG & TITIPAN
   // ==========================================
   const approveRideShare = async (id: string) => {
-    await apiFetch(`/api/admin/bookings/rideshares/${id}/approve`, { 
-      method: 'PATCH',
-      headers: getAuthHeaders() 
+    await apiFetch(`/api/admin/bookings/rideshares/${id}/approve`, {
+      method: "PATCH",
+      headers: getAuthHeaders(),
     });
     await refreshAllData();
   };
 
   const rejectRideShare = async (id: string, reason: string) => {
     await apiFetch(`/api/admin/bookings/rideshares/${id}/reject`, {
-      method: 'PATCH',
+      method: "PATCH",
       headers: getAuthHeaders(),
       body: JSON.stringify({ reason }),
     });
@@ -245,16 +279,16 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   };
 
   const approvePackage = async (id: string) => {
-    await apiFetch(`/api/admin/bookings/packages/${id}/approve`, { 
-      method: 'PATCH',
-      headers: getAuthHeaders() 
+    await apiFetch(`/api/admin/bookings/packages/${id}/approve`, {
+      method: "PATCH",
+      headers: getAuthHeaders(),
     });
     await refreshAllData();
   };
 
   const rejectPackage = async (id: string, reason: string) => {
     await apiFetch(`/api/admin/bookings/packages/${id}/reject`, {
-      method: 'PATCH',
+      method: "PATCH",
       headers: getAuthHeaders(),
       body: JSON.stringify({ reason }),
     });
@@ -267,10 +301,12 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const fetchAllBookings = async () => {
     try {
       setIsDetailLoading(true);
-      const data = await apiFetch('/api/admin/bookings/all', { headers: getAuthHeaders() }); 
+      const data = await apiFetch("/api/admin/bookings/all", {
+        headers: getAuthHeaders(),
+      });
       setAllBookings(data || []);
     } catch (error) {
-      console.error('Gagal mengambil semua histori permohonan:', error);
+      console.error("Gagal mengambil semua histori permohonan:", error);
     } finally {
       setIsDetailLoading(false);
     }
@@ -279,7 +315,9 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const fetchBookingDetail = async (id: string) => {
     try {
       setIsDetailLoading(true);
-      const data = await apiFetch(`/api/admin/bookings/${id}`, { headers: getAuthHeaders() });
+      const data = await apiFetch(`/api/admin/bookings/${id}`, {
+        headers: getAuthHeaders(),
+      });
       setBookingDetail(data);
     } catch (error) {
       console.error(`Gagal mengambil detail booking ID ${id}:`, error);
@@ -298,7 +336,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         persetujuan,
         pengembalian,
         kendaraan,
-        rutin,          
+        rutin,
         isLoading,
         allBookings,
         bookingDetail,
@@ -310,8 +348,9 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         rejectBooking,
         returnVehicle,
         addVehicle,
-        addRoutine,      
+        addRoutine,
         toggleRoutine,
+        startService,
         fetchAllBookings,
         fetchBookingDetail,
         clearBookingDetail,
@@ -328,6 +367,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
 export function useDashboard() {
   const context = useContext(DashboardContext);
-  if (!context) throw new Error('useDashboard must be used within a DashboardProvider');
+  if (!context)
+    throw new Error("useDashboard must be used within a DashboardProvider");
   return context;
 }
