@@ -4,16 +4,11 @@ import { jwtVerify } from "jose";
 
 // Ensure this matches the secret used in your NestJS JwtModule
 const SECRET_KEY = new TextEncoder().encode(
-  process.env.JWT_SECRET || "Yj0hc6JnsQ9DgtiEvip60VSD0PhwhpHrM5gDmai1Hks",
+  process.env.JWT_SECRET || "rahasia-negara-super-kuat-123",
 );
 
 export async function middleware(request: NextRequest) {
-  console.log("=== CEK ENVIRONMENT VARIABLE ===");
-  console.log("Apakah JWT_SECRET terbaca?", !!process.env.JWT_SECRET);
-  console.log(
-    "Panjang karakter JWT_SECRET:",
-    process.env.JWT_SECRET ? process.env.JWT_SECRET.length : 0,
-  );
+  console.log("Panjang Secret:", process.env.JWT_SECRET?.length || 0);
   console.log("================================");
   const token = request.cookies.get("access_token")?.value;
   const pathname = request.nextUrl.pathname;
