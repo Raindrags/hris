@@ -211,10 +211,11 @@ export function PegawaiFormModal({
           <div className="space-y-2">
             <Label className="text-gray-300">Divisi & Peran</Label>
             <div className="grid grid-cols-2 gap-2">
+              {/* FIX DI BAGIAN ONVALUECHANGE SEPERTI DI BAWAH INI */}
               <Select
                 value={formData.divisiId}
                 onValueChange={(val) =>
-                  setFormData({ ...formData, divisiId: val })
+                  setFormData({ ...formData, divisiId: val ?? "none" })
                 }
               >
                 <SelectTrigger className="bg-gray-800 border-gray-700 text-gray-200">
@@ -229,9 +230,12 @@ export function PegawaiFormModal({
                   ))}
                 </SelectContent>
               </Select>
+
               <Select
                 value={formData.role}
-                onValueChange={(val) => setFormData({ ...formData, role: val })}
+                onValueChange={(val) =>
+                  setFormData({ ...formData, role: val ?? "USER" })
+                }
               >
                 <SelectTrigger className="bg-gray-800 border-gray-700 text-gray-200">
                   <SelectValue placeholder="Peran" />
