@@ -9,7 +9,6 @@ import {
   FileText,
   User,
   Phone,
-  SteeringWheel,
 } from "lucide-react";
 import { useUserBooking } from "@/app/carfleet/context/UserBookingContext";
 

@@ -282,7 +282,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       cost: number;
       description: string;
       type: string;
-    }, // ✨ Tambahkan type: string
+    },
   ) => {
     await apiFetch(`/api/v1/vehicles/${logId}/complete-service`, {
       method: "PATCH",
