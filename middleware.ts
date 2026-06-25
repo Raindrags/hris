@@ -71,7 +71,7 @@ export async function middleware(request: NextRequest) {
       }
 
       // Opsional: Jika /carfleet/user hanya boleh untuk pegawai biasa
-      if (isCarfleetUserRoute && userRole !== "PEGAWAI") {
+      if (isCarfleetUserRoute && userRole !== "USER") {
         return NextResponse.redirect(new URL("/unauthorized", request.url));
       }
     } catch (error: any) {
