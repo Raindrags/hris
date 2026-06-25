@@ -1,11 +1,12 @@
-const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3434";
+const NEXT_PUBLIC_API_URL =
+  process.env.BACKEND_API_URL || "https://hris.maitreyawirads.dpdns.org";
 
 // Fungsi pembantu untuk membaca cookie di sisi Client
 function getCookie(name: string) {
   if (typeof document === "undefined") return null;
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(';').shift();
+  if (parts.length === 2) return parts.pop()?.split(";").shift();
   return null;
 }
 
@@ -18,7 +19,7 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}) {
   };
 
   const token = getCookie("access_token");
-  
+
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
   }
