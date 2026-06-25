@@ -7,13 +7,52 @@ export async function middleware(request: NextRequest) {
     process.env.JWT_SECRET || "rahasia-negara-super-kuat-123",
   );
 
-  console.log("Panjang Secret:", process.env.JWT_SECRET?.length || 0);
-  console.log("================================");
-
-  const token = request.cookies.get("access_token")?.value;
   const pathname = request.nextUrl.pathname;
 
-  // 1. Define Public Paths
+  // ========================================================
+  // 1. TANGKAP MAGIC LINK DARI WHATSAPP
+  // ========================================================
+  const urlToken = request.nextUrl.searchParams.get("token");
+
+  // Jika URL memiliki parameter ?token=... (Artinya user datang dari WA)
+  if (urlToken) {
+    try {
+      // Verifikasi keaslian token dari URL
+      await jwtVerify(urlToken, SECRET_KEY);
+
+      // Bersihkan URL dari parameter ?token=... agar terlihat rapi di browser
+      const cleanUrl = new URL(pathname, request.url);
+      request.nextUrl.searchParams.forEach((value, key) => {
+        if (key !== "token") cleanUrl.searchParams.set(key, value);
+      });
+
+      const response = NextResponse.redirect(cleanUrl);
+
+      // SIMPAN TOKEN KE COOKIE BROWSER USER (Ini kunci utamanya)
+      response.cookies.set("access_token", urlToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60 * 24, // Sesi berlaku 1 hari
+      });
+
+      return response;
+    } catch (error: any) {
+      console.log("❌ MAGIC LINK INVALID/EXPIRED:", error.message);
+      // Lempar ke halaman login yang sudah Anda buat dengan pesan error dinamis
+      return NextResponse.redirect(
+        new URL("/login?error=Token_tidak_valid_atau_kadaluarsa", request.url),
+      );
+    }
+  }
+
+  // ========================================================
+  // 2. CEK COOKIE UNTUK REQUEST BIASA (Setelah login dari WA)
+  // ========================================================
+  const token = request.cookies.get("access_token")?.value;
+
+  // 3. Define Public Paths
   const publicPaths = [
     "/error",
     "/login",
@@ -22,19 +61,17 @@ export async function middleware(request: NextRequest) {
     "/_next",
     "/favicon.ico",
     "/uploads",
-    "/carfleet/magic",
   ];
 
   if (publicPaths.some((p) => pathname.startsWith(p))) {
     return NextResponse.next();
   }
 
-  // 2. Define Protected Routes
+  // 4. Define Protected Routes
   const isAdminHrisRoute = pathname.startsWith("/admin");
   const isPegawaiRoute = pathname.startsWith("/pegawai");
   const isGaRoute = pathname.startsWith("/ga");
   const isPortalRoute = pathname.startsWith("/portal");
-
   const isCarfleetAdminRoute = pathname.startsWith("/carfleet/admin");
   const isCarfleetUserRoute = pathname.startsWith("/carfleet/user");
 
@@ -46,20 +83,18 @@ export async function middleware(request: NextRequest) {
     isCarfleetAdminRoute ||
     isCarfleetUserRoute;
 
-  // 3. Check Token Existence
+  // 5. Check Token Existence (Blokir jika tidak ada cookie)
   if (isProtected && !token) {
-    return NextResponse.redirect(new URL("/error?code=401", request.url));
+    return NextResponse.redirect(
+      new URL("/login?error=missing_token", request.url),
+    );
   }
 
-  // 4. Verify JWT and Check Role
+  // 6. Verify JWT and Check Role
   if (isProtected && token) {
     try {
       const { payload } = await jwtVerify(token, SECRET_KEY);
       const userRole = payload.role as string;
-      console.log("=== CEK ROLE DARI JWT ===");
-      console.log("Tujuan Route:", pathname);
-      console.log("Role User:", userRole);
-      console.log("=========================");
 
       // Validate HRIS Admin Access
       if (isAdminHrisRoute && userRole !== "ADMIN") {
@@ -70,18 +105,17 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL("/unauthorized", request.url));
       }
 
-      // Opsional: Jika /carfleet/user hanya boleh untuk pegawai biasa
-      if (isCarfleetUserRoute && userRole !== "PEGAWAI") {
+      // Izinkan PEGAWAI, ADMIN, dan ADMIN_GA masuk ke halaman Carfleet User
+      // (Agar Anda tidak kena blokir saat testing menggunakan akun Admin)
+      const allowedCarfleetRoles = ["PEGAWAI", "ADMIN", "ADMIN_GA"];
+      if (isCarfleetUserRoute && !allowedCarfleetRoles.includes(userRole)) {
         return NextResponse.redirect(new URL("/unauthorized", request.url));
       }
     } catch (error: any) {
       console.log("JWT VERIFY ERROR:", error.message);
-
+      // Lempar ke halaman login jika token expire di tengah pemakaian
       return NextResponse.redirect(
-        new URL(
-          `/error?code=401&err=${encodeURIComponent(error.message)}`,
-          request.url,
-        ),
+        new URL(`/login?error=session_expired`, request.url),
       );
     }
   }
