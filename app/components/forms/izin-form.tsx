@@ -539,7 +539,7 @@ export default function PermissionForm({
             <Label className="text-slate-300">Detail Izin Khusus</Label>
             <Select
               value={subCategory}
-              onValueChange={(val) => setSubCategory(val)}
+              onValueChange={(val) => setSubCategory(val ?? "")}
             >
               <SelectTrigger className="bg-slate-900 border-slate-700 text-slate-100">
                 <SelectValue placeholder="Pilih alasan khusus" />
