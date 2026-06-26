@@ -4,9 +4,8 @@ const NEXT_PUBLIC_API_URL =
 // Fungsi pembantu untuk membaca cookie di sisi Client
 function getCookie(name: string) {
   if (typeof document === "undefined") return null;
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(";").shift();
+  const match = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
+  if (match) return match[2];
   return null;
 }
 
@@ -17,14 +16,9 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}) {
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string>),
   };
-  if (typeof window !== "undefined") {
-    const localToken = localStorage.getItem("token");
-    if (localToken) {
-      headers["Authorization"] = `Bearer ${localToken}`;
-    }
-  }
 
   const token = getCookie("access_token");
+  console.log("DEBUG COOKIE TOKEN:", token);
 
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
@@ -36,6 +30,8 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.message || "Terjadi kesalahan pada server");
   }
+  const text = await response.text();
+  return text ? JSON.parse(text) : {};
 
   return response.json();
 }
