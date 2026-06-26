@@ -9,14 +9,15 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}) {
     ...(options.headers as Record<string, string>),
   };
 
-  // Kita beritahu fetch untuk otomatis menempelkan cookie bawaan browser
-  const fetchOptions: RequestInit = {
-    ...options,
-    headers,
-    credentials: "include",
-  };
+  if (typeof window !== "undefined") {
+    const localToken = localStorage.getItem("token");
+    if (localToken) {
+      headers["Authorization"] = `Bearer ${localToken}`;
+    }
+  }
 
-  const response = await fetch(url, fetchOptions);
+  // ✨ Perhatikan: tidak ada lagi credentials: "include"
+  const response = await fetch(url, { ...options, headers });
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
