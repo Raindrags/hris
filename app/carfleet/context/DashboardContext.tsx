@@ -156,23 +156,20 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     PackagePending[]
   >([]);
 
-  // ✨ getAuthHeaders() SUDAH DIHAPUS KARENA TIDAK PERLU LAGI
-
   const refreshAllData = async () => {
     try {
       setIsLoading(true);
 
-      // ✨ Hapus prefix /api dan buang pengiriman header manual
       const [
         allBookingsData,
         vehicleData,
-        routineData,
+        routineData, // ✨ Typo diperbaiki, nanti ngambil dari /v1/routines
         nebengData,
         titipanData,
       ] = await Promise.all([
         apiFetch("/admin/bookings/all"),
         apiFetch("/v1/vehicles"),
-        apiFetch("/v1/vehicles"), // Note: ini sepertinya salah panggil di kode asli Anda, harusnya routine? (Lihat catatan di bawah)
+        apiFetch("/v1/routines"), // ✨ FIX: Sebelumnya duplicate manggil /v1/vehicles
         apiFetch("/admin/bookings/rideshares/pending"),
         apiFetch("/admin/bookings/packages/pending"),
       ]);
@@ -202,53 +199,86 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   // ==========================================
   // FUNGSI AKSI ARMADA UTAMA & KENDARAAN
   // ==========================================
+
+  // ✨ FIX: Semua request dengan body ditambahkan headers Content-Type dan try-catch
   const approveBooking = async (id: string, vehicleId: string) => {
-    await apiFetch(`/admin/bookings/${id}/approve`, {
-      method: "PATCH",
-      body: JSON.stringify({ vehicleId }),
-    });
-    await refreshAllData();
+    try {
+      await apiFetch(`/admin/bookings/${id}/approve`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ vehicleId }),
+      });
+      await refreshAllData();
+    } catch (error) {
+      console.error("Gagal Approve Booking:", error);
+      throw error;
+    }
   };
 
   const rejectBooking = async (id: string, reason: string) => {
-    await apiFetch(`/admin/bookings/${id}/reject`, {
-      method: "PATCH",
-      body: JSON.stringify({ reason }),
-    });
-    await refreshAllData();
+    try {
+      await apiFetch(`/admin/bookings/${id}/reject`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason }),
+      });
+      await refreshAllData();
+    } catch (error) {
+      console.error("Gagal Reject Booking:", error);
+      throw error;
+    }
   };
 
   const returnVehicle = async (id: string, actualTimeIn: string) => {
-    await apiFetch(`/admin/bookings/${id}/return`, {
-      method: "PATCH",
-      body: JSON.stringify({ actualTimeIn }),
-    });
-    await refreshAllData();
+    try {
+      await apiFetch(`/admin/bookings/${id}/return`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ actualTimeIn }),
+      });
+      await refreshAllData();
+    } catch (error) {
+      throw error;
+    }
   };
 
   const addVehicle = async (data: Omit<Vehicle, "id" | "status">) => {
-    await apiFetch("/v1/vehicles", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-    await refreshAllData();
+    try {
+      await apiFetch("/v1/vehicles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      await refreshAllData();
+    } catch (error) {
+      throw error;
+    }
   };
 
   const addRoutine = async (
     data: Omit<Routine, "id" | "status" | "vehicle" | "user">,
   ) => {
-    await apiFetch("/v1/routines", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-    await refreshAllData();
+    try {
+      await apiFetch("/v1/routines", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      await refreshAllData();
+    } catch (error) {
+      throw error;
+    }
   };
 
   const toggleRoutine = async (id: string) => {
-    await apiFetch(`/v1/routines/${id}/toggle`, {
-      method: "PATCH",
-    });
-    await refreshAllData();
+    try {
+      await apiFetch(`/v1/routines/${id}/toggle`, {
+        method: "PATCH",
+      });
+      await refreshAllData();
+    } catch (error) {
+      throw error;
+    }
   };
 
   const startService = async (
@@ -256,11 +286,16 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     date: string,
     complaint: string,
   ) => {
-    await apiFetch(`/v1/vehicles/${vehicleId}/service`, {
-      method: "PATCH",
-      body: JSON.stringify({ date, complaint }),
-    });
-    await refreshAllData();
+    try {
+      await apiFetch(`/v1/vehicles/${vehicleId}/service`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date, complaint }),
+      });
+      await refreshAllData();
+    } catch (error) {
+      throw error;
+    }
   };
 
   const completeService = async (
@@ -272,44 +307,67 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       type: string;
     },
   ) => {
-    await apiFetch(`/v1/vehicles/${logId}/complete-service`, {
-      method: "PATCH",
-      body: JSON.stringify(data),
-    });
-    await refreshAllData();
+    try {
+      await apiFetch(`/v1/vehicles/${logId}/complete-service`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      await refreshAllData();
+    } catch (error) {
+      throw error;
+    }
   };
 
   // ==========================================
   // FUNGSI AKSI: NEBENG & TITIPAN
   // ==========================================
   const approveRideShare = async (id: string) => {
-    await apiFetch(`/admin/bookings/rideshares/${id}/approve`, {
-      method: "PATCH",
-    });
-    await refreshAllData();
+    try {
+      await apiFetch(`/admin/bookings/rideshares/${id}/approve`, {
+        method: "PATCH",
+      });
+      await refreshAllData();
+    } catch (error) {
+      throw error;
+    }
   };
 
   const rejectRideShare = async (id: string, reason: string) => {
-    await apiFetch(`/admin/bookings/rideshares/${id}/reject`, {
-      method: "PATCH",
-      body: JSON.stringify({ reason }),
-    });
-    await refreshAllData();
+    try {
+      await apiFetch(`/admin/bookings/rideshares/${id}/reject`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason }),
+      });
+      await refreshAllData();
+    } catch (error) {
+      throw error;
+    }
   };
 
   const approvePackage = async (id: string) => {
-    await apiFetch(`/admin/bookings/packages/${id}/approve`, {
-      method: "PATCH",
-    });
-    await refreshAllData();
+    try {
+      await apiFetch(`/admin/bookings/packages/${id}/approve`, {
+        method: "PATCH",
+      });
+      await refreshAllData();
+    } catch (error) {
+      throw error;
+    }
   };
 
   const rejectPackage = async (id: string, reason: string) => {
-    await apiFetch(`/admin/bookings/packages/${id}/reject`, {
-      method: "PATCH",
-      body: JSON.stringify({ reason }),
-    });
-    await refreshAllData();
+    try {
+      await apiFetch(`/admin/bookings/packages/${id}/reject`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason }),
+      });
+      await refreshAllData();
+    } catch (error) {
+      throw error;
+    }
   };
 
   // ==========================================
