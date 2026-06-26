@@ -161,7 +161,7 @@ export function UserBookingProvider({ children }: { children: ReactNode }) {
   const submitRideShare = async (data: RideShareData) => {
     setIsLoading(true);
     try {
-      await apiFetch(`/api/bookings/${data.bookingId}/rideshare`, {
+      await apiFetch(`/api/bookings/${data.bookingId}/rideshares`, {
         method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify({ dropOff: data.dropOff, seats: data.seats }),
@@ -213,7 +213,7 @@ export function UserBookingProvider({ children }: { children: ReactNode }) {
 
   const fetchAvailableRides = useCallback(async () => {
     try {
-      const data = await apiFetch("/api/bookings/available-rides", {
+      const data = await apiFetch("/api/bookings/available", {
         headers: getAuthHeaders(),
       });
       setAvailableRides(data);
