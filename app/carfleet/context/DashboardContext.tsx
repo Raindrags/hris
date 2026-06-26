@@ -156,17 +156,13 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     PackagePending[]
   >([]);
 
-  const getAuthHeaders = () => {
-    const token =
-      typeof window !== "undefined" ? localStorage.getItem("token") : null;
-    return { Authorization: `Bearer ${token}` };
-  };
+  // ✨ getAuthHeaders() SUDAH DIHAPUS KARENA TIDAK PERLU LAGI
 
   const refreshAllData = async () => {
     try {
       setIsLoading(true);
-      const headers = getAuthHeaders();
 
+      // ✨ Hapus prefix /api dan buang pengiriman header manual
       const [
         allBookingsData,
         vehicleData,
@@ -174,11 +170,11 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         nebengData,
         titipanData,
       ] = await Promise.all([
-        apiFetch("/api/admin/bookings/all", { headers }),
-        apiFetch("/api/v1/vehicles", { headers }),
-        apiFetch("/api/v1/vehicles", { headers }),
-        apiFetch("/api/admin/bookings/rideshares/pending", { headers }),
-        apiFetch("/api/admin/bookings/packages/pending", { headers }),
+        apiFetch("/admin/bookings/all"),
+        apiFetch("/v1/vehicles"),
+        apiFetch("/v1/vehicles"), // Note: ini sepertinya salah panggil di kode asli Anda, harusnya routine? (Lihat catatan di bawah)
+        apiFetch("/admin/bookings/rideshares/pending"),
+        apiFetch("/admin/bookings/packages/pending"),
       ]);
 
       const pendingData =
@@ -207,36 +203,32 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   // FUNGSI AKSI ARMADA UTAMA & KENDARAAN
   // ==========================================
   const approveBooking = async (id: string, vehicleId: string) => {
-    await apiFetch(`/api/admin/bookings/${id}/approve`, {
+    await apiFetch(`/admin/bookings/${id}/approve`, {
       method: "PATCH",
-      headers: getAuthHeaders(),
       body: JSON.stringify({ vehicleId }),
     });
     await refreshAllData();
   };
 
   const rejectBooking = async (id: string, reason: string) => {
-    await apiFetch(`/api/admin/bookings/${id}/reject`, {
+    await apiFetch(`/admin/bookings/${id}/reject`, {
       method: "PATCH",
-      headers: getAuthHeaders(),
       body: JSON.stringify({ reason }),
     });
     await refreshAllData();
   };
 
   const returnVehicle = async (id: string, actualTimeIn: string) => {
-    await apiFetch(`/api/admin/bookings/${id}/return`, {
+    await apiFetch(`/admin/bookings/${id}/return`, {
       method: "PATCH",
-      headers: getAuthHeaders(),
       body: JSON.stringify({ actualTimeIn }),
     });
     await refreshAllData();
   };
 
   const addVehicle = async (data: Omit<Vehicle, "id" | "status">) => {
-    await apiFetch("/api/v1/vehicles", {
+    await apiFetch("/v1/vehicles", {
       method: "POST",
-      headers: getAuthHeaders(),
       body: JSON.stringify(data),
     });
     await refreshAllData();
@@ -245,18 +237,16 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const addRoutine = async (
     data: Omit<Routine, "id" | "status" | "vehicle" | "user">,
   ) => {
-    await apiFetch("/api/v1/routines", {
+    await apiFetch("/v1/routines", {
       method: "POST",
-      headers: getAuthHeaders(),
       body: JSON.stringify(data),
     });
     await refreshAllData();
   };
 
   const toggleRoutine = async (id: string) => {
-    await apiFetch(`/api/v1/routines/${id}/toggle`, {
+    await apiFetch(`/v1/routines/${id}/toggle`, {
       method: "PATCH",
-      headers: getAuthHeaders(),
     });
     await refreshAllData();
   };
@@ -266,10 +256,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     date: string,
     complaint: string,
   ) => {
-    await apiFetch(`/api/v1/vehicles/${vehicleId}/service`, {
+    await apiFetch(`/v1/vehicles/${vehicleId}/service`, {
       method: "PATCH",
-      headers: getAuthHeaders(),
-      // ✨ Kita kirimkan tanggal dan keluhan ke backend dalam format JSON
       body: JSON.stringify({ date, complaint }),
     });
     await refreshAllData();
@@ -284,46 +272,41 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       type: string;
     },
   ) => {
-    await apiFetch(`/api/v1/vehicles/${logId}/complete-service`, {
+    await apiFetch(`/v1/vehicles/${logId}/complete-service`, {
       method: "PATCH",
-      headers: getAuthHeaders(),
       body: JSON.stringify(data),
     });
-
     await refreshAllData();
   };
+
   // ==========================================
   // FUNGSI AKSI: NEBENG & TITIPAN
   // ==========================================
   const approveRideShare = async (id: string) => {
-    await apiFetch(`/api/admin/bookings/rideshares/${id}/approve`, {
+    await apiFetch(`/admin/bookings/rideshares/${id}/approve`, {
       method: "PATCH",
-      headers: getAuthHeaders(),
     });
     await refreshAllData();
   };
 
   const rejectRideShare = async (id: string, reason: string) => {
-    await apiFetch(`/api/admin/bookings/rideshares/${id}/reject`, {
+    await apiFetch(`/admin/bookings/rideshares/${id}/reject`, {
       method: "PATCH",
-      headers: getAuthHeaders(),
       body: JSON.stringify({ reason }),
     });
     await refreshAllData();
   };
 
   const approvePackage = async (id: string) => {
-    await apiFetch(`/api/admin/bookings/packages/${id}/approve`, {
+    await apiFetch(`/admin/bookings/packages/${id}/approve`, {
       method: "PATCH",
-      headers: getAuthHeaders(),
     });
     await refreshAllData();
   };
 
   const rejectPackage = async (id: string, reason: string) => {
-    await apiFetch(`/api/admin/bookings/packages/${id}/reject`, {
+    await apiFetch(`/admin/bookings/packages/${id}/reject`, {
       method: "PATCH",
-      headers: getAuthHeaders(),
       body: JSON.stringify({ reason }),
     });
     await refreshAllData();
@@ -335,9 +318,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const fetchAllBookings = async () => {
     try {
       setIsDetailLoading(true);
-      const data = await apiFetch("/api/admin/bookings/all", {
-        headers: getAuthHeaders(),
-      });
+      const data = await apiFetch("/admin/bookings/all");
       setAllBookings(data || []);
     } catch (error) {
       console.error("Gagal mengambil semua histori permohonan:", error);
@@ -349,9 +330,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const fetchBookingDetail = async (id: string) => {
     try {
       setIsDetailLoading(true);
-      const data = await apiFetch(`/api/admin/bookings/${id}`, {
-        headers: getAuthHeaders(),
-      });
+      const data = await apiFetch(`/admin/bookings/${id}`);
       setBookingDetail(data);
     } catch (error) {
       console.error(`Gagal mengambil detail booking ID ${id}:`, error);

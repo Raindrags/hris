@@ -13,7 +13,6 @@ import { apiFetch } from "../lib/utils/api";
 // 1. TIPE DATA FORM & STATE
 // ==========================================
 
-// Tipe data untuk Armada dari Backend
 interface VehicleData {
   id: string | number;
   name: string;
@@ -23,7 +22,7 @@ interface VehicleData {
 }
 
 interface BookingData {
-  vehicleId: string | number; // Menggunakan ID dinamis dari backend
+  vehicleId: string | number;
   picName: string;
   contactNumber: string;
   driverName: string;
@@ -53,29 +52,19 @@ interface PackageData {
 
 interface UserBookingContextType {
   isLoading: boolean;
-
-  // State Data
-  vehicles: VehicleData[]; // ✨ State baru untuk daftar mobil
+  vehicles: VehicleData[];
   myBookings: any[];
   myRideShares: any[];
   myPackages: any[];
   availableRides: any[];
 
-  // Fungsi Baru untuk Armada
-  fetchVehicles: () => Promise<void>; // ✨ Fungsi fetch baru
-
-  // Fungsi Peminjaman (Sewa Armada)
+  fetchVehicles: () => Promise<void>;
   fetchMyBookings: () => Promise<void>;
   submitBooking: (data: BookingData) => Promise<boolean>;
-
-  // Fungsi Nebeng (Ride Share)
   fetchMyRideShares: () => Promise<void>;
   submitRideShare: (data: RideShareData) => Promise<boolean>;
-
-  // Fungsi Titip Barang (Package)
   fetchMyPackages: () => Promise<void>;
   submitPackage: (data: PackageData) => Promise<boolean>;
-
   fetchAvailableRides: () => Promise<void>;
 }
 
@@ -89,26 +78,17 @@ const UserBookingContext = createContext<UserBookingContextType | undefined>(
 
 export function UserBookingProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
-
-  const [vehicles, setVehicles] = useState<VehicleData[]>([]); // ✨ State untuk mobil
+  const [vehicles, setVehicles] = useState<VehicleData[]>([]);
   const [myBookings, setMyBookings] = useState<any[]>([]);
   const [myRideShares, setMyRideShares] = useState<any[]>([]);
   const [myPackages, setMyPackages] = useState<any[]>([]);
   const [availableRides, setAvailableRides] = useState<any[]>([]);
 
-  // Helper untuk mengambil token
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem("token");
-    return { Authorization: `Bearer ${token}` };
-  };
-
   // --- O. FUNGSI AMBIL DAFTAR ARMADA MOBIL ---
   const fetchVehicles = useCallback(async () => {
     try {
-      // ✨ Mengarah ke endpoint kendaraan NestJS Anda
-      const data = await apiFetch("/api/v1/vehicles", {
-        headers: getAuthHeaders(),
-      });
+      // ✨ Hilangkan /api agar tidak double, dan hapus header manual
+      const data = await apiFetch("/v1/vehicles");
       setVehicles(data);
     } catch (error: any) {
       console.error("Gagal mengambil daftar kendaraan:", error.message);
@@ -118,9 +98,7 @@ export function UserBookingProvider({ children }: { children: ReactNode }) {
   // --- A. FUNGSI BOOKING (SEWA ARMADA) ---
   const fetchMyBookings = useCallback(async () => {
     try {
-      const data = await apiFetch("/api/bookings/my-status", {
-        headers: getAuthHeaders(),
-      });
+      const data = await apiFetch("/bookings/my-status");
       setMyBookings(data);
     } catch (error: any) {
       console.error("Gagal mengambil status booking:", error.message);
@@ -130,12 +108,11 @@ export function UserBookingProvider({ children }: { children: ReactNode }) {
   const submitBooking = async (data: BookingData): Promise<boolean> => {
     setIsLoading(true);
     try {
-      await apiFetch("/api/bookings", {
+      await apiFetch("/bookings", {
         method: "POST",
-        headers: getAuthHeaders(),
         body: JSON.stringify(data),
       });
-      await fetchMyBookings(); // Refresh list otomatis
+      await fetchMyBookings();
       return true;
     } catch (error: any) {
       console.error("Gagal submit booking:", error.message);
@@ -149,9 +126,7 @@ export function UserBookingProvider({ children }: { children: ReactNode }) {
   // --- B. FUNGSI NEBENG (RIDE SHARE) ---
   const fetchMyRideShares = useCallback(async () => {
     try {
-      const data = await apiFetch("/api/bookings/my-rideshares", {
-        headers: getAuthHeaders(),
-      });
+      const data = await apiFetch("/bookings/my-rideshares");
       setMyRideShares(data);
     } catch (error: any) {
       console.error("Gagal mengambil status nebeng:", error.message);
@@ -161,9 +136,8 @@ export function UserBookingProvider({ children }: { children: ReactNode }) {
   const submitRideShare = async (data: RideShareData) => {
     setIsLoading(true);
     try {
-      await apiFetch(`/api/bookings/${data.bookingId}/rideshares`, {
+      await apiFetch(`/bookings/${data.bookingId}/rideshares`, {
         method: "POST",
-        headers: getAuthHeaders(),
         body: JSON.stringify({ dropOff: data.dropOff, seats: data.seats }),
       });
       await fetchMyRideShares();
@@ -180,9 +154,7 @@ export function UserBookingProvider({ children }: { children: ReactNode }) {
   // --- C. FUNGSI TITIP BARANG (PACKAGE) ---
   const fetchMyPackages = useCallback(async () => {
     try {
-      const data = await apiFetch("/api/bookings/my-packages", {
-        headers: getAuthHeaders(),
-      });
+      const data = await apiFetch("/bookings/my-packages");
       setMyPackages(data);
     } catch (error: any) {
       console.error("Gagal mengambil status titip barang:", error.message);
@@ -192,9 +164,8 @@ export function UserBookingProvider({ children }: { children: ReactNode }) {
   const submitPackage = async (data: PackageData) => {
     setIsLoading(true);
     try {
-      await apiFetch(`/api/bookings/${data.bookingId}/package`, {
+      await apiFetch(`/bookings/${data.bookingId}/package`, {
         method: "POST",
-        headers: getAuthHeaders(),
         body: JSON.stringify({
           description: data.description,
           receiver: data.receiver,
@@ -213,9 +184,7 @@ export function UserBookingProvider({ children }: { children: ReactNode }) {
 
   const fetchAvailableRides = useCallback(async () => {
     try {
-      const data = await apiFetch("/api/bookings/available", {
-        headers: getAuthHeaders(),
-      });
+      const data = await apiFetch("/bookings/available");
       setAvailableRides(data);
     } catch (error: any) {
       console.error("Gagal mengambil jadwal:", error.message);
@@ -226,8 +195,8 @@ export function UserBookingProvider({ children }: { children: ReactNode }) {
     <UserBookingContext.Provider
       value={{
         isLoading,
-        vehicles, // ✨ Diekspos ke komponen
-        fetchVehicles, // ✨ Diekspos ke komponen
+        vehicles,
+        fetchVehicles,
         myBookings,
         myRideShares,
         myPackages,
