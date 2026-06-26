@@ -9,9 +9,6 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}) {
     ...(options.headers as Record<string, string>),
   };
 
-  // (Opsional) Jika Abang merasa masih ada token yang tersisa di localStorage
-  // dari sistem lama, kita biarkan saja penarikannya buat jaga-jaga.
-  // Tapi otentikasi utama kita sekarang murni dari Cookie HttpOnly via Proxy.
   if (typeof window !== "undefined") {
     const localToken = localStorage.getItem("token");
     if (localToken) {
@@ -19,9 +16,6 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}) {
     }
   }
 
-  // 🚀 3. EKSEKUSI FETCH
-  // ✨ WAJIB pakai credentials: "include" agar browser menyisipkan cookie
-  // ke request lokal ini, lalu diteruskan oleh middleware ke backend.
   const response = await fetch(url, {
     ...options,
     headers,
