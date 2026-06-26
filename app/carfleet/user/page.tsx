@@ -72,12 +72,12 @@ function PortalContent() {
   const handleBookingSubmit = async (formData: any) => {
     const payloadToBackend = {
       vehicleId: selectedFleet,
-      bookingDate: selectedDate,
       ...formData,
       passengers: parseInt(formData.passengers, 10) || 1,
     };
 
     console.log("MENGIRIM DATA KE BACKEND:", payloadToBackend);
+    ``;
     const isSuccess = await submitBooking(payloadToBackend);
 
     if (isSuccess) {
