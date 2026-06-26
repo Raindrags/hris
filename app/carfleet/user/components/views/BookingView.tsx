@@ -34,10 +34,6 @@ export default function BookingView({
   setSelectedDate,
   openModal,
 }: BookingViewProps) {
-  // 1. STATE UNTUK BULAN DAN TAHUN AKTIF DI KALENDER
-  const [currentMonth, setCurrentMonth] = useState(5); // 5 = Juni
-  const [currentYear, setCurrentYear] = useState(2026);
-
   const monthNames = [
     "Januari",
     "Februari",
@@ -52,6 +48,19 @@ export default function BookingView({
     "November",
     "Desember",
   ];
+
+  // 🚀 FIX 1: Set bulan & tahun kalender berdasar tanggal yang dipilih, jangan di-hardcode Juni 2026.
+  const initDate = selectedDate ? new Date(selectedDate) : new Date();
+  const [currentMonth, setCurrentMonth] = useState(
+    selectedDate
+      ? parseInt(selectedDate.split("-")[1], 10) - 1
+      : initDate.getMonth(),
+  );
+  const [currentYear, setCurrentYear] = useState(
+    selectedDate
+      ? parseInt(selectedDate.split("-")[0], 10)
+      : initDate.getFullYear(),
+  );
 
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const firstDayOfWeek = new Date(currentYear, currentMonth, 1).getDay();
@@ -75,14 +84,23 @@ export default function BookingView({
     }
   };
 
+  // 🚀 FIX 2: Ekstrak tanggal manual agar kebal dari bug Timezone & browser
   const formatDisplayDate = (dateStr: string) => {
     if (!dateStr) return "Belum memilih tanggal";
-    const parsedDate = new Date(dateStr);
-    return `${parsedDate.getDate()} ${monthNames[parsedDate.getMonth()]} ${parsedDate.getFullYear()}`;
+    const parts = dateStr.split("-");
+    if (parts.length === 3) {
+      const year = parts[0];
+      const month = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+      return `${day} ${monthNames[month]} ${year}`;
+    }
+    return dateStr;
   };
 
-  // ✨ Helper untuk mencari nama mobil yang sedang dipilih untuk bagian Ringkasan
-  const activeVehicle = vehicles.find((v) => v.id === selectedFleet);
+  // 🚀 FIX 3: Pengecekan disamakan jadi String agar pencarian armada pasti dapat!
+  const activeVehicle = vehicles.find(
+    (v) => String(v.id) === String(selectedFleet),
+  );
 
   return (
     <div className="w-full transition-all duration-300">
@@ -104,7 +122,7 @@ export default function BookingView({
             <Car className="w-4 h-4" /> Armada Sekolah Tersedia
           </h4>
 
-          {/* ✨ RENDER MOBIL DINAMIS DARI DATABASE */}
+          {/* RENDER MOBIL DINAMIS DARI DATABASE */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {vehicles.length === 0 ? (
               <p className="text-sm text-slate-400 font-medium">
@@ -112,9 +130,10 @@ export default function BookingView({
               </p>
             ) : (
               vehicles.map((mobil) => {
-                // Menentukan icon berdasarkan kapasitas atau nama (bisa disesuaikan)
                 const isBus = mobil.capacity && mobil.capacity > 10;
-                const isSelected = selectedFleet === mobil.id;
+
+                // 🚀 FIX 3 JILID II: Pengecekan class isSelected harus diubah jadi String
+                const isSelected = String(selectedFleet) === String(mobil.id);
 
                 return (
                   <div
@@ -244,7 +263,6 @@ export default function BookingView({
               <span className="text-xs font-bold text-slate-400">
                 Armada Dipilih
               </span>
-              {/* ✨ BACA NAMA DARI DATABASE */}
               <h5 className="font-extrabold text-[#1a365d] mt-0.5">
                 {activeVehicle ? activeVehicle.name : "Belum memilih armada"}
               </h5>

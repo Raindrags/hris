@@ -12,13 +12,12 @@ import {
 } from "lucide-react";
 import { useUserBooking } from "@/app/carfleet/context/UserBookingContext";
 
-// ✨ 1. Daftarkan semua props yang dikirim oleh parent ke dalam Interface
 interface BookingModalProps {
   selectedFleetName: string;
   selectedDate: string;
   onClose: () => void;
   onSubmit: (formData: any) => void;
-  isOpen?: boolean; // Dibuat opsional (?) karena parent menggunakan {isModalOpen && <BookingModal />}
+  isOpen?: boolean;
 }
 
 export default function BookingModal({
@@ -26,22 +25,23 @@ export default function BookingModal({
   selectedDate,
   onClose,
   onSubmit,
-  isOpen = true, // Beri nilai default true
+  isOpen = true,
 }: BookingModalProps) {
   const { isLoading } = useUserBooking();
 
-  // State awal, langsung memanfaatkan `selectedDate` dari parent sebagai nilai default tanggal
-  const [formData, setFormData] = useState({
+  const initialFormState = {
     picName: "",
     contactNumber: "",
     driverName: "",
     purpose: "",
     destination: "",
-    date: selectedDate || "", // ✨ Mengisi otomatis tanggal yang dipilih user
+    date: selectedDate || "",
     timeOut: "",
     timeIn: "",
     passengers: 1,
-  });
+  };
+
+  const [formData, setFormData] = useState(initialFormState);
 
   // Efek kiriman tanggal jika sewaktu-waktu berubah dari parent
   useEffect(() => {
@@ -56,26 +56,19 @@ export default function BookingModal({
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // ✨ Helper untuk menutup dan mereset form agar data tidak nyangkut
+  const handleClose = () => {
+    setFormData(initialFormState);
+    onClose();
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // ✨ 2. Panggil fungsi onSubmit milik parent dengan membawa data form
     try {
       await onSubmit(formData);
-
-      // Reset form setelah sukses
-      setFormData({
-        picName: "",
-        contactNumber: "",
-        driverName: "",
-        purpose: "",
-        destination: "",
-        date: "",
-        timeOut: "",
-        timeIn: "",
-        passengers: 1,
-      });
-      onClose();
+      // Reset form dan tutup setelah sukses
+      handleClose();
     } catch (error) {
       console.error("Gagal mengirim permohonan:", error);
     }
@@ -84,12 +77,19 @@ export default function BookingModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white rounded-3xl w-full max-w-3xl max-h-[90vh] overflow-y-auto relative shadow-2xl">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+      // ✨ Fitur tutup kalau klik di luar area form
+      onClick={handleClose}
+    >
+      <div
+        className="bg-white rounded-3xl w-full max-w-3xl max-h-[90vh] overflow-y-auto relative shadow-2xl"
+        // ✨ Mencegah form tertutup kalau user klik di DALAM area putih form
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* HEADER MODAL */}
         <div className="sticky top-0 bg-white border-b border-slate-100 p-6 flex justify-between items-center z-10 rounded-t-3xl">
           <div>
-            {/* ✨ 3. Tampilkan nama armada yang dipilih secara dinamis di sini */}
             <h2 className="text-2xl font-extrabold text-[#1a365d]">
               Ajukan Peminjaman {selectedFleetName}
             </h2>
@@ -99,7 +99,7 @@ export default function BookingModal({
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
           >
             <X className="w-6 h-6" />
@@ -287,7 +287,7 @@ export default function BookingModal({
           <div className="pt-4 border-t border-slate-100 flex gap-3 justify-end">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               disabled={isLoading}
               className="px-6 py-3 font-bold text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors"
             >
