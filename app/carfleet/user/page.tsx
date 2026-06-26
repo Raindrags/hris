@@ -77,7 +77,7 @@ function PortalContent() {
       passengers: parseInt(formData.passengers, 10) || 1,
     };
 
-    // ✨ Mengirim data asli lewat Context ke API NestJS
+    console.log("MENGIRIM DATA KE BACKEND:", payloadToBackend);
     const isSuccess = await submitBooking(payloadToBackend);
 
     if (isSuccess) {
