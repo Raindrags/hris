@@ -71,8 +71,10 @@ function PortalContent() {
   // --- HANDLER SUBMIT KE BACKEND ---
   const handleBookingSubmit = async (formData: any) => {
     const payloadToBackend = {
-      vehicleId: selectedFleet, // Mengirimkan ID asli mobil ke backend
+      vehicleId: selectedFleet,
+      bookingDate: selectedDate,
       ...formData,
+      passengers: parseInt(formData.passengers, 10) || 1,
     };
 
     // ✨ Mengirim data asli lewat Context ke API NestJS

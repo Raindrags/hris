@@ -27,7 +27,7 @@ interface BookingViewProps {
 }
 
 export default function BookingView({
-  vehicles, // ✨ Variabel ini sekarang KITA GUNAKAN di bawah
+  vehicles,
   selectedFleet,
   setSelectedFleet,
   selectedDate,
