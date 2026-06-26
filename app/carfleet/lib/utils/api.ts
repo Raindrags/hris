@@ -1,14 +1,17 @@
-const NEXT_PUBLIC_API_URL =
-  process.env.BACKEND_API_URL || "https://hris.maitreyawirads.dpdns.org";
-
 export async function apiFetch(endpoint: string, options: RequestInit = {}) {
-  const url = `${NEXT_PUBLIC_API_URL}${endpoint}`;
+  // 🚀 1. KUNCI UTAMA: Kita paksa semua request masuk ke rute proxy lokal
+  // Middleware akan menangkap awalan '/api/proxy' ini
+  const url = `/api/proxy${endpoint}`;
 
+  // 🚀 2. Siapkan header standar
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string>),
   };
 
+  // (Opsional) Jika Abang merasa masih ada token yang tersisa di localStorage
+  // dari sistem lama, kita biarkan saja penarikannya buat jaga-jaga.
+  // Tapi otentikasi utama kita sekarang murni dari Cookie HttpOnly via Proxy.
   if (typeof window !== "undefined") {
     const localToken = localStorage.getItem("token");
     if (localToken) {
@@ -16,14 +19,25 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}) {
     }
   }
 
-  // ✨ Perhatikan: tidak ada lagi credentials: "include"
-  const response = await fetch(url, { ...options, headers });
+  // 🚀 3. EKSEKUSI FETCH
+  // ✨ WAJIB pakai credentials: "include" agar browser menyisipkan cookie
+  // ke request lokal ini, lalu diteruskan oleh middleware ke backend.
+  const response = await fetch(url, {
+    ...options,
+    headers,
+    credentials: "include",
+  });
 
+  // 🚀 4. TANGKAP ERROR
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || "Terjadi kesalahan pada server");
+    throw new Error(
+      errorData.message ||
+        `Error ${response.status}: Terjadi kesalahan pada server`,
+    );
   }
 
+  // 🚀 5. KEMBALIKAN DATA
   const text = await response.text();
   return text ? JSON.parse(text) : {};
 }
