@@ -17,6 +17,12 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}) {
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string>),
   };
+  if (typeof window !== "undefined") {
+    const localToken = localStorage.getItem("token");
+    if (localToken) {
+      headers["Authorization"] = `Bearer ${localToken}`;
+    }
+  }
 
   const token = getCookie("access_token");
 
