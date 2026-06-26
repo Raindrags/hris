@@ -149,7 +149,7 @@ export function UserBookingProvider({ children }: { children: ReactNode }) {
   // --- B. FUNGSI NEBENG (RIDE SHARE) ---
   const fetchMyRideShares = useCallback(async () => {
     try {
-      const data = await apiFetch("/api/v1/bookings/my-rideshares", {
+      const data = await apiFetch("/api/bookings/my-rideshares", {
         headers: getAuthHeaders(),
       });
       setMyRideShares(data);
@@ -161,7 +161,7 @@ export function UserBookingProvider({ children }: { children: ReactNode }) {
   const submitRideShare = async (data: RideShareData) => {
     setIsLoading(true);
     try {
-      await apiFetch(`/api/v1/bookings/${data.bookingId}/rideshare`, {
+      await apiFetch(`/api/bookings/${data.bookingId}/rideshare`, {
         method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify({ dropOff: data.dropOff, seats: data.seats }),
@@ -180,7 +180,7 @@ export function UserBookingProvider({ children }: { children: ReactNode }) {
   // --- C. FUNGSI TITIP BARANG (PACKAGE) ---
   const fetchMyPackages = useCallback(async () => {
     try {
-      const data = await apiFetch("/api/v1/bookings/my-packages", {
+      const data = await apiFetch("/api/bookings/my-packages", {
         headers: getAuthHeaders(),
       });
       setMyPackages(data);
@@ -192,7 +192,7 @@ export function UserBookingProvider({ children }: { children: ReactNode }) {
   const submitPackage = async (data: PackageData) => {
     setIsLoading(true);
     try {
-      await apiFetch(`/api/v1/bookings/${data.bookingId}/package`, {
+      await apiFetch(`/api/bookings/${data.bookingId}/package`, {
         method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -213,7 +213,7 @@ export function UserBookingProvider({ children }: { children: ReactNode }) {
 
   const fetchAvailableRides = useCallback(async () => {
     try {
-      const data = await apiFetch("/api/v1/bookings/available-rides", {
+      const data = await apiFetch("/api/bookings/available-rides", {
         headers: getAuthHeaders(),
       });
       setAvailableRides(data);
