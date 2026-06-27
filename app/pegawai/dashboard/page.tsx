@@ -13,10 +13,10 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-import { ApprovalRequestData } from "@/app/components/forms/approval-form";
 import { ProfileForm } from "@/app/components/forms/profile-form";
 import { getDashboardData } from "@/app/actions/dashboard-action";
 import { ApprovalSection } from "@/app/components/forms/approval-section";
+import { ApprovalRequestData } from "@/app/components/forms/types";
 
 const formatDate = (date: Date | string | null | undefined) => {
   if (!date) return "-";
