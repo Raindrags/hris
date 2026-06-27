@@ -233,12 +233,12 @@ export const usePermissionForm = ({
     }
   };
 
-  const handleCategoryChange = (val: string) => {
-    setCategory(val);
-    if (val !== "IzinKhusus") setSubCategory("");
-    if (val !== "Terlambat" && val !== "PulangAwal") setTimeValue("");
+  const handleCategoryChange = (val: string | null) => {
+    const safeVal = val ?? "";
+    setCategory(safeVal);
+    if (safeVal !== "IzinKhusus") setSubCategory("");
+    if (safeVal !== "Terlambat" && safeVal !== "PulangAwal") setTimeValue("");
   };
-
   const isAutoEndDate =
     category === "IzinKhusus" &&
     [
