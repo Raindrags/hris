@@ -1,6 +1,9 @@
+// app/admin/form-cuti/page.tsx
+
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React from "react";
+import { useRouter } from "next/navigation";
 import {
   Check,
   ChevronsUpDown,
@@ -8,10 +11,8 @@ import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
-  Sparkles,
 } from "lucide-react";
 
-import { useRouter } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -34,112 +35,32 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { LeaveForm } from "@/app/components/forms/cuti-form";
 
-const ITEMS_PER_PAGE = 10;
+// Komponen dan Hooks
+import { LeaveForm } from "@/app/components/forms/cuti-form";
+import { useAdminLeaveForm } from "@/app/form-cuti/hooks/useAdminLeaveForm";
 
 export default function AdminFormCutiPage() {
   const router = useRouter();
-  const [users, setUsers] = useState<any[]>([]);
-  const [open, setOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<any>(null);
-  const [showForm, setShowForm] = useState(false);
-  const [userDetail, setUserDetail] = useState<any>(null);
 
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const res = await fetch("/api/users");
-        const responseData = await res.json();
-
-        // Pencari otomatis (Smart Extractor) yang sudah di-upgrade!
-        let extractedUsers: any[] = [];
-
-        if (Array.isArray(responseData)) {
-          extractedUsers = responseData;
-        } else if (responseData?.data && Array.isArray(responseData.data)) {
-          extractedUsers = responseData.data;
-        } else if (
-          responseData?.data?.data &&
-          Array.isArray(responseData.data.data)
-        ) {
-          extractedUsers = responseData.data.data;
-        } else if (responseData?.users && Array.isArray(responseData.users)) {
-          extractedUsers = responseData.users;
-        }
-
-        if (extractedUsers.length > 0) {
-          setUsers(extractedUsers);
-        } else {
-          setUsers([]);
-        }
-      } catch (error) {
-        // console.error("Gagal mengambil daftar pegawai:", error);
-        console.log(
-          "Menggunakan data simulasi untuk keperluan preview karena fetch API lokal tidak tersedia.",
-        );
-      }
-    };
-    fetchUsers();
-  }, []);
-
-  const handleSearchChange = useCallback((value: string) => {
-    setSearch(value);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      setDebouncedSearch(value);
-      setPage(1);
-    }, 300);
-  }, []);
-
-  // --- BAGIAN YANG SUDAH DIAMANKAN ---
-  const safeUsers = Array.isArray(users) ? users : [];
-
-  const filteredUsers = debouncedSearch
-    ? safeUsers.filter(
-        (u) =>
-          u?.name?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-          u?.niy?.toLowerCase().includes(debouncedSearch.toLowerCase()),
-      )
-    : safeUsers;
-
-  const finalUsers = Array.isArray(filteredUsers) ? filteredUsers : [];
-
-  const totalPages = Math.ceil(finalUsers.length / ITEMS_PER_PAGE) || 1;
-
-  const pagedUsers = finalUsers.slice(
-    (page - 1) * ITEMS_PER_PAGE,
-    page * ITEMS_PER_PAGE,
-  );
-  // ------------------------------------
-
-  const handleSelectUser = async (userId: string) => {
-    const user = safeUsers.find((u) => u.id === userId);
-    setSelectedUser(user);
-    setOpen(false);
-    setShowForm(false);
-
-    try {
-      const res = await fetch(`/api/users/${userId}`);
-      const data = await res.json();
-      setUserDetail(
-        data.data || data.user || { sisaCuti: user?.sisaCuti ?? 0 },
-      );
-    } catch {
-      setUserDetail({ sisaCuti: user?.sisaCuti ?? 0 }); // Fallback untuk preview
-    }
-  };
-
-  const handleAjukan = () => setShowForm(true);
+  // Ambil semua state dan actions dari custom hook
+  const {
+    open,
+    setOpen,
+    search,
+    handleSearchChange,
+    page,
+    handlePageChange,
+    totalPages,
+    selectedUser,
+    showForm,
+    userDetail,
+    pagedUsers,
+    handleSelectUser,
+    handleAjukan,
+  } = useAdminLeaveForm();
 
   return (
-    // Background modern: Dark base dengan ambient glow (pendaran cahaya blur di pojok)
-    // Warna ambient disesuaikan menjadi nuansa Biru/Ungu untuk Form Cuti
     <div className="min-h-screen bg-slate-950 relative overflow-hidden flex items-center justify-center p-4 sm:p-6 text-slate-100 font-sans">
       {/* Decorative Ambient Backgrounds */}
       <div className="absolute top-[-15%] left-[-10%] w-[500px] h-[500px] rounded-full bg-indigo-600/15 blur-[120px] pointer-events-none" />
@@ -197,7 +118,6 @@ export default function AdminFormCutiPage() {
                   </Button>
                 </PopoverTrigger>
 
-                {/* Desain Popover Modern yang terhubung dengan komponen UI bawaanmu */}
                 <PopoverContent className="w-[--radix-popover-trigger-width] p-1.5 rounded-2xl border-slate-700/60 bg-slate-900/95 backdrop-blur-2xl shadow-2xl shadow-black/60">
                   <Command
                     shouldFilter={false}
@@ -256,7 +176,7 @@ export default function AdminFormCutiPage() {
                       <div className="flex items-center justify-between p-2 mt-2 border-t border-slate-800/50">
                         <Button
                           variant="ghost"
-                          onClick={() => setPage((p) => Math.max(1, p - 1))}
+                          onClick={() => handlePageChange(page - 1)}
                           disabled={page === 1}
                           className="h-8 px-3 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
                         >
@@ -267,9 +187,7 @@ export default function AdminFormCutiPage() {
                         </span>
                         <Button
                           variant="ghost"
-                          onClick={() =>
-                            setPage((p) => Math.min(totalPages, p + 1))
-                          }
+                          onClick={() => handlePageChange(page + 1)}
                           disabled={page === totalPages}
                           className="h-8 px-3 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
                         >
@@ -282,7 +200,7 @@ export default function AdminFormCutiPage() {
               </Popover>
             </div>
 
-            {/* Tombol Ajukan (Animasi Muncul) */}
+            {/* Tombol Ajukan */}
             {selectedUser && !showForm && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 mt-2">
                 <Button
@@ -295,11 +213,10 @@ export default function AdminFormCutiPage() {
               </div>
             )}
 
-            {/* Area Form (Animasi Muncul & Pemisah Elegan) */}
+            {/* Area Form Cuti */}
             {showForm && selectedUser && userDetail && (
               <div className="animate-in fade-in slide-in-from-top-6 duration-700 ease-out">
                 <div className="relative py-8">
-                  {/* Garis pemisah estetik */}
                   <div
                     className="absolute inset-0 flex items-center"
                     aria-hidden="true"
@@ -314,7 +231,6 @@ export default function AdminFormCutiPage() {
                 </div>
 
                 <div className="bg-slate-950/40 rounded-3xl p-6 sm:p-8 border border-slate-700/50 shadow-inner relative overflow-hidden">
-                  {/* Subtle highlight inside the form card */}
                   <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent opacity-50"></div>
 
                   <div className="flex items-center gap-4 mb-8">
@@ -331,7 +247,7 @@ export default function AdminFormCutiPage() {
                     </div>
                   </div>
 
-                  {/* Memanggil komponen aslimu */}
+                  {/* Komponen LeaveForm yang sudah kita refactor di tahap sebelumnya */}
                   <LeaveForm
                     userId={selectedUser.id}
                     user={{ sisaCuti: userDetail.sisaCuti ?? 0 }}

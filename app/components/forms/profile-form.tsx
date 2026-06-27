@@ -1,8 +1,8 @@
+// app/components/forms/ProfileForm.tsx
+
 "use client";
 
-import { Suspense, useState } from "react";
-// PENTING: Tambahkan kembali useSearchParams
-import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,83 +14,12 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { toast } from "sonner";
 import { Loader2, Save } from "lucide-react";
+import { ProfileFormProps } from "./types/profile";
+import { useProfileForm } from "./hooks/useProfileForm";
 
-export type UserProfileData = {
-  id?: string | null;
-  name?: string | null;
-  email?: string | null;
-  phone?: string | null;
-  emergencyContact?: string | null;
-  address?: string | null;
-  isFirstLogin?: boolean | null;
-  [key: string]: unknown;
-};
-
-interface ProfileFormProps {
-  user: UserProfileData;
-  variant?: "page" | "onboarding";
-}
-
-// Komponen dalam
 function ProfileFormContent({ user, variant = "page" }: ProfileFormProps) {
-  const router = useRouter();
-  // Membaca target url awal (contoh: /pegawai/form-cuti)
-  const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl");
-
-  const [loading, setLoading] = useState<boolean>(false);
-
-  const isFirstTime = user?.isFirstLogin === true;
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      const formData = new FormData(e.currentTarget);
-      const payload = {
-        email: formData.get("email") as string,
-        phone: formData.get("phone") as string,
-        emergencyContact: formData.get("emergencyContact") as string,
-        address: formData.get("address") as string,
-        isFirstLogin: false,
-      };
-
-      const res = await fetch(`/api/users/${user.id}/profile`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json();
-
-      if (res.ok && data.success) {
-        toast.success(data.message || "Profil berhasil diperbarui");
-
-        // --- UBAH BAGIAN INI ---
-        // Kita gunakan window.location.href untuk memaksa browser memuat
-        // ulang halaman sepenuhnya agar tidak memakai Cache / Ingatan lama.
-
-        setTimeout(() => {
-          if (callbackUrl) {
-            window.location.href = callbackUrl;
-          } else {
-            window.location.href = "/pegawai/dashboard";
-          }
-        }, 1000); // Beri jeda 1 detik agar pesan toast "Berhasil" sempat terbaca
-        // ------------------------
-      } else {
-        toast.error(data.message || "Gagal memperbarui profil");
-      }
-    } catch (error) {
-      console.error("Error updating profile:", error);
-      toast.error("Terjadi kesalahan sistem saat menyimpan profil.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { loading, isFirstTime, handleSubmit } = useProfileForm(user);
 
   const FormContent = (
     <form onSubmit={handleSubmit} className="space-y-5">
@@ -168,7 +97,7 @@ function ProfileFormContent({ user, variant = "page" }: ProfileFormProps) {
   );
 }
 
-// Komponen utama dengan Suspense
+// Komponen utama dengan Suspense Wrapper
 export function ProfileForm(props: ProfileFormProps) {
   return (
     <Suspense fallback={<div className="py-4 text-center">Memuat form...</div>}>

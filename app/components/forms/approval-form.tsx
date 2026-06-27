@@ -1,6 +1,8 @@
+// app/components/forms/ApprovalForm.tsx
+
 "use client";
 
-import { useState } from "react";
+import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,28 +17,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
-
-export interface SubstituteUser {
-  id: string;
-  name: string;
-  divisi?: { id: string; name: string } | null;
-}
-
-export interface ApprovalRequestData {
-  id: string;
-  type: "CUTI" | "IZIN";
-  reason?: string;
-  startDate: Date | string;
-  endDate: Date | string;
-  attachmentUrl?: string | null;
-  user: {
-    id: string;
-    name: string;
-    divisi?: { id: string; name: string } | null;
-    category?: string;
-  };
-}
+import { useApprovalForm } from "./hooks/useApprovalForm";
+import { ApprovalRequestData, SubstituteUser } from "./types";
 
 interface ApprovalFormProps {
   request: ApprovalRequestData;
@@ -49,97 +31,21 @@ export function ApprovalForm({
   potentialSubstitutes,
   onClose,
 }: ApprovalFormProps) {
-  const [actionType, setActionType] = useState<"APPROVE" | "REJECT" | null>(
-    null,
-  );
-  const [loading, setLoading] = useState<boolean>(false);
+  const {
+    actionType,
+    setActionType,
+    loading,
+    delegatedTo,
+    setDelegatedTo,
+    noDeduction,
+    setNoDeduction,
+    isSakit,
+    isIzinPribadi,
+    filteredSubstitutes,
+    handleProcess,
+  } = useApprovalForm(request, potentialSubstitutes, onClose);
 
-  const categoryStr = request.user.category?.toLowerCase() || "";
-  const isDinasOrKhusus =
-    categoryStr.includes("dinas") || categoryStr.includes("izinkhusus");
-  const isSakit = categoryStr.includes("sakit");
-  const isIzinPribadi = !isDinasOrKhusus && !isSakit;
-
-  const [delegatedTo, setDelegatedTo] = useState<string>("");
-  const [noDeduction, setNoDeduction] = useState<boolean>(isDinasOrKhusus);
-
-  const filteredSubstitutes = potentialSubstitutes.filter((sub) => {
-    if (!request.user?.divisi?.id || !sub.divisi?.id) return false;
-    return sub.divisi.id === request.user.divisi.id;
-  });
-
-  const rejectRequestApi = async (id: string, reason: string) => {
-    const token = localStorage.getItem("accessToken");
-    const res = await fetch(`/api/requests/${id}/reject`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ reason }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "Gagal menolak pengajuan");
-    return data;
-  };
-
-  const approveRequestApi = async (id: string, payload: any) => {
-    const token = localStorage.getItem("accessToken");
-    const res = await fetch(`/api/requests/${id}/approve`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "Gagal menyetujui pengajuan");
-    return data;
-  };
-
-  const handleProcess = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setLoading(true);
-    const formData = new FormData(e.currentTarget);
-
-    try {
-      if (actionType === "REJECT") {
-        const reason = formData.get("rejectionReason") as string;
-        await rejectRequestApi(request.id, reason);
-        toast.info("Pengajuan ditolak.");
-      } else if (actionType === "APPROVE") {
-        // Payload minimal yang didukung backend saat ini
-        const payload: any = {
-          delegatedToId: delegatedTo || undefined,
-          taskDetail: (formData.get("taskDetail") as string) || undefined,
-          deductions: [] as string[],
-        };
-
-        if (!noDeduction) {
-          if (formData.get("potongGaji")) payload.deductions.push("Gaji");
-          if (formData.get("potongKonsumsi"))
-            payload.deductions.push("Tunjangan Konsumsi");
-          if (formData.get("potongTransport"))
-            payload.deductions.push("Tunjangan Transportasi");
-        }
-
-        // Field tambahan yang akan dikirim setelah backend diperluas:
-        // payload.lateFine = formData.get("lateFine") as string | null;
-        // payload.invalCount = formData.get("invalCount") as string | null;
-        // payload.shiftCount = formData.get("shiftCount") as string | null;
-
-        await approveRequestApi(request.id, payload);
-        toast.success("Pengajuan disetujui.");
-      }
-      onClose();
-    } catch (error: any) {
-      toast.error(error.message || "Terjadi kesalahan");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // 1. Tampilan Awal (Belum Memilih Aksi)
   if (!actionType) {
     return (
       <div className="space-y-4 text-gray-200">
@@ -173,6 +79,7 @@ export function ApprovalForm({
     );
   }
 
+  // 2. Tampilan Form PENOLAKAN
   if (actionType === "REJECT") {
     return (
       <form onSubmit={handleProcess} className="space-y-4 text-gray-200">
@@ -200,6 +107,7 @@ export function ApprovalForm({
     );
   }
 
+  // 3. Tampilan Form PERSETUJUAN (Khusus CUTI)
   if (actionType === "APPROVE" && request.type === "CUTI") {
     return (
       <form onSubmit={handleProcess} className="space-y-4 text-gray-200">
@@ -228,7 +136,7 @@ export function ApprovalForm({
     );
   }
 
-  // Tampilan APPROVE untuk IZIN (kompleks)
+  // 4. Tampilan Form PERSETUJUAN (Khusus IZIN - Kompleks)
   return (
     <form
       onSubmit={handleProcess}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -17,11 +17,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { CheckSquare, Paperclip, Calendar } from "lucide-react";
-import {
-  ApprovalForm,
-  ApprovalRequestData,
-  SubstituteUser,
-} from "./approval-form";
+import { ApprovalRequestData, SubstituteUser } from "./types";
+import { useApprovalSection } from "./hooks/useApprovalSection";
+import { ApprovalForm } from "./approval-form";
 
 interface ApprovalSectionProps {
   incomingRequests: ApprovalRequestData[];
@@ -34,8 +32,13 @@ export function ApprovalSection({
   potentialSubstitutes,
   onRefresh,
 }: ApprovalSectionProps) {
-  const [selectedRequest, setSelectedRequest] =
-    useState<ApprovalRequestData | null>(null);
+  const {
+    selectedRequest,
+    handleOpenChange,
+    openApprovalDialog,
+    closeApprovalDialog,
+    formatDateRange,
+  } = useApprovalSection(onRefresh);
 
   if (incomingRequests.length === 0) return null;
 
@@ -53,6 +56,7 @@ export function ApprovalSection({
             Ada {incomingRequests.length} pengajuan bawahan yang menunggu.
           </CardDescription>
         </CardHeader>
+
         <CardContent className="pt-4 space-y-3 bg-gray-900">
           {incomingRequests.map((req) => (
             <div
@@ -74,18 +78,7 @@ export function ApprovalSection({
 
                   <div className="flex items-center gap-1 text-xs text-blue-300 bg-blue-900/20 px-2 py-1 rounded border border-blue-800/50">
                     <Calendar className="w-3.5 h-3.5 text-blue-400" />
-                    <span>
-                      {new Intl.DateTimeFormat("id-ID", {
-                        day: "numeric",
-                        month: "short",
-                      }).format(new Date(req.startDate))}
-                      {" - "}
-                      {new Intl.DateTimeFormat("id-ID", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      }).format(new Date(req.endDate))}
-                    </span>
+                    <span>{formatDateRange(req.startDate, req.endDate)}</span>
                   </div>
                 </div>
 
@@ -111,7 +104,7 @@ export function ApprovalSection({
               </div>
 
               <Button
-                onClick={() => setSelectedRequest(req)}
+                onClick={() => openApprovalDialog(req)}
                 className="bg-red-500 hover:bg-crimson-800 text-white font-semibold shadow-sm"
               >
                 Proses Sekarang
@@ -121,15 +114,7 @@ export function ApprovalSection({
         </CardContent>
       </Card>
 
-      <Dialog
-        open={!!selectedRequest}
-        onOpenChange={(open) => {
-          if (!open) {
-            setSelectedRequest(null);
-            onRefresh();
-          }
-        }}
-      >
+      <Dialog open={!!selectedRequest} onOpenChange={handleOpenChange}>
         <DialogContent className="max-w-xl bg-gray-950 text-gray-100 border-gray-800 shadow-xl">
           <DialogHeader>
             <DialogTitle className="text-xl text-white">
@@ -140,7 +125,7 @@ export function ApprovalSection({
             <ApprovalForm
               request={selectedRequest}
               potentialSubstitutes={potentialSubstitutes}
-              onClose={() => setSelectedRequest(null)}
+              onClose={closeApprovalDialog}
             />
           )}
         </DialogContent>
