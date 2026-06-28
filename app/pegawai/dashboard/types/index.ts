@@ -1,6 +1,10 @@
-import type { ApprovalRequestData } from "@/app/components/forms/types";
+import type {
+  ApprovalRequestData,
+  SubstituteUser,
+} from "@/app/components/forms/types";
 
-export type { ApprovalRequestData };
+// 2. Re-export agar file lain tetap bisa mengambilnya dari folder types ini
+export type { ApprovalRequestData, SubstituteUser };
 
 export interface AuthUser {
   id: string;
@@ -8,7 +12,7 @@ export interface AuthUser {
   email?: string;
   phone?: string;
   isFirstLogin?: boolean;
-  // Index signature agar kompatibel (assignable) dengan properti dinamis di ProfileForm
+  // Index signature agar kompatibel dengan properti dinamis di ProfileForm
   [key: string]: any;
 }
 
@@ -37,19 +41,14 @@ export interface AttendanceSummary {
   earlyLeaves: number;
 }
 
-export interface SubstituteUser {
-  id: string;
-  name: string;
-  // Kita buat fleksibel untuk mengantisipasi data dari API yang berupa objek maupun ID langsung
-  divisiId?: string | number | null;
-  divisi?: { id?: string | number; name?: string } | string | null;
-}
+// NOTE: interface SubstituteUser LOKAL TELAH DIHAPUS
+// Kita murni menggunakan SubstituteUser dari komponen asli untuk menghindari bentrok tipe.
 
 export interface DashboardDataResponse {
   success: boolean;
   user?: UserData;
   recentRequests?: RecentRequest[];
   incomingRequests?: ApprovalRequestData[];
-  potentialSubstitutes?: SubstituteUser[];
+  potentialSubstitutes?: SubstituteUser[]; // <-- Sekarang menggunakan tipe dari komponen asli
   attendanceSummary?: AttendanceSummary;
 }
