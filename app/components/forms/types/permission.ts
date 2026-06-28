@@ -1,16 +1,14 @@
 export interface SubstituteUser {
   id: string;
   name: string;
-  divisi?: { id: string; name: string } | null;
+  divisiId?: string | number | null;
+  divisi?: { id?: string | number; name?: string } | string | null;
 }
 
 export type PermissionUserData = {
   name: string;
-  divisi?: {
-    id?: string;
-    name: string;
-  } | null;
-  [key: string]: unknown;
+  divisiId?: string | number | null;
+  divisi?: { id?: string | number; name?: string } | string | null;
 };
 
 export type PermissionSubmitPayload = {
