@@ -106,7 +106,11 @@ export default function PermissionForm({
           </div>
           <div className="flex justify-between items-center">
             <span className="text-slate-400">Divisi:</span>
-            <span className="font-semibold">{user.divisi?.name || "-"}</span>
+            <span className="font-semibold">
+              {(typeof user.divisi === "object" && user.divisi !== null
+                ? user.divisi.name
+                : user.divisi) || "-"}
+            </span>
           </div>
         </div>
 
