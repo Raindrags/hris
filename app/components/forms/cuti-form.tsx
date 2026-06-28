@@ -81,7 +81,7 @@ export function LeaveForm({ user, onSuccess, userId }: LeaveFormProps) {
                 <Button
                   variant="outline"
                   className={cn(
-                    "w-full justify-start text-left font-normal h-12 rounded-xl bg-slate-950/50 border-slate-700 hover:bg-slate-800 hover:text-white",
+                    "w-full justify-start text-left font-normal h-12 rounded-xl bg-slate-950/50 border-slate-700 hover:bg-slate-800 text-slate-400 hover:text-white",
                     !startDate && "text-slate-500",
                   )}
                 >
@@ -116,7 +116,7 @@ export function LeaveForm({ user, onSuccess, userId }: LeaveFormProps) {
                 <Button
                   variant="outline"
                   className={cn(
-                    "w-full justify-start text-left font-normal h-12 rounded-xl bg-slate-950/50 border-slate-700 hover:bg-slate-800 hover:text-white",
+                    "w-full justify-start text-left font-normal h-12 rounded-xl bg-slate-950/50 border-slate-700 hover:bg-slate-800 text-slate-400 hover:text-white",
                     !endDate && "text-slate-500",
                   )}
                 >

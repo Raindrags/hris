@@ -38,14 +38,29 @@ export const usePermissionForm = ({
 
   const [delegatedTo, setDelegatedTo] = useState<string>("");
   const [taskDetail, setTaskDetail] = useState<string>("");
+  const [substitutesList, setSubstitutesList] = useState<SubstituteUser[]>([]);
 
   const [showWarning, setShowWarning] = useState<boolean>(false);
   const [pendingPayload, setPendingPayload] =
     useState<PermissionSubmitPayload | null>(null);
 
-  const filteredSubstitutes = potentialSubstitutes.filter((sub) => {
-    if (!user?.divisi?.name || !sub.divisi?.name) return false;
-    return sub.divisi.name === user.divisi.name;
+  const safeSubstitutesList = Array.isArray(substitutesList)
+    ? substitutesList
+    : [];
+
+  const filteredSubstitutes = safeSubstitutesList.filter((sub) => {
+    if (sub.id === user?.id) return false;
+    const myDivisiId =
+      user?.divisiId ||
+      user?.divisi?.id ||
+      (typeof user?.divisi !== "object" ? user?.divisi : null);
+    const subDivisiId =
+      sub?.divisiId ||
+      sub?.divisi?.id ||
+      (typeof sub?.divisi !== "object" ? sub?.divisi : null);
+    if (!myDivisiId || !subDivisiId) return false;
+
+    return String(subDivisiId) === String(myDivisiId);
   });
 
   useEffect(() => {
@@ -123,6 +138,30 @@ export const usePermissionForm = ({
       if (isAutoSet) setEndDate(newEndDate);
     }
   }, [category, subCategory, startDate]);
+
+  useEffect(() => {
+    const fetchSubstitutes = async () => {
+      try {
+        const res = await fetch("/api/users");
+        if (!res.ok) throw new Error("Gagal fetch users");
+        const data = await res.json();
+
+        let usersData: SubstituteUser[] = [];
+        if (Array.isArray(data)) {
+          usersData = data;
+        } else if (data?.data && Array.isArray(data.data)) {
+          usersData = data.data;
+        } else if (data?.users && Array.isArray(data.users)) {
+          usersData = data.users;
+        }
+
+        setSubstitutesList(usersData);
+      } catch (error) {
+        setSubstitutesList([]);
+      }
+    };
+    fetchSubstitutes();
+  }, []);
 
   const isHolidayOrSunday = (date: Date) => {
     const year = date.getFullYear();

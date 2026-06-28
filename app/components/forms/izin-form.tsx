@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -115,10 +115,10 @@ export default function PermissionForm({
             <Label className="text-slate-300">Tanggal Mulai</Label>
             <Popover>
               <PopoverTrigger>
-                <Button
-                  variant="outline"
+                <div
                   className={cn(
-                    "justify-start text-left font-normal bg-slate-900 border-slate-700 text-slate-100 hover:bg-slate-800",
+                    buttonVariants({ variant: "outline" }),
+                    "justify-start text-left font-normal bg-slate-900 border-slate-700 text-slate-100 hover:bg-slate-800 w-full",
                     !startDate && "text-slate-400",
                   )}
                 >
@@ -126,7 +126,7 @@ export default function PermissionForm({
                   {startDate
                     ? format(startDate, "PPP", { locale: id })
                     : "Pilih tanggal"}
-                </Button>
+                </div>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0 bg-slate-900 border-slate-700">
                 <Calendar
@@ -144,12 +144,11 @@ export default function PermissionForm({
           <div className="space-y-2 flex flex-col">
             <Label className="text-slate-300">Tanggal Selesai</Label>
             <Popover>
-              <PopoverTrigger>
-                <Button
-                  disabled={isAutoEndDate}
-                  variant="outline"
+              <PopoverTrigger disabled={isAutoEndDate}>
+                <div
                   className={cn(
-                    "justify-start text-left font-normal bg-slate-900 border-slate-700 text-slate-100 hover:bg-slate-800",
+                    buttonVariants({ variant: "outline" }),
+                    "justify-start text-left font-normal bg-slate-900 border-slate-700 text-slate-100 hover:bg-slate-800 w-full",
                     !endDate && "text-slate-400",
                     isAutoEndDate && "opacity-50",
                   )}
@@ -158,7 +157,7 @@ export default function PermissionForm({
                   {endDate
                     ? format(endDate, "PPP", { locale: id })
                     : "Pilih tanggal"}
-                </Button>
+                </div>
               </PopoverTrigger>
               {!isAutoEndDate && (
                 <PopoverContent className="w-auto p-0 bg-slate-900 border-slate-700">

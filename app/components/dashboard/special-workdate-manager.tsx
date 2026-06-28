@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Plus, Pencil, Trash2, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,151 +21,30 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { toast } from "sonner";
-import {
-  getSpecialWorkDates,
-  createSpecialWorkDate,
-  updateSpecialWorkDate,
-  deleteSpecialWorkDate,
-} from "@/app/actions/special-workdate-action";
-import { getUsers } from "@/app/actions/get-user-action";
-
-interface SpecialWorkDate {
-  id: string;
-  date: string;
-  description?: string;
-  name?: string;
-  checkIn?: string;
-  checkOut?: string;
-  users: { id: string; name: string; niy: string }[];
-}
-
-interface UserOption {
-  id: string;
-  name: string;
-  niy: string;
-  divisi?: { name: string };
-}
+import { useSpecialWorkDateManager } from "./hooks/useSpecialWorkDateManager";
 
 export function SpecialWorkDateManager() {
-  const [items, setItems] = useState<SpecialWorkDate[]>([]);
-  const [users, setUsers] = useState<UserOption[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    date: "",
-    name: "",
-    checkIn: "07:00",
-    checkOut: "11:00",
-  });
-
-  const [assignModalOpen, setAssignModalOpen] = useState(false);
-  const [assignItemId, setAssignItemId] = useState<string | null>(null);
-  const [assignSelectedIds, setAssignSelectedIds] = useState<string[]>([]);
-
-  const fetchData = async () => {
-    setIsLoading(true);
-    const [dateRes, userRes] = await Promise.all([
-      getSpecialWorkDates(),
-      getUsers(),
-    ]);
-    if (dateRes.success) setItems(dateRes.data);
-    if (userRes.success) setUsers(userRes.data);
-    setIsLoading(false);
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const handleSave = async () => {
-    if (
-      !formData.date ||
-      !formData.name ||
-      !formData.checkIn ||
-      !formData.checkOut
-    ) {
-      toast.error("Semua field wajib diisi");
-      return;
-    }
-    const payload = {
-      date: formData.date,
-      reason: formData.name,
-      checkIn: formData.checkIn,
-      checkOut: formData.checkOut,
-    };
-    let res;
-    if (editingId) {
-      res = await updateSpecialWorkDate(editingId, payload);
-    } else {
-      res = await createSpecialWorkDate(payload);
-    }
-    console.log(res);
-    if (res.success) {
-      toast.success(editingId ? "Data diperbarui" : "Data ditambahkan");
-      setDialogOpen(false);
-      resetForm();
-      fetchData();
-    } else {
-      toast.error(res.error || res.message || "Gagal menyimpan");
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm("Hapus hari kerja khusus ini?")) return;
-    const res = await deleteSpecialWorkDate(id);
-    if (res.success) {
-      toast.success("Data dihapus");
-      fetchData();
-    } else {
-      toast.error(res.error || "Gagal menghapus");
-    }
-  };
-
-  const openEdit = (item: SpecialWorkDate) => {
-    setEditingId(item.id);
-    setFormData({
-      date: item.date,
-      name: item.name || item.description || "",
-      checkIn: item.checkIn || "07:00",
-      checkOut: item.checkOut || "11:00",
-    });
-    setDialogOpen(true);
-  };
-
-  const resetForm = () => {
-    setEditingId(null);
-    setFormData({ date: "", name: "", checkIn: "07:00", checkOut: "11:00" });
-  };
-
-  const openAssignModal = (item: SpecialWorkDate) => {
-    setAssignItemId(item.id);
-    setAssignSelectedIds(item.users.map((u) => u.id));
-    setAssignModalOpen(true);
-  };
-
-  const handleAssignSave = async () => {
-    if (!assignItemId) return;
-    const res = await updateSpecialWorkDate(assignItemId, {
-      userIds: assignSelectedIds.length ? assignSelectedIds : null,
-    });
-    if (res.success) {
-      toast.success("Penugasan pegawai diperbarui");
-      setAssignModalOpen(false);
-      fetchData();
-    } else {
-      toast.error(res.error || "Gagal menyimpan penugasan");
-    }
-  };
-
-  const toggleAssignUser = (userId: string) => {
-    setAssignSelectedIds((prev) =>
-      prev.includes(userId)
-        ? prev.filter((id) => id !== userId)
-        : [...prev, userId],
-    );
-  };
+  const {
+    items,
+    users,
+    isLoading,
+    dialogOpen,
+    setDialogOpen,
+    editingId,
+    formData,
+    setFormData,
+    assignModalOpen,
+    setAssignModalOpen,
+    assignSelectedIds,
+    setAssignSelectedIds,
+    handleSave,
+    handleDelete,
+    openEdit,
+    resetForm,
+    openAssignModal,
+    handleAssignSave,
+    toggleAssignUser,
+  } = useSpecialWorkDateManager();
 
   return (
     <div className="space-y-4 text-gray-100">
@@ -292,6 +170,7 @@ export function SpecialWorkDateManager() {
         </Table>
       </div>
 
+      {/* DIALOG TAMBAH/EDIT */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-md bg-gray-900 border-gray-700 text-gray-100">
           <DialogHeader>
@@ -367,6 +246,7 @@ export function SpecialWorkDateManager() {
         </DialogContent>
       </Dialog>
 
+      {/* DIALOG PENUGASAN PEGAWAI */}
       <Dialog open={assignModalOpen} onOpenChange={setAssignModalOpen}>
         <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col bg-gray-900 border-gray-700 text-gray-100">
           <DialogHeader>

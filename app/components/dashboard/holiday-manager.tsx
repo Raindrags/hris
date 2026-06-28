@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Plus, Pencil, Trash2, Users } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,140 +19,32 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { toast } from "sonner";
-import {
-  getHolidays,
-  createHoliday,
-  updateHoliday,
-  deleteHoliday,
-} from "@/app/actions/holiday-action";
-import { getUsers } from "@/app/actions/get-user-action";
 import { HolidayTable } from "../table/holiday-table";
-
-interface Holiday {
-  id: string;
-  date: string;
-  description: string;
-  users: { id: string; name: string; niy: string }[];
-}
-
-interface UserOption {
-  id: string;
-  name: string;
-  niy: string;
-  divisi?: { name: string };
-}
+import { useHolidayManager } from "./hooks/useHolidayManager";
 
 export function HolidayManager() {
-  const [holidays, setHolidays] = useState<Holiday[]>([]);
-  const [users, setUsers] = useState<UserOption[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ date: "", description: "" });
-  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
-
-  const [assignModalOpen, setAssignModalOpen] = useState(false);
-  const [assignHolidayId, setAssignHolidayId] = useState<string | null>(null);
-  const [assignSelectedIds, setAssignSelectedIds] = useState<string[]>([]);
-
-  const fetchData = useCallback(async () => {
-    setIsLoading(true);
-    const [holidayRes, userRes] = await Promise.all([
-      getHolidays(),
-      getUsers(),
-    ]);
-    if (holidayRes.success) setHolidays(holidayRes.data);
-    if (userRes.success) setUsers(userRes.data);
-    setIsLoading(false);
-  }, []);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  const handleSave = async () => {
-    if (!formData.date || !formData.description) {
-      toast.error("Tanggal dan deskripsi wajib diisi");
-      return;
-    }
-    const payload = {
-      date: formData.date,
-      description: formData.description,
-      userIds: selectedUserIds.length ? selectedUserIds : null,
-    };
-    let res;
-    if (editingId) {
-      res = await updateHoliday(editingId, payload);
-    } else {
-      res = await createHoliday(payload);
-    }
-    if (res.success) {
-      toast.success(editingId ? "Libur diperbarui" : "Libur ditambahkan");
-      setDialogOpen(false);
-      resetForm();
-      fetchData();
-    } else {
-      toast.error(res.error || "Gagal menyimpan");
-    }
-  };
-
-  const handleDelete = useCallback(
-    async (id: string) => {
-      if (!confirm("Hapus hari libur ini?")) return;
-      const res = await deleteHoliday(id);
-      if (res.success) {
-        toast.success("Libur dihapus");
-        fetchData();
-      } else {
-        toast.error(res.error || "Gagal menghapus");
-      }
-    },
-    [fetchData],
-  );
-
-  const openEdit = useCallback((holiday: Holiday) => {
-    setEditingId(holiday.id);
-    setFormData({ date: holiday.date, description: holiday.description });
-    setSelectedUserIds(holiday.users.map((u) => u.id));
-    setDialogOpen(true);
-  }, []);
-
-  const resetForm = () => {
-    setEditingId(null);
-    setFormData({ date: "", description: "" });
-    setSelectedUserIds([]);
-  };
-
-  const openAssignModal = useCallback((holiday: Holiday) => {
-    setAssignHolidayId(holiday.id);
-    setAssignSelectedIds(holiday.users.map((u) => u.id));
-    setAssignModalOpen(true);
-  }, []);
-
-  const handleAssignSave = async () => {
-    if (!assignHolidayId) return;
-    const res = await updateHoliday(assignHolidayId, {
-      userIds: assignSelectedIds.length ? assignSelectedIds : null,
-    });
-    if (res.success) {
-      toast.success("Penugasan pegawai diperbarui");
-      setAssignModalOpen(false);
-      fetchData();
-    } else {
-      toast.error(res.error || "Gagal menyimpan penugasan");
-    }
-  };
-
-  const toggleAssignUser = useCallback((userId: string) => {
-    setAssignSelectedIds((prev) =>
-      prev.includes(userId)
-        ? prev.filter((id) => id !== userId)
-        : [...prev, userId],
-    );
-  }, []);
+  const {
+    holidays,
+    users,
+    isLoading,
+    dialogOpen,
+    setDialogOpen,
+    editingId,
+    formData,
+    setFormData,
+    assignModalOpen,
+    setAssignModalOpen,
+    assignSelectedIds,
+    setAssignSelectedIds,
+    handleSave,
+    handleDelete,
+    openEdit,
+    resetForm,
+    openAssignModal,
+    handleAssignSave,
+    toggleAssignUser,
+  } = useHolidayManager();
 
   return (
     <div className="space-y-4 text-gray-100">
@@ -178,6 +69,7 @@ export function HolidayManager() {
         onDelete={handleDelete}
       />
 
+      {/* DIALOG TAMBAH/EDIT */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-md bg-gray-900 border-gray-700 text-gray-100">
           <DialogHeader>
@@ -227,6 +119,7 @@ export function HolidayManager() {
         </DialogContent>
       </Dialog>
 
+      {/* DIALOG PENUGASAN PEGAWAI */}
       <Dialog open={assignModalOpen} onOpenChange={setAssignModalOpen}>
         <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col bg-gray-900 border-gray-700 text-gray-100">
           <DialogHeader>
