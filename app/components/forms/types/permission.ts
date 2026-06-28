@@ -6,6 +6,7 @@ export interface SubstituteUser {
 }
 
 export type PermissionUserData = {
+  id: string;
   name: string;
   divisiId?: string | number | null;
   divisi?: { id?: string | number; name?: string } | string | null;
