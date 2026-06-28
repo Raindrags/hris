@@ -50,14 +50,22 @@ export const usePermissionForm = ({
 
   const filteredSubstitutes = safeSubstitutesList.filter((sub) => {
     if (sub.id === user?.id) return false;
+
+    const myDivisi = user?.divisi;
+    const subDivisi = sub?.divisi;
+
     const myDivisiId =
       user?.divisiId ||
-      user?.divisi?.id ||
-      (typeof user?.divisi !== "object" ? user?.divisi : null);
+      (typeof myDivisi === "object" && myDivisi !== null
+        ? myDivisi.id
+        : myDivisi);
+
     const subDivisiId =
       sub?.divisiId ||
-      sub?.divisi?.id ||
-      (typeof sub?.divisi !== "object" ? sub?.divisi : null);
+      (typeof subDivisi === "object" && subDivisi !== null
+        ? subDivisi.id
+        : subDivisi);
+
     if (!myDivisiId || !subDivisiId) return false;
 
     return String(subDivisiId) === String(myDivisiId);
