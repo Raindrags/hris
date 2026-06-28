@@ -1,4 +1,6 @@
-// app/pegawai/dashboard/types/index.ts
+import type { ApprovalRequestData } from "@/app/components/forms/types";
+
+export type { ApprovalRequestData };
 
 export interface AuthUser {
   id: string;
@@ -6,6 +8,7 @@ export interface AuthUser {
   email?: string;
   phone?: string;
   isFirstLogin?: boolean;
+  // Index signature agar kompatibel (assignable) dengan properti dinamis di ProfileForm
   [key: string]: any;
 }
 
@@ -37,15 +40,9 @@ export interface AttendanceSummary {
 export interface SubstituteUser {
   id: string;
   name: string;
-  divisiId?: string;
-}
-
-export interface ApprovalRequestData {
-  id: string;
-  requesterName: string;
-  type: string;
-  status: string;
-  date: string;
+  // Kita buat fleksibel untuk mengantisipasi data dari API yang berupa objek maupun ID langsung
+  divisiId?: string | number | null;
+  divisi?: { id?: string | number; name?: string } | string | null;
 }
 
 export interface DashboardDataResponse {
