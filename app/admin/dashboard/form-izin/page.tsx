@@ -361,7 +361,9 @@ export default function AdminFormIzinPage() {
                   <PermissionForm
                     userId={selectedUser.id}
                     user={{
+                      id: selectedUser.id,
                       name: userDetail?.name || selectedUser.name,
+                      divisiId: userDetail?.divisiId || null,
                       divisi: userDetail?.divisi
                         ? { name: userDetail.divisi }
                         : null,
