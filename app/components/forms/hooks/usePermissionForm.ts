@@ -48,27 +48,25 @@ export const usePermissionForm = ({
     ? substitutesList
     : [];
 
-  const filteredSubstitutes = safeSubstitutesList.filter((sub) => {
+const filteredSubstitutes = safeSubstitutesList.filter((sub) => {
     if (sub.id === user?.id) return false;
 
     const myDivisi = user?.divisi;
     const subDivisi = sub?.divisi;
 
-    const myDivisiId =
-      user?.divisiId ||
-      (typeof myDivisi === "object" && myDivisi !== null
-        ? myDivisi.id
-        : myDivisi);
+    const myDivisiName =
+      typeof myDivisi === "object" && myDivisi !== null
+        ? myDivisi.name // Jika bentuknya objek { name: "IT" }
+        : myDivisi; // Jika bentuknya string "IT"
 
-    const subDivisiId =
-      sub?.divisiId ||
-      (typeof subDivisi === "object" && subDivisi !== null
-        ? subDivisi.id
-        : subDivisi);
+    const subDivisiName =
+      typeof subDivisi === "object" && subDivisi !== null
+        ? subDivisi.name
+        : subDivisi;
 
-    if (!myDivisiId || !subDivisiId) return false;
+    if (!myDivisiName || !subDivisiName) return false;
 
-    return String(subDivisiId) === String(myDivisiId);
+    return String(subDivisiName).toLowerCase() === String(myDivisiName).toLowerCase();
   });
 
   useEffect(() => {
@@ -147,24 +145,32 @@ export const usePermissionForm = ({
     }
   }, [category, subCategory, startDate]);
 
-  useEffect(() => {
+useEffect(() => {
     const fetchSubstitutes = async () => {
       try {
         const res = await fetch("/api/users");
         if (!res.ok) throw new Error("Gagal fetch users");
-        const data = await res.json();
+        const responseData = await res.json();
 
+        // 🚀 Gunakan Smart Extractor yang sama dengan halaman Admin Anda
         let usersData: SubstituteUser[] = [];
-        if (Array.isArray(data)) {
-          usersData = data;
-        } else if (data?.data && Array.isArray(data.data)) {
-          usersData = data.data;
-        } else if (data?.users && Array.isArray(data.users)) {
-          usersData = data.users;
+
+        if (Array.isArray(responseData)) {
+          usersData = responseData;
+        } else if (responseData?.data && Array.isArray(responseData.data)) {
+          usersData = responseData.data;
+        } else if (
+          responseData?.data?.data &&
+          Array.isArray(responseData.data.data)
+        ) {
+          usersData = responseData.data.data;
+        } else if (responseData?.users && Array.isArray(responseData.users)) {
+          usersData = responseData.users;
         }
 
         setSubstitutesList(usersData);
       } catch (error) {
+        console.error("Gagal menarik data rekan pengganti:", error);
         setSubstitutesList([]);
       }
     };

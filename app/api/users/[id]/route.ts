@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 
+// ==========================================
+// 1. GET USER DETAIL
+// ==========================================
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  // 2. PERBAIKAN: Ekstrak id dari params dengan await
+  // Ekstrak id dari params dengan await (Standar Next.js 15)
   const { id } = await params;
 
   try {
@@ -24,7 +27,7 @@ export async function GET(
       );
     }
 
-    // Mengirim permintaan ke backend asli menggunakan id yang sudah diekstrak
+    // Mengirim permintaan ke backend NestJS
     const res = await fetch(`${backendUrl}/users/${id}`, {
       method: "GET",
       headers: {
@@ -34,18 +37,32 @@ export async function GET(
       cache: "no-store",
     });
 
-    const data = await res.json();
-    console.log("sisaCuti from backend:", data.user.sisaCuti);
-    return NextResponse.json(data, { status: res.status });
-  } catch (error) {
+    const backendData = await res.json();
+
+    // Jika backend mengembalikan error (misal 404 / 401)
+    if (!res.ok) {
+      console.error(`[API /users/${id}] ❌ Backend error:`, backendData);
+      return NextResponse.json(backendData, { status: res.status });
+    }
+
+    // ✅ PERBAIKAN: Menggunakan backendData.data sesuai format return NestJS Anda
+    // Menggunakan ?. (Optional Chaining) agar aman jika data kosong
+    console.log("sisaCuti from backend:", backendData.data?.sisaCuti);
+
+    // Kirim data utuh ke frontend Next.js
+    return NextResponse.json(backendData, { status: res.status });
+  } catch (error: any) {
     console.error("Error fetching user detail:", error);
     return NextResponse.json(
-      { success: false, error: "Terjadi kesalahan server" },
+      { success: false, error: "Terjadi kesalahan server saat mengambil data" },
       { status: 500 },
     );
   }
 }
 
+// ==========================================
+// 2. UPDATE USER (PUT)
+// ==========================================
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -86,31 +103,34 @@ export async function PUT(
       body: JSON.stringify(body),
     });
 
-    const data = await res.json();
+    const backendData = await res.json();
 
     // 🔍 Log respons dari backend
     if (!res.ok) {
       console.error(
         `[API /users/${id}] ❌ Backend error ${res.status}:`,
-        JSON.stringify(data, null, 2),
+        JSON.stringify(backendData, null, 2),
       );
     } else {
       console.log(
-        `[API /users/${id}] ✅ Backend sukses:`,
-        JSON.stringify(data, null, 2),
+        `[API /users/${id}] ✅ Backend sukses mengupdate:`,
+        JSON.stringify(backendData, null, 2),
       );
     }
 
-    return NextResponse.json(data, { status: res.status });
+    return NextResponse.json(backendData, { status: res.status });
   } catch (error) {
-    console.error(`[API /users/${id}] 💥 Server error:`, error);
+    console.error(`[API /users/${id}] 💥 Server error saat update:`, error);
     return NextResponse.json(
-      { success: false, error: "Terjadi kesalahan server" },
+      { success: false, error: "Terjadi kesalahan server saat memperbarui data" },
       { status: 500 },
     );
   }
 }
 
+// ==========================================
+// 3. DELETE USER
+// ==========================================
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -147,25 +167,25 @@ export async function DELETE(
       },
     });
 
-    const data = await res.json();
+    const backendData = await res.json();
 
     if (!res.ok) {
       console.error(
         `[API /users/${id}] ❌ Backend error saat delete ${res.status}:`,
-        JSON.stringify(data, null, 2),
+        JSON.stringify(backendData, null, 2),
       );
     } else {
       console.log(
         `[API /users/${id}] ✅ Backend sukses menghapus data:`,
-        JSON.stringify(data, null, 2),
+        JSON.stringify(backendData, null, 2),
       );
     }
 
-    return NextResponse.json(data, { status: res.status });
+    return NextResponse.json(backendData, { status: res.status });
   } catch (error) {
     console.error(`[API /users/${id}] 💥 Server error saat delete:`, error);
     return NextResponse.json(
-      { success: false, error: "Terjadi kesalahan server saat menghapus" },
+      { success: false, error: "Terjadi kesalahan server saat menghapus data" },
       { status: 500 },
     );
   }

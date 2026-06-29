@@ -238,7 +238,14 @@ export default function PermissionForm({
                 onValueChange={(val) => setDelegatedTo(val ?? "")}
               >
                 <SelectTrigger className="bg-slate-900 border-slate-700 text-slate-200">
-                  <SelectValue placeholder="Pilih Rekan Pengganti" />
+                  {/* --- PERBAIKAN DI SINI: Tampilkan Nama, Bukan ID --- */}
+                  <SelectValue placeholder="Pilih Rekan Pengganti">
+                    {delegatedTo
+                      ? filteredSubstitutes.find(
+                          (sub) => sub.id === delegatedTo,
+                        )?.name
+                      : "Pilih Rekan Pengganti"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent className="bg-slate-800 border-slate-700">
                   <SelectGroup>
@@ -317,11 +324,11 @@ export default function PermissionForm({
         {category === "IzinKhusus" && (
           <div className="space-y-2 p-3 bg-slate-900/50 rounded border border-slate-700">
             <Label className="text-slate-300">Detail Izin Khusus</Label>
+            {/* --- PERBAIKAN BUG DI SINI: Menggunakan subCategory --- */}
             <Select
-              value={delegatedTo}
-              onValueChange={(val) => setDelegatedTo(val ?? "")}
+              value={subCategory}
+              onValueChange={(val) => setSubCategory(val ?? "")}
             >
-              ``
               <SelectTrigger className="bg-slate-900 border-slate-700 text-slate-100">
                 <SelectValue placeholder="Pilih alasan khusus" />
               </SelectTrigger>

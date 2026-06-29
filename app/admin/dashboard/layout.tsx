@@ -11,6 +11,7 @@ import {
   CalendarDays,
   FileText,
   CircleUser,
+  CalendarRange,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -21,6 +22,7 @@ const navItems = [
   { title: "Dashboard", href: "/admin/dashboard", icon: Home },
   { title: "Pegawai", href: "/admin/dashboard/pegawai", icon: Users },
   { title: "Absensi", href: "/admin/dashboard/absensi", icon: CalendarDays },
+  { title: "Periode", href: "/admin/dashboard/periods", icon: CalendarRange },
   { title: "Form Cuti", href: "/admin/dashboard/form-cuti", icon: FileText },
   { title: "Form Izin", href: "/admin/dashboard/form-izin", icon: FileText },
   { title: "Jadwal", href: "/admin/dashboard/jadwal", icon: CalendarDays },
