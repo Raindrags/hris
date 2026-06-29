@@ -1,3 +1,4 @@
+// app/actions/jadwal-action.ts
 "use server";
 
 import { revalidatePath } from "next/cache";
@@ -55,18 +56,12 @@ export async function getAllShifts() {
     const headers = await getHeaders();
     const url = `${API_URL}/shifts`;
 
-    console.log("Mencoba fetch ke URL:", url);
-
     const res = await fetch(url, {
       cache: "no-store",
       headers,
     });
 
-    console.log("Status Code dari Backend:", res.status);
-
     if (!res.ok) {
-      const errorText = await res.text();
-      console.error("Error Response Backend:", errorText);
       return {
         success: false,
         error: `Backend merespons dengan status ${res.status}`,
@@ -74,11 +69,8 @@ export async function getAllShifts() {
     }
 
     const data = await res.json();
-    console.log("Format Data dari Backend:", data);
-
     return data;
   } catch (error: any) {
-    console.error("Fetch Gagal (Network error dll):", error.message);
     return {
       success: false,
       error: "Gagal mengambil data jadwal",
@@ -92,10 +84,6 @@ export async function getAllShifts() {
 // ============================================================================
 export async function createShift(payload: any) {
   try {
-    console.log(
-      "[DEBUG] createShift dipanggil dengan payload:",
-      JSON.stringify(payload, null, 2),
-    );
     const sanitizedPayload = {
       ...payload,
       details: sanitizeDetails(payload.details),
@@ -107,11 +95,9 @@ export async function createShift(payload: any) {
       body: JSON.stringify(sanitizedPayload),
     });
     const data = await res.json();
-    console.log("[DEBUG] Respons dari backend (createShift):", data);
-    if (data.success) revalidatePath("/pengaturan-jadwal");
+    if (data.success) revalidatePath("/admin/pengaturan-jadwal");
     return data;
   } catch (error: any) {
-    console.error("[DEBUG] Error createShift:", error);
     return { success: false, error: error.message };
   }
 }
@@ -133,7 +119,7 @@ export async function updateShift(id: string, payload: any) {
     });
     const data = await res.json();
 
-    if (data.success) revalidatePath("/pengaturan-jadwal");
+    if (data.success) revalidatePath("/admin/pengaturan-jadwal");
     return data;
   } catch (error: any) {
     return {
@@ -156,7 +142,7 @@ export async function deleteShift(id: string) {
     });
     const data = await res.json();
 
-    if (data.success) revalidatePath("/pengaturan-jadwal");
+    if (data.success) revalidatePath("/admin/pengaturan-jadwal");
     return data;
   } catch (error: any) {
     return {
@@ -201,12 +187,129 @@ export async function batchAssignShift(userIds: string[], shiftId: string) {
     });
     const data = await res.json();
 
-    if (data.success) revalidatePath("/pengaturan-jadwal");
+    if (data.success) revalidatePath("/admin/pengaturan-jadwal");
     return data;
   } catch (error: any) {
     return {
       success: false,
       error: "Gagal menyimpan penugasan jadwal.",
+      errorDetail: error.message,
+    };
+  }
+}
+
+// ============================================================================
+// 7. Ambil Semua Hari Kerja Khusus (Special Work Dates)
+// ============================================================================
+export async function getSpecialWorkDates() {
+  try {
+    const headers = await getHeaders();
+    // Sesuaikan URL endpoint backend Anda, misal: /special-work-dates
+    const res = await fetch(`${API_URL}/special-work-dates`, {
+      cache: "no-store",
+      headers,
+    });
+    const data = await res.json();
+    return data;
+  } catch (error: any) {
+    return {
+      success: false,
+      error: "Gagal mengambil data hari kerja khusus.",
+      errorDetail: error.message,
+    };
+  }
+}
+
+// ============================================================================
+// 8. Buat Hari Kerja Khusus Baru
+// ============================================================================
+export async function createSpecialWorkDate(payload: any) {
+  try {
+    const headers = await getHeaders();
+    const res = await fetch(`${API_URL}/special-work-dates`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    
+    if (data.success) revalidatePath("/admin/pengaturan-jadwal");
+    return data;
+  } catch (error: any) {
+    return {
+      success: false,
+      error: "Gagal membuat hari kerja khusus.",
+      errorDetail: error.message,
+    };
+  }
+}
+
+// ============================================================================
+// 9. Update Hari Kerja Khusus
+// ============================================================================
+export async function updateSpecialWorkDate(id: string, payload: any) {
+  try {
+    const headers = await getHeaders();
+    const res = await fetch(`${API_URL}/special-work-dates/${id}`, {
+      method: "PUT",
+      headers,
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+
+    if (data.success) revalidatePath("/admin/pengaturan-jadwal");
+    return data;
+  } catch (error: any) {
+    return {
+      success: false,
+      error: "Gagal memperbarui hari kerja khusus.",
+      errorDetail: error.message,
+    };
+  }
+}
+
+// ============================================================================
+// 10. Hapus Hari Kerja Khusus
+// ============================================================================
+export async function deleteSpecialWorkDate(id: string) {
+  try {
+    const headers = await getHeaders();
+    const res = await fetch(`${API_URL}/special-work-dates/${id}`, {
+      method: "DELETE",
+      headers,
+    });
+    const data = await res.json();
+
+    if (data.success) revalidatePath("/admin/pengaturan-jadwal");
+    return data;
+  } catch (error: any) {
+    return {
+      success: false,
+      error: "Gagal menghapus hari kerja khusus.",
+      errorDetail: error.message,
+    };
+  }
+}
+
+// ============================================================================
+// 11. Assign Pegawai ke Hari Kerja Khusus
+// ============================================================================
+export async function assignEmployeesToSpecialDate(specialDateId: string, userIds: string[]) {
+  try {
+    const headers = await getHeaders();
+    const res = await fetch(`${API_URL}/special-work-dates/assign`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ specialDateId, userIds }),
+    });
+    const data = await res.json();
+
+    if (data.success) revalidatePath("/admin/pengaturan-jadwal");
+    return data;
+  } catch (error: any) {
+    return {
+      success: false,
+      error: "Gagal menyimpan penugasan hari kerja khusus.",
       errorDetail: error.message,
     };
   }
