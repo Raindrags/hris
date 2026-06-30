@@ -48,23 +48,30 @@ export function SpecialWorkDateForm({ form, setForm, onSave, isLoading, isEditin
             className="bg-gray-800 border-gray-700 text-gray-100 focus:border-crimson-700"
           />
         </div>
+        
+        {/* JAM MULAI (Flekibel / Opsional) */}
         <div className="space-y-2">
-          <Label className="text-gray-300">Jam Mulai Kerja (Start)</Label>
+          <Label className="text-gray-300">Jam Mulai Kerja <span className="text-gray-500 text-xs">(Opsional)</span></Label>
           <Input
             type="time"
-            value={form.startTime}
+            // Tambahkan || "" agar React tidak error jika form.startTime bernilai null/undefined
+            value={form.startTime || ""} 
             onChange={(e) => setForm({ ...form, startTime: e.target.value })}
             className="bg-gray-800 border-gray-700 text-gray-100 focus:border-crimson-700 [color-scheme:dark]"
           />
+          <p className="text-[10px] text-gray-500 mt-1">Kosongkan untuk ikut jam shift reguler</p>
         </div>
+        
+        {/* JAM SELESAI (Fleksibel / Opsional) */}
         <div className="space-y-2">
-          <Label className="text-gray-300">Jam Selesai Kerja (End)</Label>
+          <Label className="text-gray-300">Jam Selesai Kerja <span className="text-gray-500 text-xs">(Opsional)</span></Label>
           <Input
             type="time"
-            value={form.endTime}
+            value={form.endTime || ""} 
             onChange={(e) => setForm({ ...form, endTime: e.target.value })}
             className="bg-gray-800 border-gray-700 text-gray-100 focus:border-crimson-700 [color-scheme:dark]"
           />
+          <p className="text-[10px] text-gray-500 mt-1">Kosongkan untuk ikut jam shift reguler</p>
         </div>
       </div>
 

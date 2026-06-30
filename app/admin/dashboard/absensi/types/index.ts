@@ -2,8 +2,10 @@ export interface AttendanceLog {
   date: string;
   dayName: string;
   isSpecialWorkDay: boolean;
-  isHoliday?: boolean;
+  isHoliday: boolean;
   holidayName?: string | null;
+  targetIn: string;
+  targetOut: string;
   in: string | null;
   out: string | null;
   lateDuration: string;
@@ -11,11 +13,7 @@ export interface AttendanceLog {
   isAbsent: boolean;
   status: string;
   leaveType?: string | null;
-  leaveCategory?: string | null;
-  partialLeave?: {
-    type: string;
-    timeRange: string;
-  } | null;
+  partialLeave?: any;
 }
 
 export interface EmployeeReport {

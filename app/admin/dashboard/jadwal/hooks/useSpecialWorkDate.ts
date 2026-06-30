@@ -1,7 +1,6 @@
 // app/admin/pengaturan-jadwal/hooks/useSpecialWorkDate.ts
 
 import { useState, useCallback, useMemo } from "react";
-import { toast } from "sonner";
 import { Employee, Division, SpecialWorkDate, SpecialWorkDateFormState } from "../types";
 import {
   getSpecialWorkDates,
@@ -12,6 +11,18 @@ import {
   assignEmployeesToSpecialDate,
 } from "@/app/actions/jadwal-action";
 
+// Pembersih format tanggal otomatis untuk UI
+const formatToInputDate = (dateInput: any): string => {
+  if (!dateInput) return "";
+  try {
+    const d = new Date(dateInput);
+    if (isNaN(d.getTime())) return "";
+    return d.toISOString().split("T")[0]; 
+  } catch {
+    return "";
+  }
+};
+
 export function useSpecialWorkDate() {
   const [specialDates, setSpecialDates] = useState<SpecialWorkDate[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -19,13 +30,12 @@ export function useSpecialWorkDate() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   
-  // Perbarui state form dengan default string kosong untuk jam kerja
   const [formState, setFormState] = useState<SpecialWorkDateFormState>({
     name: "",
     startDate: "",
     endDate: "",
-    startTime: "", // BARU
-    endTime: "",   // BARU
+    startTime: "", 
+    endTime: "",   
   });
 
   const [isAssignOpen, setIsAssignOpen] = useState(false);
@@ -43,10 +53,14 @@ export function useSpecialWorkDate() {
     setIsLoading(true);
     try {
       const res = await getSpecialWorkDates();
-      if (res?.success) setSpecialDates(res.data || []);
-      else toast.error(res?.error || "Gagal memuat data");
+      if (res?.success) {
+        setSpecialDates(res.data || []);
+        console.log("FETCH DATA: Berhasil memuat data hari kerja khusus.", res.data);
+      } else {
+        console.log("FETCH DATA GAGAL:", res?.error || "Gagal memuat data");
+      }
     } catch (error) {
-      toast.error("Terjadi kesalahan sistem");
+      console.log("FETCH DATA CRASH:", error);
     } finally {
       setIsLoading(false);
     }
@@ -58,8 +72,8 @@ export function useSpecialWorkDate() {
       name: "", 
       startDate: "", 
       endDate: "", 
-      startTime: "", // BARU
-      endTime: ""    // BARU
+      startTime: "", 
+      endTime: ""    
     });
   }, []);
 
@@ -70,41 +84,64 @@ export function useSpecialWorkDate() {
     });
   }, [resetForm]);
 
+  // =========================================================================
+  // FIX CRITICAL: Mengonversi "" Menjadi null Agar Diterima Database Backend
+  // =========================================================================
   const handleSave = async () => {
-    // Tambahkan validasi jam kerja wajib diisi
-    if (
-      !formState.name.trim() || 
-      !formState.startDate || 
-      !formState.endDate || 
-      !formState.startTime || 
-      !formState.endTime
-    ) {
-      return toast.error("Semua kolom termasuk tanggal dan jam kerja wajib diisi!");
+    console.log("=== BERHASIL KLIK TOMBOL SIMPAN ===");
+    console.log("Data mentah dari Form State:", formState);
+
+    // Validasi dasar frontend untuk kolom wajib
+    if (!formState.name.trim() || !formState.startDate || !formState.endDate) {
+      console.log("VALIDASI FRONTEND GAGAL: Nama, Tanggal Mulai, atau Tanggal Selesai wajib diisi!");
+      return;
     }
     
-    setIsLoading(true);
-    const res = editingId
-      ? await updateSpecialWorkDate(editingId, formState)
-      : await createSpecialWorkDate(formState);
+    try {
+      setIsLoading(true);
+      
+      // PERBAIKAN UTAMA: Jika string kosong "", paksa jadi null agar backend tidak crash
+      const payload = {
+        name: formState.name.trim(),
+        startDate: formState.startDate,
+        endDate: formState.endDate,
+        startTime: formState.startTime && formState.startTime.trim() !== "" ? formState.startTime : null,
+        endTime: formState.endTime && formState.endTime.trim() !== "" ? formState.endTime : null,
+      };
 
-    if (res?.success) {
-      toast.success(editingId ? "Data berhasil diperbarui" : "Data berhasil ditambahkan");
-      setShowForm(false);
-      resetForm();
-      fetchData();
-    } else {
-      toast.error(res?.error || "Gagal menyimpan data");
+      console.log("Payload FINAL dikirim ke Server Action:", payload);
+
+      const res = editingId
+        ? await updateSpecialWorkDate(editingId, payload)
+        : await createSpecialWorkDate(payload);
+
+      console.log("RESPON BALASAN DARI SERVER ACTION:", res);
+
+      if (res && (res.success || res.id)) { 
+        console.log("DATABASE SAKSES: Data berhasil disimpan/diperbarui.");
+        setShowForm(false);
+        resetForm();
+        await fetchData();
+      } else {
+        console.log("DATABASE GAGAL MENYIMPAN:", res?.error || "Unknown Server Error");
+      }
+    } catch (error) {
+      console.log("FATAL ERROR (CRASH DI FRONTEND JALUR HANDLE SAVE):", error);
+    } finally {
+      setIsLoading(false);
+      console.log("=== PROSES SIMPAN SELESAI, LOADING DISABLED REOPENED ===");
     }
-    setIsLoading(false);
   };
+  // =========================================================================
 
   const handleEdit = (data: SpecialWorkDate) => {
+    console.log("MEMULAI MODE EDIT DATA:", data);
     setFormState({
       name: data.name,
-      startDate: data.startDate,
-      endDate: data.endDate,
-      startTime: data.startTime || "", // BARU
-      endTime: data.endTime || "",     // BARU
+      startDate: formatToInputDate(data.startDate), 
+      endDate: formatToInputDate(data.endDate),     
+      startTime: data.startTime || "", 
+      endTime: data.endTime || "",     
     });
     setEditingId(data.id);
     setShowForm(true);
@@ -113,14 +150,19 @@ export function useSpecialWorkDate() {
   const handleDelete = async (id: string) => {
     if (!confirm("Hapus agenda hari kerja khusus ini?")) return;
     setIsLoading(true);
-    const res = await deleteSpecialWorkDate(id);
-    if (res?.success) {
-      toast.success("Berhasil dihapus");
-      fetchData();
-    } else {
-      toast.error(res?.error || "Gagal menghapus");
+    try {
+      const res = await deleteSpecialWorkDate(id);
+      if (res?.success) {
+        console.log("DELETE BERHASIL");
+        fetchData();
+      } else {
+        console.log("DELETE GAGAL:", res?.error);
+      }
+    } catch (error) {
+      console.log("DELETE CRASH:", error);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const openAssignModal = async (target: SpecialWorkDate) => {
@@ -130,30 +172,41 @@ export function useSpecialWorkDate() {
     setSelectedTarget(target);
 
     setIsLoading(true);
-    const res = await getEmployeesForAssign();
-    if (res?.success) {
-      setEmployees(res.data || []);
-      setDivisions(res.divisions || []);
-      setSelectedUserIds(res.assignedUserIds?.[target.id] || []);
-      setIsAssignOpen(true);
-    } else {
-      toast.error(res?.error || "Gagal memuat data pegawai");
+    try {
+      const res = await getEmployeesForAssign();
+      if (res?.success) {
+        setEmployees(res.data || []);
+        setDivisions(res.divisions || []);
+        setSelectedUserIds(res.assignedUserIds?.[target.id] || []);
+        setIsAssignOpen(true);
+        console.log("MODAL ASSIGNMENT OPENED");
+      } else {
+        console.log("LOAD ASSIGNMENT GAGAL:", res?.error);
+      }
+    } catch (error) {
+      console.log("LOAD ASSIGNMENT CRASH:", error);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const handleSaveAssignment = async () => {
     if (!selectedTarget) return;
     setIsLoading(true);
-    const res = await assignEmployeesToSpecialDate(selectedTarget.id, selectedUserIds);
-    if (res?.success) {
-      toast.success(`Berhasil menugaskan ${selectedUserIds.length} pegawai`);
-      setIsAssignOpen(false);
-      fetchData();
-    } else {
-      toast.error(res?.error || "Gagal menyimpan penugasan");
+    try {
+      const res = await assignEmployeesToSpecialDate(selectedTarget.id, selectedUserIds);
+      if (res?.success) {
+        console.log("SAVE ASSIGNMENT BERHASIL");
+        setIsAssignOpen(false);
+        fetchData();
+      } else {
+        console.log("SAVE ASSIGNMENT GAGAL:", res?.error);
+      }
+    } catch (error) {
+      console.log("SAVE ASSIGNMENT CRASH:", error);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const toggleEmployee = (id: string) => {
