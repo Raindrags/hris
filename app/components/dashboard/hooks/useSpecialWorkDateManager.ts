@@ -81,7 +81,7 @@ export const useSpecialWorkDateManager = () => {
 
   const handleDelete = useCallback(
     async (id: string) => {
-      if (!confirm("Hapus hari kerja khusus ini?")) return;
+      if (!confirm("Hapus hari kerja khusus ini?")) return; 
       const res = await deleteSpecialWorkDate(id);
       if (res.success) {
         toast.success("Data dihapus");

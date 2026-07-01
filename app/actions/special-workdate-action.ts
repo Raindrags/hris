@@ -83,6 +83,7 @@ export async function updateSpecialWorkDate(
     reason: string;
     checkIn: string | null;
     checkOut: string | null;
+    userIds: string[] | null;
   }>,
 ) {
   console.log(`=== SERVER ACTION: MEMULAI UPDATE DATA (ID: ${id}) ===`);
