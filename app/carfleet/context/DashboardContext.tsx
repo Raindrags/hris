@@ -100,7 +100,18 @@ interface DashboardContextType {
   refreshAllData: () => Promise<void>;
   approveBooking: (id: string, vehicleId: string) => Promise<void>;
   rejectBooking: (id: string, reason: string) => Promise<void>;
-  returnVehicle: (id: string, actualTimeIn: string) => Promise<void>;
+  returnVehicle: (
+  id: string, 
+  actualTimeIn: string, 
+  physicalData?: { 
+    km?: any; 
+    etoll?: any; 
+    bbm?: any; 
+    isiBBM?: boolean; 
+    topUpEtoll?: boolean; 
+    kondisi?: any; 
+  }
+) => Promise<void>;
   addVehicle: (data: Omit<Vehicle, "id" | "status">) => Promise<void>;
   addRoutine: (
     data: Omit<Routine, "id" | "status" | "vehicle" | "user">,
@@ -229,12 +240,12 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const returnVehicle = async (id: string, actualTimeIn: string) => {
+  const returnVehicle = async (id: string, actualTimeIn: string, physicalData?: any) => {
     try {
       await apiFetch(`/admin/bookings/${id}/return`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ actualTimeIn }),
+        body: JSON.stringify({ actualTimeIn, ...physicalData }),
       });
       await refreshAllData();
     } catch (error) {

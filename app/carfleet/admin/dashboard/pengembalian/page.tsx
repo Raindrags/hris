@@ -4,24 +4,41 @@
 import { useState } from 'react';
 import { KeyRound, CarFront } from 'lucide-react';
 import { useDashboard } from '@/app/carfleet/context/DashboardContext';
+import { FormValidasiPengembalian } from '../modals/FormValidasiPengembalian';
 
 export default function PengembalianPage() {
   const { pengembalian, returnVehicle } = useDashboard();
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  
+  // State untuk mengontrol Modal
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<any>(null);
 
-  const handleReturn = async (id: string, namaMobil: string) => {
-    const jamAktual = prompt(`Jam berapa mobil ${namaMobil} dikembalikan? (Format: HH:MM, contoh: 15:30)`);
-    
-    if (jamAktual) {
-      try {
-        setLoadingId(id);
-        await returnVehicle(id, jamAktual);
-        alert('Pengembalian berhasil divalidasi! Mobil kini tersedia kembali.');
-      } catch (error: any) {
-        alert(error.message);
-      } finally {
-        setLoadingId(null);
-      }
+  // Saat tombol "Terima Kunci" diklik
+  const handleOpenModal = (item: any) => {
+    setSelectedItem(item);
+    setIsModalOpen(true);
+  };
+
+  const handleSubmitValidasi = async (formData: any) => {
+    if (!selectedItem) return;
+
+    try {
+      setLoadingId(selectedItem.id);
+      
+      const jamAktual = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+      
+      console.log("Data Validasi Fisik:", formData);
+      
+      await returnVehicle(selectedItem.id, jamAktual, formData); 
+      
+      alert('Pengembalian berhasil divalidasi! Mobil kini tersedia kembali.');
+      setIsModalOpen(false);
+    } catch (error: any) {
+      alert(error.message);
+    } finally {
+      setLoadingId(null);
+      setSelectedItem(null);
     }
   };
 
@@ -71,7 +88,8 @@ export default function PengembalianPage() {
               </div>
 
               <button
-                onClick={() => handleReturn(item.id, item.vehicle?.name || 'Kendaraan')}
+                // Ubah dari trigger handleReturn ke handleOpenModal
+                onClick={() => handleOpenModal(item)}
                 disabled={loadingId === item.id}
                 className="w-full bg-indigo-600 text-white font-medium py-2.5 rounded-lg hover:bg-indigo-700 transition flex items-center justify-center gap-2 text-sm disabled:opacity-60"
               >
@@ -85,6 +103,14 @@ export default function PengembalianPage() {
           ))}
         </div>
       )}
+
+      {/* Render Modal di luar loop agar tidak duplikat */}
+      <FormValidasiPengembalian 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        kendaraan={selectedItem?.vehicle?.name || 'Kendaraan'} 
+        onSubmitData={handleSubmitValidasi} 
+      />
     </div>
   );
 }
