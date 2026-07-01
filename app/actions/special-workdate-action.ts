@@ -9,10 +9,10 @@ export async function getSpecialWorkDates() {
     const res = await fetch(`${API_BASE}/special-workdates`, {
       cache: "no-store",
     });
-    
+
     const result = await res.json();
     console.log("=== SERVER ACTION: GET DATA BERHASIL ===", result);
-    
+
     // Pastikan format return selalu seragam agar frontend tidak bingung
     if (Array.isArray(result)) {
       return { success: true, data: result };
@@ -25,11 +25,10 @@ export async function getSpecialWorkDates() {
 }
 
 export async function createSpecialWorkDate(formData: {
-  name: string;
-  startDate: string;
-  endDate: string;
-  startTime?: string | null;
-  endTime?: string | null;
+  date: string;
+  reason: string;
+  checkIn?: string | null;
+  checkOut?: string | null;
 }) {
   console.log("=== SERVER ACTION: MEMULAI CREATE DATA ===");
   console.log("Data mentah dari frontend:", formData);
@@ -38,10 +37,16 @@ export async function createSpecialWorkDate(formData: {
     // PEMETAAN & SANITISASI JAM KOSONG
     // Jika string kosong ("") atau null, paksa jadi "00:00" agar lolos validasi format jam di API utama
     const apiPayload = {
-      date: formData.startDate,
-      reason: formData.name || "Hari Kerja Khusus",
-      checkIn: formData.startTime && formData.startTime.trim() !== "" ? formData.startTime : "00:00",
-      checkOut: formData.endTime && formData.endTime.trim() !== "" ? formData.endTime : "00:00",
+      date: formData.date,
+      reason: formData.reason || "Hari Kerja Khusus",
+      checkIn:
+        formData.checkIn && formData.checkIn.trim() !== ""
+          ? formData.checkIn
+          : "00:00",
+      checkOut:
+        formData.checkOut && formData.checkOut.trim() !== ""
+          ? formData.checkOut
+          : "00:00",
       divisiId: null,
       userIds: null,
     };
@@ -56,9 +61,12 @@ export async function createSpecialWorkDate(formData: {
 
     const result = await res.json();
     console.log("=== SERVER ACTION: API UTAMA MERESPON CREATE ===", result);
-    
+
     if (!res.ok) {
-      return { success: false, error: result.message || "Gagal menyimpan data ke API utama" };
+      return {
+        success: false,
+        error: result.message || "Gagal menyimpan data ke API utama",
+      };
     }
 
     return { success: true, data: result };
@@ -71,11 +79,10 @@ export async function createSpecialWorkDate(formData: {
 export async function updateSpecialWorkDate(
   id: string,
   formData: Partial<{
-    name: string;
-    startDate: string;
-    endDate: string;
-    startTime: string | null;
-    endTime: string | null;
+    date: string;
+    reason: string;
+    checkIn: string | null;
+    checkOut: string | null;
   }>,
 ) {
   console.log(`=== SERVER ACTION: MEMULAI UPDATE DATA (ID: ${id}) ===`);
@@ -84,21 +91,30 @@ export async function updateSpecialWorkDate(
   try {
     // PEMETAAN & SANITISASI JAM KOSONG UNTUK UPDATE
     const apiPayload: any = {};
-    
-    if (formData.startDate) apiPayload.date = formData.startDate;
-    if (formData.name) apiPayload.reason = formData.name;
-    
+
+    if (formData.date) apiPayload.date = formData.date;
+    if (formData.reason) apiPayload.reason = formData.reason;
+
     // Amankan Jam Mulai jika dikirim oleh frontend
-    if (formData.startTime !== undefined) {
-      apiPayload.checkIn = formData.startTime && formData.startTime.trim() !== "" ? formData.startTime : "00:00";
-    }
-    
-    // Amankan Jam Selesai jika dikirim oleh frontend
-    if (formData.endTime !== undefined) {
-      apiPayload.checkOut = formData.endTime && formData.endTime.trim() !== "" ? formData.endTime : "00:00";
+    if (formData.checkIn !== undefined) {
+      apiPayload.checkIn =
+        formData.checkIn && formData.checkIn.trim() !== ""
+          ? formData.checkIn
+          : "00:00";
     }
 
-    console.log("Payload parsial siap tembak ke API Utama (PATCH):", apiPayload);
+    // Amankan Jam Selesai jika dikirim oleh frontend
+    if (formData.checkOut !== undefined) {
+      apiPayload.checkOut =
+        formData.checkOut && formData.checkOut.trim() !== ""
+          ? formData.checkOut
+          : "00:00";
+    }
+
+    console.log(
+      "Payload parsial siap tembak ke API Utama (PATCH):",
+      apiPayload,
+    );
 
     const res = await fetch(`${API_BASE}/special-workdates/${id}`, {
       method: "PATCH",
@@ -110,7 +126,10 @@ export async function updateSpecialWorkDate(
     console.log("=== SERVER ACTION: API UTAMA MERESPON UPDATE ===", result);
 
     if (!res.ok) {
-      return { success: false, error: result.message || "Gagal memperbarui data di API utama" };
+      return {
+        success: false,
+        error: result.message || "Gagal memperbarui data di API utama",
+      };
     }
 
     return { success: true, data: result };
@@ -126,12 +145,15 @@ export async function deleteSpecialWorkDate(id: string) {
     const res = await fetch(`${API_BASE}/special-workdates/${id}`, {
       method: "DELETE",
     });
-    
+
     const result = await res.json();
     console.log("=== SERVER ACTION: API UTAMA MERESPON DELETE ===", result);
-    
+
     if (!res.ok) {
-      return { success: false, error: result.message || "Gagal menghapus data di API utama" };
+      return {
+        success: false,
+        error: result.message || "Gagal menghapus data di API utama",
+      };
     }
 
     return { success: true, data: result };
