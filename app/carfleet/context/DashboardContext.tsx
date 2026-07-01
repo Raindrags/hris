@@ -101,21 +101,27 @@ interface DashboardContextType {
   approveBooking: (id: string, vehicleId: string) => Promise<void>;
   rejectBooking: (id: string, reason: string) => Promise<void>;
   returnVehicle: (
-  id: string, 
-  actualTimeIn: string, 
-  physicalData?: { 
-    km?: any; 
-    etoll?: any; 
-    bbm?: any; 
-    isiBBM?: boolean; 
-    topUpEtoll?: boolean; 
-    kondisi?: any; 
-  }
-) => Promise<void>;
-  addVehicle: (data: Omit<Vehicle, "id" | "status">) => Promise<void>;
-  addRoutine: (
-    data: Omit<Routine, "id" | "status" | "vehicle" | "user">,
+    id: string,
+    actualTimeIn: string,
+    physicalData?: {
+      km?: any;
+      etoll?: any;
+      bbm?: any;
+      isiBBM?: boolean;
+      topUpEtoll?: boolean;
+      kondisi?: any;
+    }
   ) => Promise<void>;
+  
+  // ✨ Fungsi CRUD Kendaraan
+  addVehicle: (data: Omit<Vehicle, "id" | "status">) => Promise<void>;
+  updateVehicle: (id: string, data: Partial<Vehicle>) => Promise<void>;
+  deleteVehicle: (id: string) => Promise<void>;
+  
+  // ✨ Fungsi CRUD Jadwal Rutin
+  addRoutine: (data: Omit<Routine, "id" | "status" | "vehicle" | "user">) => Promise<void>;
+  updateRoutine: (id: string, data: Partial<Routine>) => Promise<void>;
+  deleteRoutine: (id: string) => Promise<void>;
   toggleRoutine: (id: string) => Promise<void>;
 
   startService: (
@@ -160,12 +166,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [bookingDetail, setBookingDetail] = useState<Booking | null>(null);
   const [isDetailLoading, setIsDetailLoading] = useState<boolean>(false);
 
-  const [persetujuanNebeng, setPersetujuanNebeng] = useState<
-    RideSharePending[]
-  >([]);
-  const [persetujuanTitipan, setPersetujuanTitipan] = useState<
-    PackagePending[]
-  >([]);
+  const [persetujuanNebeng, setPersetujuanNebeng] = useState<RideSharePending[]>([]);
+  const [persetujuanTitipan, setPersetujuanTitipan] = useState<PackagePending[]>([]);
 
   const refreshAllData = async () => {
     try {
@@ -174,21 +176,19 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       const [
         allBookingsData,
         vehicleData,
-        routineData, // ✨ Typo diperbaiki, nanti ngambil dari /v1/routines
+        routineData, 
         nebengData,
         titipanData,
       ] = await Promise.all([
         apiFetch("/admin/bookings/all"),
         apiFetch("/v1/vehicles"),
-        apiFetch("/v1/routines"), // ✨ FIX: Sebelumnya duplicate manggil /v1/vehicles
+        apiFetch("/v1/routines"), 
         apiFetch("/admin/bookings/rideshares/pending"),
         apiFetch("/admin/bookings/packages/pending"),
       ]);
 
-      const pendingData =
-        allBookingsData?.filter((b: Booking) => b.status === "PENDING") || [];
-      const activeData =
-        allBookingsData?.filter((b: Booking) => b.status === "APPROVED") || [];
+      const pendingData = allBookingsData?.filter((b: Booking) => b.status === "PENDING") || [];
+      const activeData = allBookingsData?.filter((b: Booking) => b.status === "APPROVED") || [];
 
       setPersetujuan(pendingData);
       setPengembalian(activeData);
@@ -211,7 +211,6 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   // FUNGSI AKSI ARMADA UTAMA & KENDARAAN
   // ==========================================
 
-  // ✨ FIX: Semua request dengan body ditambahkan headers Content-Type dan try-catch
   const approveBooking = async (id: string, vehicleId: string) => {
     try {
       await apiFetch(`/admin/bookings/${id}/approve`, {
@@ -253,6 +252,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // ✨ CRUD MASTER KENDARAAN
   const addVehicle = async (data: Omit<Vehicle, "id" | "status">) => {
     try {
       await apiFetch("/v1/vehicles", {
@@ -266,14 +266,61 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const addRoutine = async (
-    data: Omit<Routine, "id" | "status" | "vehicle" | "user">,
-  ) => {
+  const updateVehicle = async (id: string, data: Partial<Vehicle>) => {
+    try {
+      await apiFetch(`/v1/vehicles/${id}`, {
+        method: "PATCH", 
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      await refreshAllData();
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const deleteVehicle = async (id: string) => {
+    try {
+      await apiFetch(`/v1/vehicles/${id}`, {
+        method: "DELETE",
+      });
+      await refreshAllData();
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  // ✨ CRUD MASTER JADWAL RUTIN
+  const addRoutine = async (data: Omit<Routine, "id" | "status" | "vehicle" | "user">) => {
     try {
       await apiFetch("/v1/routines", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
+      });
+      await refreshAllData();
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const updateRoutine = async (id: string, data: Partial<Routine>) => {
+    try {
+      await apiFetch(`/v1/routines/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      await refreshAllData();
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const deleteRoutine = async (id: string) => {
+    try {
+      await apiFetch(`/v1/routines/${id}`, {
+        method: "DELETE",
       });
       await refreshAllData();
     } catch (error) {
@@ -429,9 +476,16 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         approveBooking,
         rejectBooking,
         returnVehicle,
+        
         addVehicle,
+        updateVehicle,
+        deleteVehicle,
+        
         addRoutine,
+        updateRoutine,
+        deleteRoutine,
         toggleRoutine,
+        
         startService,
         completeService,
         fetchAllBookings,
