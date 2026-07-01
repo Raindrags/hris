@@ -76,8 +76,7 @@ export const useSpecialWorkDateManager = () => {
       resetForm();
       fetchData();
     } else {
-      toast.error(res.error || res.message || "Gagal menyimpan");
-    }
+      toast.error(res.error || (res as any).message || "Gagal menyimpan");
   };
 
   const handleDelete = useCallback(
