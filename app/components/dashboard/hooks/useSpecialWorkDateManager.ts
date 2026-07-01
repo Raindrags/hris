@@ -77,11 +77,12 @@ export const useSpecialWorkDateManager = () => {
       fetchData();
     } else {
       toast.error(res.error || (res as any).message || "Gagal menyimpan");
+    }
   };
 
   const handleDelete = useCallback(
     async (id: string) => {
-      if (!confirm("Hapus hari kerja khusus ini?")) return; 
+      if (!confirm("Hapus hari kerja khusus ini?")) return;
       const res = await deleteSpecialWorkDate(id);
       if (res.success) {
         toast.success("Data dihapus");
