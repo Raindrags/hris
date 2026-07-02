@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ShieldCheck, LayoutDashboard, FileCheck2, KeyRound, Wrench, Car, ClipboardPenLine } from "lucide-react";
+import { ShieldCheck, LayoutDashboard, FileCheck2, KeyRound, Wrench, Car, ClipboardPenLine, ClipboardList } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useDashboard } from "../../context/DashboardContext";
 
@@ -29,6 +29,7 @@ export function Sidebar() {
       badgeColor: "bg-emerald-500" 
     },
     { title: "Servis & BBM", icon: Wrench, href: "/carfleet/admin/dashboard/perawatan" },
+    { title: "Riwayat Pemakaian", icon: ClipboardList, href: "/carfleet/admin/dashboard/history" },
     { title: "Pengajuan Servis", icon: ClipboardPenLine, href: "/carfleet/admin/dashboard/pengajuan-servis" },
     { title: "Master Data", icon: Car, href: "/carfleet/admin/dashboard/master" },
   ];

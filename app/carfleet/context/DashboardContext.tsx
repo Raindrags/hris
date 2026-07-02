@@ -6,6 +6,7 @@ import React, {
   useState,
   useEffect,
   ReactNode,
+  useCallback,
 } from "react";
 import { apiFetch } from "../lib/utils/api";
 
@@ -86,6 +87,18 @@ export interface PackagePending {
   };
 }
 
+// ✨ Interface Laporan Kendaraan Baru
+export interface VehicleReport {
+  id: string;
+  name: string;
+  platNumber: string;
+  capacity: number;
+  type: string;
+  status: string;
+  bookings: any[]; 
+  maintenances: any[]; 
+}
+
 interface DashboardContextType {
   persetujuan: Booking[];
   pengembalian: Booking[];
@@ -96,6 +109,11 @@ interface DashboardContextType {
   allBookings: Booking[];
   bookingDetail: Booking | null;
   isDetailLoading: boolean;
+
+  // ✨ State & Fungsi Laporan Kendaraan
+  vehicleReports: VehicleReport[];
+  isReportLoading: boolean;
+  fetchVehicleReports: (month: number, year: number) => Promise<void>;
 
   refreshAllData: () => Promise<void>;
   approveBooking: (id: string, vehicleId: string) => Promise<void>;
@@ -169,6 +187,10 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [persetujuanNebeng, setPersetujuanNebeng] = useState<RideSharePending[]>([]);
   const [persetujuanTitipan, setPersetujuanTitipan] = useState<PackagePending[]>([]);
 
+  // ✨ State Laporan Kendaraan
+  const [vehicleReports, setVehicleReports] = useState<VehicleReport[]>([]);
+  const [isReportLoading, setIsReportLoading] = useState<boolean>(false);
+
   const refreshAllData = async () => {
     try {
       setIsLoading(true);
@@ -205,6 +227,19 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     refreshAllData();
+  }, []);
+
+  // ✨ Fungsi Fetch Laporan Kendaraan
+  const fetchVehicleReports = useCallback(async (month: number, year: number) => {
+    setIsReportLoading(true);
+    try {
+      const data = await apiFetch(`/api/vehicles-report?month=${month}&year=${year}`);
+      setVehicleReports(data || []);
+    } catch (error: any) {
+      console.error("Gagal mengambil laporan kendaraan:", error.message);
+    } finally {
+      setIsReportLoading(false);
+    }
   }, []);
 
   // ==========================================
@@ -472,6 +507,12 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         isDetailLoading,
         persetujuanNebeng,
         persetujuanTitipan,
+        
+        // ✨ Data & Fungsi Laporan Kendaraan
+        vehicleReports,
+        isReportLoading,
+        fetchVehicleReports,
+
         refreshAllData,
         approveBooking,
         rejectBooking,
