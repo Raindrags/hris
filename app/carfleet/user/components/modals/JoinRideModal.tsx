@@ -34,7 +34,7 @@ export default function JoinRideModal({
 
     if (success) {
       alert("Permintaan nebeng berhasil dikirim!");
-      setFormData({ dropOff: "", seats: 1 }); // Reset form
+      setFormData({ dropOff: "", seats: 1 });
       onClose();
     }
   };
