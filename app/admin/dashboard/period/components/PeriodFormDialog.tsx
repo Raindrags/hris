@@ -12,15 +12,16 @@ import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { PeriodFormData } from "../types";
+import { Dispatch, SetStateAction } from "react";
 
 interface PeriodFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   formData: any; // Sesuaikan dengan tipe data Bos
-  setFormData: any;
+  setFormData: Dispatch<SetStateAction<PeriodFormData>>;
   onSubmit: (e: React.FormEvent) => void;
   submitLoading: boolean;
-  isEdit?: boolean; 
+  isEdit?: boolean;
 }
 
 export function PeriodFormDialog({
