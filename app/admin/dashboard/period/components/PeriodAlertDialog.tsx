@@ -7,7 +7,7 @@ import { PeriodActionType } from "../types";
 interface PeriodAlertDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  type: PeriodActionType | null;
+ type: PeriodActionType | "delete" | null;
   onConfirm: () => void;
   onCancel: () => void;
 }

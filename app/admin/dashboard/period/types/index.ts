@@ -7,7 +7,7 @@ export interface AttendancePeriod {
   isClosed: boolean;
 }
 
-export type PeriodActionType = "active" | "close";
+export type PeriodActionType = "active" | "close" | "delete";
 
 export interface PeriodFormData {
   name: string;
