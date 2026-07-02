@@ -16,10 +16,11 @@ import { PeriodFormData } from "../types";
 interface PeriodFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  formData: PeriodFormData;
-  setFormData: React.Dispatch<React.SetStateAction<PeriodFormData>>;
+  formData: any; // Sesuaikan dengan tipe data Bos
+  setFormData: any;
   onSubmit: (e: React.FormEvent) => void;
   submitLoading: boolean;
+  isEdit?: boolean; 
 }
 
 export function PeriodFormDialog({
@@ -29,6 +30,7 @@ export function PeriodFormDialog({
   setFormData,
   onSubmit,
   submitLoading,
+  isEdit,
 }: PeriodFormDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
