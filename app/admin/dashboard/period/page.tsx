@@ -41,7 +41,7 @@ export default function AttendancePeriodPage() {
         onActionTrigger={actions.triggerActionConfirmation}
         // ✨ Lempar fungsi edit dan hapus ke dalam tabel
         onEdit={actions.openEditModal} 
-        onDelete={(id) => actions.triggerActionConfirmation(id, "DELETE")} 
+       onDelete={(id) => actions.triggerActionConfirmation(id, "delete")}
       />
 
       {/* Global Alert Confirmation */}
