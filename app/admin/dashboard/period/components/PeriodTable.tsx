@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Lock, CheckCircle2, Loader2 } from "lucide-react";
+import { Lock, CheckCircle2, Loader2, Edit, Trash2 } from "lucide-react"; // ✨ Tambah icon Edit & Trash2
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { AttendancePeriod, PeriodActionType } from "../types";
@@ -19,9 +19,17 @@ interface PeriodTableProps {
   periods: AttendancePeriod[];
   loading: boolean;
   onActionTrigger: (id: string, type: PeriodActionType) => void;
+  onEdit: (period: AttendancePeriod) => void; // ✨ Tambah prop onEdit
+  onDelete: (id: string) => void;             // ✨ Tambah prop onDelete
 }
 
-export function PeriodTable({ periods, loading, onActionTrigger }: PeriodTableProps) {
+export function PeriodTable({ 
+  periods, 
+  loading, 
+  onActionTrigger, 
+  onEdit,     // ✨ Destructure onEdit
+  onDelete    // ✨ Destructure onDelete
+}: PeriodTableProps) {
   return (
     <div className="rounded-md border border-slate-800 bg-slate-900/40">
       <Table>
@@ -79,6 +87,34 @@ export function PeriodTable({ periods, loading, onActionTrigger }: PeriodTablePr
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
+                    
+                    {/* ✨ TOMBOL EDIT: Muncul jika periode belum dikunci */}
+                    {!period.isClosed && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onEdit(period)}
+                        className="border-blue-600/50 hover:bg-blue-600 hover:text-white text-blue-400 bg-transparent btn-sm px-2"
+                        title="Edit Periode"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    )}
+
+                    {/* ✨ TOMBOL HAPUS: Muncul jika periode belum dikunci dan belum aktif */}
+                    {!period.isClosed && !period.isActive && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onDelete(period.id)}
+                        className="border-rose-600/50 hover:bg-rose-600 hover:text-white text-rose-400 bg-transparent btn-sm px-2"
+                        title="Hapus Periode"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+
+                    {/* TOMBOL AKTIFKAN */}
                     {!period.isActive && !period.isClosed && (
                       <Button
                         size="sm"
@@ -89,6 +125,8 @@ export function PeriodTable({ periods, loading, onActionTrigger }: PeriodTablePr
                         <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Aktifkan
                       </Button>
                     )}
+
+                    {/* TOMBOL KUNCI */}
                     {!period.isClosed && (
                       <Button
                         size="sm"
@@ -99,6 +137,8 @@ export function PeriodTable({ periods, loading, onActionTrigger }: PeriodTablePr
                         <Lock className="h-3.5 w-3.5 mr-1" /> Kunci
                       </Button>
                     )}
+
+                    {/* STATUS TERKUNCI (NO ACTION) */}
                     {period.isClosed && (
                       <span className="text-xs text-slate-500 italic pr-2">No Action</span>
                     )}

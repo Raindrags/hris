@@ -27,8 +27,10 @@ export default function AttendancePeriodPage() {
           onOpenChange={actions.setIsDialogOpen}
           formData={states.formData}
           setFormData={actions.setFormData}
-          onSubmit={actions.handleCreatePeriod}
+          // ✨ Cek apakah sedang mode edit atau tambah baru
+          onSubmit={states.editingId ? actions.handleUpdatePeriod : actions.handleCreatePeriod}
           submitLoading={states.submitLoading}
+          isEdit={!!states.editingId} // ✨ Opsional: Untuk mengubah judul modal (Tambah vs Edit)
         />
       </div>
 
@@ -36,7 +38,10 @@ export default function AttendancePeriodPage() {
       <PeriodTable 
         periods={states.periods} 
         loading={states.loading} 
-        onActionTrigger={actions.triggerActionConfirmation} 
+        onActionTrigger={actions.triggerActionConfirmation}
+        // ✨ Lempar fungsi edit dan hapus ke dalam tabel
+        onEdit={actions.openEditModal} 
+        onDelete={(id) => actions.triggerActionConfirmation(id, "DELETE")} 
       />
 
       {/* Global Alert Confirmation */}
