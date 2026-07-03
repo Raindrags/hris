@@ -127,7 +127,7 @@ export function UserBookingProvider({ children }: { children: ReactNode }) {
   const fetchMyRideShares = useCallback(async () => {
     try {
       // ✨ URL sudah disesuaikan dengan Controller
-      const data = await apiFetch("/api/ride-shares/my-status");
+     const data = await apiFetch("/ride-shares/my-status");
       setMyRideShares(data);
     } catch (error: any) {
       console.error("Gagal mengambil status nebeng:", error.message);
@@ -138,7 +138,7 @@ export function UserBookingProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     try {
       // ✨ URL disesuaikan, dan bookingId dilempar ke body
-      await apiFetch(`/api/ride-shares`, {
+      await apiFetch(`/ride-shares`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
@@ -162,7 +162,7 @@ export function UserBookingProvider({ children }: { children: ReactNode }) {
   const fetchMyPackages = useCallback(async () => {
     try {
       // ✨ URL sudah disesuaikan dengan Controller
-      const data = await apiFetch("/api/packages/my-status");
+      const data = await apiFetch("/packages/my-status");
       setMyPackages(data);
     } catch (error: any) {
       console.error("Gagal mengambil status titip barang:", error.message);
@@ -173,7 +173,7 @@ export function UserBookingProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     try {
       // ✨ URL disesuaikan, dan bookingId dilempar ke body
-      await apiFetch(`/api/packages`, {
+     await apiFetch(`/packages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
