@@ -34,6 +34,8 @@ export async function DELETE(
 }
 
 async function handleProxy(request: NextRequest, pathSegments: string[]) {
+  console.log("=== CEK ENVIRONMENT ===");
+  console.log("URL Backend Asli:", process.env.BACKEND_API_URL);
   const backendUrl = process.env.BACKEND_API_URL;
   if (!backendUrl) {
     return NextResponse.json(

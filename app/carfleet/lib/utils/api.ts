@@ -1,9 +1,6 @@
 export async function apiFetch(endpoint: string, options: RequestInit = {}) {
-  // 🚀 1. KUNCI UTAMA: Kita paksa semua request masuk ke rute proxy lokal
-  // Middleware akan menangkap awalan '/api/proxy' ini
   const url = `/api/proxy${endpoint}`;
 
-  // 🚀 2. Siapkan header standar
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string>),
