@@ -1,5 +1,5 @@
 export const API_BASE_URL =
   process.env.BACKEND_API_URL ||
-  "http://localhost:3434";
+  "https://hris.maitreyawirads.dpdns.org";
 
 export const ITEMS_PER_PAGE = 5;
