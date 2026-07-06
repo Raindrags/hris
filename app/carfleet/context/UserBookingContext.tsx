@@ -19,6 +19,7 @@ interface VehicleData {
   type?: string;
   licensePlate?: string;
   capacity?: number;
+  status?: string;
 }
 
 interface BookingData {
