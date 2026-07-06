@@ -35,7 +35,7 @@ export default function StatusView() {
   } = useUserBooking();
 
   const [swapBookingId, setSwapBookingId] = useState<string | null>(null);
-  const [selectedNewVehicleId, setSelectedNewVehicleId] = useState<string | null>(null);
+  const [selectedNewVehicleId, setSelectedNewVehicleId] = useState<string | number | null>(null);
   const [toast, setToast] = useState<{ message: string; type: "success" | "info" } | null>(null);
 
   useEffect(() => {
