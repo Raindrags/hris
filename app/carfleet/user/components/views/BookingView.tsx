@@ -9,9 +9,9 @@ import {
 interface Vehicle {
   id: string | number;
   name: string;
-  platNumber: string;
-  capacity: number;
-  status: string; // "Tersedia" | "Dipakai" | "Servis"
+  platNumber?: string; // ✨ Tambahkan tanda tanya
+  capacity?: number;   // ✨ Tambahkan tanda tanya
+  status?: string;
 }
 
 interface BookingViewProps {
