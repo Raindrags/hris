@@ -21,6 +21,10 @@ export interface UserData {
   sisaCuti: number;
   jatahCuti: number;
   isFirstLogin: boolean;
+  email?: string;
+  phone?: string;
+  address?: string;
+  emergencyContact?: string;
   supervisor: { name: string } | null;
 }
 
