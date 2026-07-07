@@ -48,7 +48,7 @@ export const usePermissionForm = ({
     ? substitutesList
     : [];
 
-const filteredSubstitutes = safeSubstitutesList.filter((sub) => {
+  const filteredSubstitutes = safeSubstitutesList.filter((sub) => {
     if (sub.id === user?.id) return false;
 
     const myDivisi = user?.divisi;
@@ -66,7 +66,9 @@ const filteredSubstitutes = safeSubstitutesList.filter((sub) => {
 
     if (!myDivisiName || !subDivisiName) return false;
 
-    return String(subDivisiName).toLowerCase() === String(myDivisiName).toLowerCase();
+    return (
+      String(subDivisiName).toLowerCase() === String(myDivisiName).toLowerCase()
+    );
   });
 
   useEffect(() => {
@@ -145,7 +147,7 @@ const filteredSubstitutes = safeSubstitutesList.filter((sub) => {
     }
   }, [category, subCategory, startDate]);
 
-useEffect(() => {
+  useEffect(() => {
     const fetchSubstitutes = async () => {
       try {
         const res = await fetch("/api/users");
@@ -230,11 +232,11 @@ useEffect(() => {
         body: formDataObj,
       });
 
-      const data = await res.json();
-      if (res.ok && data.success) {
-        toast.success(data.message || "Pengajuan izin berhasil dikirim.");
-        onSuccess();
+      if (res.ok) {
+        toast.success("Pengajuan izin berhasil dikirim.");
+        onSuccess(); // Ini yang akan menutup form modal Anda
       } else {
+        const data = await res.json().catch(() => ({}));
         toast.error(data.message || "Gagal mengajukan izin.");
       }
     } catch (error) {

@@ -111,7 +111,6 @@ export const useLeaveForm = (
   const excessDays =
     calculatedDays > sisaCutiNum ? calculatedDays - sisaCutiNum : 0;
 
-  // 4. Proses Submit
   const processSubmit = async (payload: LeaveSubmitPayload) => {
     setLoading(true);
     try {
@@ -130,11 +129,12 @@ export const useLeaveForm = (
         body: JSON.stringify(bodyPayload),
       });
 
-      const data = await res.json();
-      if (res.ok && data.success) {
-        toast.success(data.message || "Pengajuan cuti berhasil dikirim.");
-        onSuccess?.();
+      if (res.ok) {
+        toast.success("Pengajuan cuti berhasil dikirim.");
+        onSuccess?.(); // Ini yang akan menutup modal
       } else {
+        // Ambil pesan error dari backend jika ada
+        const data = await res.json().catch(() => ({}));
         toast.error(data.message || "Gagal mengajukan cuti.");
       }
     } catch (error) {
