@@ -26,6 +26,7 @@ export interface UserData {
   address?: string;
   emergencyContact?: string;
   supervisor: { name: string } | null;
+  [key: string]: any;
 }
 
 export interface RecentRequest {
