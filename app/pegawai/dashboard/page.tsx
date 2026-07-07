@@ -47,7 +47,7 @@ export default function PegawaiDashboardPage() {
           <h1 className="text-2xl font-bold text-white mb-2">
             Selamat Datang!
           </h1>
-          <ProfileForm user={currentUser} />
+          <ProfileForm user={userData} />
         </div>
       </main>
     );

@@ -1,5 +1,3 @@
-// app/components/forms/ProfileForm.tsx
-
 "use client";
 
 import { Suspense } from "react";
@@ -20,9 +18,12 @@ import { useProfileForm } from "./hooks/useProfileForm";
 
 function ProfileFormContent({ user, variant = "page" }: ProfileFormProps) {
   const { loading, isFirstTime, handleSubmit } = useProfileForm(user);
-
   const FormContent = (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form
+      key={user?.id || "loading-form"}
+      onSubmit={handleSubmit}
+      className="space-y-5"
+    >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div className="space-y-2">
           <Label className="text-muted-foreground">Nama Lengkap</Label>

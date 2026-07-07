@@ -30,12 +30,9 @@ export const useProfileForm = (user: UserProfileData) => {
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
+      if (res.ok) {
+        toast.success("Profil berhasil diperbarui");
 
-      if (res.ok && data.success) {
-        toast.success(data.message || "Profil berhasil diperbarui");
-
-        // Memaksa browser memuat ulang halaman untuk membersihkan cache state
         setTimeout(() => {
           if (callbackUrl) {
             window.location.href = callbackUrl;
@@ -44,6 +41,8 @@ export const useProfileForm = (user: UserProfileData) => {
           }
         }, 1000);
       } else {
+        // Ambil pesan error jika ada, dibungkus catch agar tidak crash
+        const data = await res.json().catch(() => ({}));
         toast.error(data.message || "Gagal memperbarui profil");
         setLoading(false);
       }
