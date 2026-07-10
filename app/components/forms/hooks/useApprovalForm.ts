@@ -22,10 +22,8 @@ export const useApprovalForm = (
   const isSakit = categoryStr.includes("sakit");
   const isIzinPribadi = !isDinasOrKhusus && !isSakit;
 
-  // Inisialisasi state berdasarkan kategori
   const [noDeduction, setNoDeduction] = useState<boolean>(isDinasOrKhusus);
 
-  // Optimasi filter menggunakan useMemo
   const filteredSubstitutes = useMemo(() => {
     return potentialSubstitutes.filter((sub) => {
       if (!request.user?.divisi?.id || !sub.divisi?.id) return false;
@@ -33,7 +31,6 @@ export const useApprovalForm = (
     });
   }, [potentialSubstitutes, request.user]);
 
-  // Fungsi API Internal
   const rejectRequestApi = async (id: string, reason: string) => {
     const token = localStorage.getItem("accessToken");
     const res = await fetch(`/api/requests/${id}/reject`, {
@@ -44,9 +41,13 @@ export const useApprovalForm = (
       },
       body: JSON.stringify({ reason }),
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "Gagal menolak pengajuan");
-    return data;
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.message || "Gagal menolak pengajuan");
+    }
+
+    return true;
   };
 
   const approveRequestApi = async (id: string, payload: any) => {
@@ -59,9 +60,13 @@ export const useApprovalForm = (
       },
       body: JSON.stringify(payload),
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "Gagal menyetujui pengajuan");
-    return data;
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.message || "Gagal menyetujui pengajuan");
+    }
+
+    return true;
   };
 
   // Handler Submit
