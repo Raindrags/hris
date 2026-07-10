@@ -36,6 +36,10 @@ export const usePermissionForm = ({
   const [reason, setReason] = useState<string>("");
   const [file, setFile] = useState<File | null>(null);
 
+  // 🆕 State baru untuk Dinas & Izin Keluar
+  const [returnTime, setReturnTime] = useState<string>("");
+  const [attachmentLink, setAttachmentLink] = useState<string>("");
+
   const [delegatedTo, setDelegatedTo] = useState<string>("");
   const [taskDetail, setTaskDetail] = useState<string>("");
   const [substitutesList, setSubstitutesList] = useState<SubstituteUser[]>([]);
@@ -56,8 +60,8 @@ export const usePermissionForm = ({
 
     const myDivisiName =
       typeof myDivisi === "object" && myDivisi !== null
-        ? myDivisi.name // Jika bentuknya objek { name: "IT" }
-        : myDivisi; // Jika bentuknya string "IT"
+        ? myDivisi.name
+        : myDivisi;
 
     const subDivisiName =
       typeof subDivisi === "object" && subDivisi !== null
@@ -80,11 +84,11 @@ export const usePermissionForm = ({
         let holidaysArray: string[] = [];
         if (Array.isArray(data)) {
           holidaysArray = data.map((item: any) =>
-            typeof item === "string" ? item : (item.date ?? item.tanggal),
+            typeof item === "string" ? item : item.date ?? item.tanggal,
           );
         } else if (data?.data && Array.isArray(data.data)) {
           holidaysArray = data.data.map((item: any) =>
-            typeof item === "string" ? item : (item.date ?? item.tanggal),
+            typeof item === "string" ? item : item.date ?? item.tanggal,
           );
         }
         setHolidays(holidaysArray);
@@ -104,11 +108,11 @@ export const usePermissionForm = ({
         let daysArray: string[] = [];
         if (Array.isArray(data)) {
           daysArray = data.map((item: any) =>
-            typeof item === "string" ? item : (item.date ?? item.tanggal),
+            typeof item === "string" ? item : item.date ?? item.tanggal,
           );
         } else if (data?.data && Array.isArray(data.data)) {
           daysArray = data.data.map((item: any) =>
-            typeof item === "string" ? item : (item.date ?? item.tanggal),
+            typeof item === "string" ? item : item.date ?? item.tanggal,
           );
         }
         setSpecialWorkDays(daysArray);
@@ -154,7 +158,6 @@ export const usePermissionForm = ({
         if (!res.ok) throw new Error("Gagal fetch users");
         const responseData = await res.json();
 
-        // 🚀 Gunakan Smart Extractor yang sama dengan halaman Admin Anda
         let usersData: SubstituteUser[] = [];
 
         if (Array.isArray(responseData)) {
@@ -216,15 +219,17 @@ export const usePermissionForm = ({
       formDataObj.append("endDate", new Date(payload.endDate).toISOString());
       formDataObj.append("reason", payload.reason);
       formDataObj.append("category", payload.category);
-      if (payload.subCategory)
-        formDataObj.append("subCategory", payload.subCategory);
+      
+      if (payload.subCategory) formDataObj.append("subCategory", payload.subCategory);
       if (payload.time) formDataObj.append("time", payload.time);
       if (payload.file) formDataObj.append("file", payload.file);
       if (userId) formDataObj.append("userId", userId);
-      if (payload.delegatedToId)
-        formDataObj.append("delegatedToId", payload.delegatedToId);
-      if (payload.taskDetail)
-        formDataObj.append("taskDetail", payload.taskDetail);
+      if (payload.delegatedToId) formDataObj.append("delegatedToId", payload.delegatedToId);
+      if (payload.taskDetail) formDataObj.append("taskDetail", payload.taskDetail);
+      
+      // 🛠️ TAMBAHKAN APPEND KE FORMDATA UNTUK FITUR BARU
+      if (payload.returnTime) formDataObj.append("returnTime", payload.returnTime);
+      if (payload.attachmentLink) formDataObj.append("attachmentLink", payload.attachmentLink);
 
       const res = await fetch("/api/izin", {
         method: "POST",
@@ -234,7 +239,7 @@ export const usePermissionForm = ({
 
       if (res.ok) {
         toast.success("Pengajuan izin berhasil dikirim.");
-        onSuccess(); // Ini yang akan menutup form modal Anda
+        onSuccess();
       } else {
         const data = await res.json().catch(() => ({}));
         toast.error(data.message || "Gagal mengajukan izin.");
@@ -257,12 +262,19 @@ export const usePermissionForm = ({
     if (!category) return toast.error("Mohon pilih jenis izin.");
     if (category === "IzinKhusus" && !subCategory)
       return toast.error("Mohon pilih detail izin khusus.");
-    if ((category === "Terlambat" || category === "PulangAwal") && !timeValue)
-      return toast.error("Mohon masukkan jam/waktu yang sesuai.");
+    
+    // 🛠️ Validasi Waktu
+    if (["Terlambat", "PulangAwal", "IzinKeluar"].includes(category) && !timeValue)
+      return toast.error("Mohon masukkan jam keluar/masuk.");
+    if (category === "IzinKeluar" && !returnTime)
+      return toast.error("Mohon masukkan jam kembali untuk Izin Keluar.");
+
+    // 🛠️ Validasi Lampiran File
     if (category === "Sakit" && calculatedDays > 1 && !file)
-      return toast.error(
-        "Mohon lampirkan surat dokter untuk izin sakit > 1 hari.",
-      );
+      return toast.error("Mohon lampirkan surat dokter untuk izin sakit > 1 hari.");
+    if (category === "Dinas" && !file && !attachmentLink)
+      return toast.error("Surat tugas (file atau link) wajib dilampirkan untuk Dinas Luar.");
+
     if (!reason.trim()) return toast.error("Mohon isi keterangan lengkap.");
 
     const finalData: PermissionSubmitPayload = {
@@ -271,16 +283,21 @@ export const usePermissionForm = ({
       reason,
       category,
       subCategory: category === "IzinKhusus" ? subCategory : null,
-      time:
-        category === "Terlambat" || category === "PulangAwal"
-          ? timeValue
-          : null,
-      file: category === "Sakit" && calculatedDays > 1 ? file : null,
+      
+      // 🛠️ Update Payload Mapping
+      time: ["Terlambat", "PulangAwal", "IzinKeluar"].includes(category) ? timeValue : null,
+      returnTime: category === "IzinKeluar" ? returnTime : null,
+      attachmentLink: category === "Dinas" ? attachmentLink : null,
+      
+      // File dikirim kalau dia Sakit > 1 hari ATAU kalau dia Dinas
+      file: (category === "Sakit" && calculatedDays > 1) || category === "Dinas" ? file : null,
+      
       delegatedToId: delegatedTo || null,
       taskDetail: taskDetail || null,
     };
 
-    if (category === "Izin") {
+    // Peringatan Warning untuk Izin Pribadi & Izin Keluar
+    if (category === "Izin" || category === "IzinKeluar") {
       setPendingPayload(finalData);
       setShowWarning(true);
     } else {
@@ -292,8 +309,15 @@ export const usePermissionForm = ({
     const safeVal = val ?? "";
     setCategory(safeVal);
     if (safeVal !== "IzinKhusus") setSubCategory("");
-    if (safeVal !== "Terlambat" && safeVal !== "PulangAwal") setTimeValue("");
+    if (!["Terlambat", "PulangAwal", "IzinKeluar"].includes(safeVal)) {
+      setTimeValue("");
+    }
+    // 🛠️ Reset field jika pindah kategori
+    setReturnTime("");
+    setAttachmentLink("");
+    setFile(null);
   };
+
   const isAutoEndDate =
     category === "IzinKhusus" &&
     [
@@ -313,6 +337,8 @@ export const usePermissionForm = ({
       category,
       subCategory,
       timeValue,
+      returnTime,       // 🆕 Export
+      attachmentLink,   // 🆕 Export
       reason,
       delegatedTo,
       taskDetail,
@@ -327,6 +353,8 @@ export const usePermissionForm = ({
       setEndDate,
       setSubCategory,
       setTimeValue,
+      setReturnTime,     // 🆕 Export
+      setAttachmentLink, // 🆕 Export
       setReason,
       setFile,
       setDelegatedTo,

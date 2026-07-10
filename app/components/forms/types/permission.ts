@@ -12,14 +12,16 @@ export type PermissionUserData = {
   divisi?: { id?: string | number; name?: string } | string | null;
 };
 
-export type PermissionSubmitPayload = {
+export interface PermissionSubmitPayload {
   startDate: string;
   endDate: string;
   reason: string;
   category: string;
-  subCategory: string | null;
-  time: string | null;
+  subCategory?: string | null;
+  time?: string | null;
+  returnTime?: string | null;      
+  attachmentLink?: string | null;  
   file?: File | null;
   delegatedToId?: string | null;
   taskDetail?: string | null;
-};
+}
