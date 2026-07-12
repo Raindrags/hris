@@ -5,7 +5,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const { id } = await params; // ✅ unwrap Promise
+    const { id } = await params;
 
     const token = req.cookies.get("access_token")?.value;
     if (!token) {

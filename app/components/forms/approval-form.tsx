@@ -9,14 +9,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useApprovalForm } from "./hooks/useApprovalForm";
 import { ApprovalRequestData, SubstituteUser } from "./types";
 
@@ -35,13 +27,10 @@ export function ApprovalForm({
     actionType,
     setActionType,
     loading,
-    delegatedTo,
-    setDelegatedTo,
     noDeduction,
     setNoDeduction,
     isSakit,
     isIzinPribadi,
-    filteredSubstitutes,
     handleProcess,
   } = useApprovalForm(request, potentialSubstitutes, onClose);
 
@@ -136,55 +125,13 @@ export function ApprovalForm({
     );
   }
 
-  // 4. Tampilan Form PERSETUJUAN (Khusus IZIN - Kompleks)
+  // 4. Tampilan Form PERSETUJUAN (Khusus IZIN - Tanpa Penyerahan Tugas)
   return (
     <form
       onSubmit={handleProcess}
       className="space-y-4 max-h-[60vh] overflow-y-auto px-1 text-gray-200"
     >
-      <div className="space-y-2">
-        <Label className="text-gray-300">Tugas Diserahkan Kepada</Label>
-        <Select
-          value={delegatedTo || ""}
-          onValueChange={(value) => setDelegatedTo(value ?? "")}
-        >
-          <SelectTrigger className="bg-gray-900 border-gray-700 text-gray-200">
-            <SelectValue placeholder="Pilih Pegawai Pengganti" />
-          </SelectTrigger>
-          <SelectContent className="z-[9999] bg-gray-900 border-gray-700 shadow-xl">
-            <SelectGroup>
-              {filteredSubstitutes.length === 0 ? (
-                <SelectItem value="empty" disabled className="text-gray-500">
-                  Tidak ada pegawai pengganti yang tersedia
-                </SelectItem>
-              ) : (
-                filteredSubstitutes.map((sub) => (
-                  <SelectItem
-                    key={sub.id}
-                    value={sub.id}
-                    className="text-gray-200 focus:bg-crimson-900/40 focus:text-white"
-                  >
-                    {sub.name}
-                  </SelectItem>
-                ))
-              )}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-2">
-        <Label className="text-gray-300">Rincian Tugas</Label>
-        <Textarea
-          name="taskDetail"
-          placeholder="Apa yang harus dikerjakan pengganti?"
-          className="bg-gray-900 border-gray-700 focus:border-crimson-700 text-gray-200 placeholder:text-gray-500"
-        />
-      </div>
-
-      <div className="border-t my-4 border-gray-800" />
-
-      <div className="space-y-4">
+      <div className="space-y-4 mt-2">
         <div className="flex items-center space-x-2 mb-2">
           <Checkbox
             id="no_deduction"
