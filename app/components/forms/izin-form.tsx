@@ -99,7 +99,7 @@ export default function PermissionForm({
     category,
   );
 
-  const onCategorySelect = (val: string) => {
+  const onCategorySelect = (val: string | null) => {
     handleCategoryChange(val);
     setReturnTime("");
     setAttachmentLink("");
