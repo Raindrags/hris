@@ -485,11 +485,15 @@ export default function PermissionForm({
             <AlertDialogAction
               className="bg-red-600 hover:bg-red-700 text-white"
               onClick={() => {
-                if (pendingPayload && category === "IzinKeluar")
-                  pendingPayload.returnTime = returnTime;
-                if (pendingPayload && category === "Dinas")
-                  pendingPayload.attachmentLink = attachmentLink;
-                processSubmit(pendingPayload);
+                if (pendingPayload) {
+                  if (category === "IzinKeluar") {
+                    pendingPayload.returnTime = returnTime;
+                  }
+                  if (category === "Dinas") {
+                    pendingPayload.attachmentLink = attachmentLink;
+                  }
+                  processSubmit(pendingPayload);
+                }
               }}
             >
               Ya, Lanjutkan
