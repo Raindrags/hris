@@ -114,7 +114,7 @@ export default function PermissionForm({
   };
 
   // MENCEGAT SUBMIT UNTUK VALIDASI EXTRA
-  const onFormSubmit = (e: React.FormEvent) => {
+  const onFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (category === "IzinKeluar") {
