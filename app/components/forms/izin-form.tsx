@@ -70,8 +70,8 @@ export default function PermissionForm({
     endDate,
     category,
     timeValue,
-    returnTime,      
-    attachmentLink,  
+    returnTime,
+    attachmentLink,
     reason,
     showWarning,
     pendingPayload,
@@ -83,19 +83,21 @@ export default function PermissionForm({
     setStartDate,
     setEndDate,
     setTimeValue,
-    setReturnTime,      
-    setAttachmentLink,  
+    setReturnTime,
+    setAttachmentLink,
     setReason,
-    setFile, 
+    setFile,
     setPendingPayload,
     handleCategoryChange,
     isHolidayOrSunday,
-    handleSubmit,       // Pakai handleSubmit asli, nggak perlu "originalHandleSubmit"
+    handleSubmit,
     processSubmit,
-    setShowWarning, 
+    setShowWarning,
   } = actions;
   const [dinasMethod, setDinasMethod] = useState<"file" | "link">("file");
-  const isHourlyPermission = ["Terlambat", "PulangAwal", "IzinKeluar"].includes(category);
+  const isHourlyPermission = ["Terlambat", "PulangAwal", "IzinKeluar"].includes(
+    category,
+  );
 
   const onCategorySelect = (val: string) => {
     handleCategoryChange(val);
@@ -128,10 +130,9 @@ export default function PermissionForm({
         alert("Link Surat Tugas wajib diisi!");
         return;
       }
-      // Jika pilih file, validasi file kosong diserahkan ke elemen input 'required' HTML5 bawaan browser
     }
 
-    originalHandleSubmit(e);
+    handleSubmit(e);
   };
 
   return (
@@ -164,11 +165,14 @@ export default function PermissionForm({
                     buttonVariants({ variant: "outline" }),
                     "justify-start text-left font-normal bg-slate-900 border-slate-700 text-slate-100 hover:bg-slate-800 w-full",
                     !startDate && "text-slate-400",
-                    category === "IzinKeluar" && "opacity-60 cursor-not-allowed"
+                    category === "IzinKeluar" &&
+                      "opacity-60 cursor-not-allowed",
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {startDate ? format(startDate, "PPP", { locale: id }) : "Pilih tanggal"}
+                  {startDate
+                    ? format(startDate, "PPP", { locale: id })
+                    : "Pilih tanggal"}
                 </div>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0 bg-slate-900 border-slate-700">
@@ -187,17 +191,22 @@ export default function PermissionForm({
           <div className="space-y-2 flex flex-col">
             <Label className="text-slate-300">Tanggal Selesai</Label>
             <Popover>
-              <PopoverTrigger disabled={isAutoEndDate || category === "IzinKeluar"}>
+              <PopoverTrigger
+                disabled={isAutoEndDate || category === "IzinKeluar"}
+              >
                 <div
                   className={cn(
                     buttonVariants({ variant: "outline" }),
                     "justify-start text-left font-normal bg-slate-900 border-slate-700 text-slate-100 hover:bg-slate-800 w-full",
                     !endDate && "text-slate-400",
-                    (isAutoEndDate || category === "IzinKeluar") && "opacity-60 cursor-not-allowed",
+                    (isAutoEndDate || category === "IzinKeluar") &&
+                      "opacity-60 cursor-not-allowed",
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {endDate ? format(endDate, "PPP", { locale: id }) : "Pilih tanggal"}
+                  {endDate
+                    ? format(endDate, "PPP", { locale: id })
+                    : "Pilih tanggal"}
                 </div>
               </PopoverTrigger>
               {!(isAutoEndDate || category === "IzinKeluar") && (
@@ -218,14 +227,32 @@ export default function PermissionForm({
 
         {/* INFO DURASI */}
         {startDate && endDate && (
-          <div className={cn(
-            "flex flex-col gap-1 p-3 text-sm rounded-md border",
-            calculatedDays > 0 || isHourlyPermission ? "bg-blue-950/40 border-blue-900/50 text-blue-200" : "bg-red-950/40 border-red-900/50 text-red-200"
-          )}>
+          <div
+            className={cn(
+              "flex flex-col gap-1 p-3 text-sm rounded-md border",
+              calculatedDays > 0 || isHourlyPermission
+                ? "bg-blue-950/40 border-blue-900/50 text-blue-200"
+                : "bg-red-950/40 border-red-900/50 text-red-200",
+            )}
+          >
             <div className="flex items-center gap-2">
               <Calculator className="h-4 w-4 opacity-70" />
               <span>
-                {calculatedDays < 0 ? "Tanggal selesai tidak valid!" : calculatedDays === 0 && !isHourlyPermission ? "Durasi 0 hari (Hari libur)." : isHourlyPermission ? <>Tipe Pengajuan: <b className="text-blue-400">Izin Berbasis Jam</b></> : <>Durasi Izin: <b className="text-blue-400">{calculatedDays} Hari Kerja</b></>}
+                {calculatedDays < 0 ? (
+                  "Tanggal selesai tidak valid!"
+                ) : calculatedDays === 0 && !isHourlyPermission ? (
+                  "Durasi 0 hari (Hari libur)."
+                ) : isHourlyPermission ? (
+                  <>
+                    Tipe Pengajuan:{" "}
+                    <b className="text-blue-400">Izin Berbasis Jam</b>
+                  </>
+                ) : (
+                  <>
+                    Durasi Izin:{" "}
+                    <b className="text-blue-400">{calculatedDays} Hari Kerja</b>
+                  </>
+                )}
               </span>
             </div>
           </div>
@@ -241,8 +268,12 @@ export default function PermissionForm({
             <SelectContent className="bg-slate-800 border-slate-700 text-slate-100">
               <SelectItem value="Sakit">Sakit</SelectItem>
               <SelectItem value="Izin">Izin Pribadi</SelectItem>
-              <SelectItem value="Dinas">Dinas Luar (Wajib Surat Tugas)</SelectItem>
-              <SelectItem value="IzinKeluar">Izin Keluar (Meninggalkan Kantor)</SelectItem>
+              <SelectItem value="Dinas">
+                Dinas Luar (Wajib Surat Tugas)
+              </SelectItem>
+              <SelectItem value="IzinKeluar">
+                Izin Keluar (Meninggalkan Kantor)
+              </SelectItem>
               <SelectItem value="Terlambat">Terlambat Masuk</SelectItem>
               <SelectItem value="PulangAwal">Pulang Lebih Awal</SelectItem>
               <SelectItem value="IzinKhusus">Izin Khusus</SelectItem>
@@ -252,12 +283,30 @@ export default function PermissionForm({
 
         {/* INPUT WAKTU (IZIN KELUAR / JAM-JAMAN) */}
         {isHourlyPermission && (
-          <div className={cn("p-3 bg-blue-950/30 rounded border border-blue-900/50", category === "IzinKeluar" ? "grid grid-cols-2 gap-4" : "space-y-2")}>
+          <div
+            className={cn(
+              "p-3 bg-blue-950/30 rounded border border-blue-900/50",
+              category === "IzinKeluar"
+                ? "grid grid-cols-2 gap-4"
+                : "space-y-2",
+            )}
+          >
             <div className="space-y-2">
               <Label className="text-blue-400 flex items-center gap-2">
-                <Clock className="h-4 w-4" /> {category === "Terlambat" ? "Jam Perkiraan Tiba" : category === "PulangAwal" ? "Jam Rencana Keluar" : "Jam Keluar"}
+                <Clock className="h-4 w-4" />{" "}
+                {category === "Terlambat"
+                  ? "Jam Perkiraan Tiba"
+                  : category === "PulangAwal"
+                    ? "Jam Rencana Keluar"
+                    : "Jam Keluar"}
               </Label>
-              <Input type="time" value={timeValue} onChange={(e) => setTimeValue(e.target.value)} className="w-full bg-slate-900 border-slate-700 text-slate-100" required />
+              <Input
+                type="time"
+                value={timeValue}
+                onChange={(e) => setTimeValue(e.target.value)}
+                className="w-full bg-slate-900 border-slate-700 text-slate-100"
+                required
+              />
             </div>
 
             {category === "IzinKeluar" && (
@@ -265,7 +314,15 @@ export default function PermissionForm({
                 <Label className="text-blue-400 flex items-center gap-2">
                   <Clock className="h-4 w-4" /> Jam Kembali
                 </Label>
-                <Input id="returnTime" name="returnTime" type="time" value={returnTime} onChange={(e) => setReturnTime(e.target.value)} className="w-full bg-slate-900 border-slate-700 text-slate-100" required />
+                <Input
+                  id="returnTime"
+                  name="returnTime"
+                  type="time"
+                  value={returnTime}
+                  onChange={(e) => setReturnTime(e.target.value)}
+                  className="w-full bg-slate-900 border-slate-700 text-slate-100"
+                  required
+                />
               </div>
             )}
           </div>
@@ -282,15 +339,31 @@ export default function PermissionForm({
               <div className="flex rounded-md border border-slate-700 p-0.5 bg-slate-950 text-xs">
                 <button
                   type="button"
-                  onClick={() => { setDinasMethod("file"); setAttachmentLink(""); }}
-                  className={cn("px-2 py-1 rounded", dinasMethod === "file" ? "bg-blue-600 text-white" : "text-slate-400 hover:text-slate-200")}
+                  onClick={() => {
+                    setDinasMethod("file");
+                    setAttachmentLink("");
+                  }}
+                  className={cn(
+                    "px-2 py-1 rounded",
+                    dinasMethod === "file"
+                      ? "bg-blue-600 text-white"
+                      : "text-slate-400 hover:text-slate-200",
+                  )}
                 >
                   Upload File
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setDinasMethod("link"); setFile(null); }}
-                  className={cn("px-2 py-1 rounded", dinasMethod === "link" ? "bg-blue-600 text-white" : "text-slate-400 hover:text-slate-200")}
+                  onClick={() => {
+                    setDinasMethod("link");
+                    setFile(null);
+                  }}
+                  className={cn(
+                    "px-2 py-1 rounded",
+                    dinasMethod === "link"
+                      ? "bg-blue-600 text-white"
+                      : "text-slate-400 hover:text-slate-200",
+                  )}
                 >
                   Input Link
                 </button>
@@ -311,8 +384,12 @@ export default function PermissionForm({
                   />
                   <div className="text-center space-y-1 text-slate-400 group-hover:text-slate-300">
                     <UploadCloud className="h-8 w-8 mx-auto text-slate-500 group-hover:text-blue-400 transition-colors" />
-                    <p className="text-xs font-medium">Klik atau seret file ke sini</p>
-                    <p className="text-[10px] text-slate-500">PDF, DOC, DOCX, PPT, PPTX (Maks 5MB)</p>
+                    <p className="text-xs font-medium">
+                      Klik atau seret file ke sini
+                    </p>
+                    <p className="text-[10px] text-slate-500">
+                      PDF, DOC, DOCX, PPT, PPTX (Maks 5MB)
+                    </p>
                   </div>
                 </div>
               </div>
@@ -328,7 +405,10 @@ export default function PermissionForm({
                     className="pl-9 bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-600"
                   />
                 </div>
-                <p className="text-[10px] text-slate-500 pl-1">Pastikan hak akses link Google Drive/OneDrive diatur ke 'Siapa saja yang memiliki link'.</p>
+                <p className="text-[10px] text-slate-500 pl-1">
+                  Pastikan hak akses link Google Drive/OneDrive diatur ke 'Siapa
+                  saja yang memiliki link'.
+                </p>
               </div>
             )}
           </div>
@@ -337,15 +417,33 @@ export default function PermissionForm({
         {/* ALASAN LENGKAP */}
         <div className="space-y-2 mt-4">
           <Label className="text-slate-300">Keterangan / Alasan Lengkap</Label>
-          <Textarea value={reason} onChange={(e) => setReason(e.target.value)} required className="bg-slate-900 border-slate-700 text-slate-100 min-h-[80px]" />
+          <Textarea
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            required
+            className="bg-slate-900 border-slate-700 text-slate-100 min-h-[80px]"
+          />
         </div>
 
         {/* HIDDEN INPUTS UNTUK COMPATIBILITY FORMDATA HOOK */}
         <input type="hidden" name="returnTime" value={returnTime} />
         <input type="hidden" name="attachmentLink" value={attachmentLink} />
 
-        <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white" disabled={loading || (!isHourlyPermission && category !== "Dinas" && calculatedDays <= 0)}>
-          {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Mengirim...</> : "Kirim Pengajuan"}
+        <Button
+          type="submit"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+          disabled={
+            loading ||
+            (!isHourlyPermission && category !== "Dinas" && calculatedDays <= 0)
+          }
+        >
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Mengirim...
+            </>
+          ) : (
+            "Kirim Pengajuan"
+          )}
         </Button>
       </form>
 
@@ -355,23 +453,47 @@ export default function PermissionForm({
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-red-500">
               <AlertTriangle className="h-5 w-5" />
-              {category === "IzinKeluar" ? "Batas Akumulasi Terlampaui" : "Peringatan Pemotongan"}
+              {category === "IzinKeluar"
+                ? "Batas Akumulasi Terlampaui"
+                : "Peringatan Pemotongan"}
             </AlertDialogTitle>
             <AlertDialogDescription className="text-slate-300 mt-2">
               {category === "IzinKeluar" ? (
-                <>Pengajuan <b>Izin Keluar</b> Anda pada bulan berjalan <b>telah melebihi kuota 6 jam</b>.<br /><br />Melanjutkan pengajuan ini akan mengakibatkan <b>pemotongan upah/gaji secara proporsional</b>. Yakin tetap melanjutkan?</>
+                <>
+                  Pengajuan <b>Izin Keluar</b> Anda pada bulan berjalan{" "}
+                  <b>telah melebihi kuota 6 jam</b>.<br />
+                  <br />
+                  Melanjutkan pengajuan ini akan mengakibatkan{" "}
+                  <b>pemotongan upah/gaji secara proporsional</b>. Yakin tetap
+                  melanjutkan?
+                </>
               ) : (
-                <>Pengajuan <b>Izin Pribadi</b> akan mengakibatkan <b>pemotongan Gaji Pokok</b>. Yakin melanjutkan?</>
+                <>
+                  Pengajuan <b>Izin Pribadi</b> akan mengakibatkan{" "}
+                  <b>pemotongan Gaji Pokok</b>. Yakin melanjutkan?
+                </>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="bg-slate-800 border-slate-700 text-slate-200" onClick={() => setPendingPayload(null)}>Batal</AlertDialogCancel>
-            <AlertDialogAction className="bg-red-600 hover:bg-red-700 text-white" onClick={() => {
-              if (pendingPayload && category === "IzinKeluar") pendingPayload.returnTime = returnTime;
-              if (pendingPayload && category === "Dinas") pendingPayload.attachmentLink = attachmentLink;
-              processSubmit(pendingPayload);
-            }}>Ya, Lanjutkan</AlertDialogAction>
+            <AlertDialogCancel
+              className="bg-slate-800 border-slate-700 text-slate-200"
+              onClick={() => setPendingPayload(null)}
+            >
+              Batal
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={() => {
+                if (pendingPayload && category === "IzinKeluar")
+                  pendingPayload.returnTime = returnTime;
+                if (pendingPayload && category === "Dinas")
+                  pendingPayload.attachmentLink = attachmentLink;
+                processSubmit(pendingPayload);
+              }}
+            >
+              Ya, Lanjutkan
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
