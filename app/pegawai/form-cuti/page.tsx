@@ -17,6 +17,7 @@ import { usePegawaiAuth } from "@/app/form-cuti/hooks/usePegawaiAuth";
 function FormCutiContent() {
   const { loading, error, userData, handleSuccess, handleBack } =
     usePegawaiAuth();
+  console.log("===== CEK DATA USER =====", userData);
 
   if (loading) {
     return (
@@ -64,7 +65,6 @@ function FormCutiContent() {
         </CardHeader>
 
         <CardContent className="pt-8 px-6 sm:px-8 pb-8">
-          {/* Komponen LeaveForm murni hanya menerima props */}
           <LeaveForm
             user={{ sisaCuti: userData?.sisaCuti ?? 0 }}
             onSuccess={handleSuccess}
@@ -78,7 +78,6 @@ function FormCutiContent() {
 export default function FormCutiPage() {
   return (
     <main className="min-h-screen bg-slate-950 relative overflow-hidden flex items-center justify-center p-4 sm:p-6 text-slate-100 font-sans">
-      {/* Decorative Ambient Backgrounds */}
       <div className="absolute top-[-15%] left-[-10%] w-[500px] h-[500px] rounded-full bg-indigo-600/15 blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-15%] right-[-10%] w-[500px] h-[500px] rounded-full bg-violet-600/15 blur-[120px] pointer-events-none" />
 

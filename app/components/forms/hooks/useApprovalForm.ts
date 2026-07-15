@@ -1,5 +1,3 @@
-// app/hooks/useApprovalForm.ts
-
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { ApprovalRequestData, SubstituteUser } from "../types";
@@ -15,12 +13,10 @@ export const useApprovalForm = (
   const [loading, setLoading] = useState<boolean>(false);
   const [delegatedTo, setDelegatedTo] = useState<string>("");
 
-  // Derivasi logika kategori secara langsung
+  // Derivasi logika kategori
   const categoryStr = request.user.category?.toLowerCase() || "";
   const isDinasOrKhusus =
     categoryStr.includes("dinas") || categoryStr.includes("izinkhusus");
-  const isSakit = categoryStr.includes("sakit");
-  const isIzinPribadi = !isDinasOrKhusus && !isSakit;
 
   const [noDeduction, setNoDeduction] = useState<boolean>(isDinasOrKhusus);
 
@@ -81,19 +77,12 @@ export const useApprovalForm = (
         await rejectRequestApi(request.id, reason);
         toast.info("Pengajuan ditolak.");
       } else if (actionType === "APPROVE") {
+        // 🛠️ UPDATE: Payload disederhanakan, langsung kirim `noDeduction`
         const payload: any = {
           delegatedToId: delegatedTo || undefined,
           taskDetail: (formData.get("taskDetail") as string) || undefined,
-          deductions: [] as string[],
+          noDeduction,
         };
-
-        if (!noDeduction) {
-          if (formData.get("potongGaji")) payload.deductions.push("Gaji");
-          if (formData.get("potongKonsumsi"))
-            payload.deductions.push("Tunjangan Konsumsi");
-          if (formData.get("potongTransport"))
-            payload.deductions.push("Tunjangan Transportasi");
-        }
 
         await approveRequestApi(request.id, payload);
         toast.success("Pengajuan disetujui.");
@@ -117,8 +106,6 @@ export const useApprovalForm = (
     setNoDeduction,
 
     // Derived States
-    isSakit,
-    isIzinPribadi,
     filteredSubstitutes,
 
     // Handlers

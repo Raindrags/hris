@@ -6,7 +6,6 @@ import { DashboardHeader } from "./components/DashboardHeader";
 import { DashboardStats } from "./components/DashboardStats";
 import { RecentRequestsList } from "./components/RecentRequestsList";
 
-// Impor komponen eksternal (asumsi path asli tetap sama)
 import { ProfileForm } from "@/app/components/forms/profile-form";
 import { ApprovalSection } from "@/app/components/forms/approval-section";
 
@@ -20,9 +19,11 @@ export default function PegawaiDashboardPage() {
     potentialSubstitutes,
     attendanceSummary,
     currentUser,
+    deductionSummary,
   } = states;
 
   if (loading) {
+    console.log("ISI USER DATA:", userData);
     return (
       <main className="min-h-screen bg-gray-950 flex items-center justify-center">
         <div className="text-gray-300">Memuat dashboard...</div>
@@ -57,10 +58,10 @@ export default function PegawaiDashboardPage() {
     <main className="min-h-screen bg-gray-950 p-6 md:p-10 text-gray-100">
       <div className="max-w-6xl mx-auto space-y-8">
         <DashboardHeader userName={userData.name} />
-
         <DashboardStats
           userData={userData}
           attendanceSummary={attendanceSummary}
+          deductionSummary={deductionSummary}
         />
 
         <ApprovalSection
@@ -68,7 +69,6 @@ export default function PegawaiDashboardPage() {
           potentialSubstitutes={potentialSubstitutes}
           onRefresh={actions.refreshData}
         />
-
         <RecentRequestsList requests={recentRequests} />
       </div>
     </main>

@@ -3,7 +3,6 @@ import type {
   SubstituteUser,
 } from "@/app/components/forms/types";
 
-// 2. Re-export agar file lain tetap bisa mengambilnya dari folder types ini
 export type { ApprovalRequestData, SubstituteUser };
 
 export interface AuthUser {
@@ -12,7 +11,6 @@ export interface AuthUser {
   email?: string;
   phone?: string;
   isFirstLogin?: boolean;
-  // Index signature agar kompatibel dengan properti dinamis di ProfileForm
   [key: string]: any;
 }
 
@@ -46,14 +44,27 @@ export interface AttendanceSummary {
   earlyLeaves: number;
 }
 
-// NOTE: interface SubstituteUser LOKAL TELAH DIHAPUS
-// Kita murni menggunakan SubstituteUser dari komponen asli untuk menghindari bentrok tipe.
+export interface DeductionSummary {
+  transportCount: number;
+  konsumsiCount: number;
+  gajiCount: number;
+  shiftCount: number;
+  shiftRate: number; // misal: 5000 atau 30000
+  shiftTotal: number;
+}
 
 export interface DashboardDataResponse {
   success: boolean;
   user?: UserData;
   recentRequests?: RecentRequest[];
   incomingRequests?: ApprovalRequestData[];
-  potentialSubstitutes?: SubstituteUser[]; // <-- Sekarang menggunakan tipe dari komponen asli
+  potentialSubstitutes?: SubstituteUser[];
   attendanceSummary?: AttendanceSummary;
+  deductionSummary?: DeductionSummary;
+}
+
+export interface DashboardStatsProps {
+  userData: UserData;
+  attendanceSummary: AttendanceSummary | null;
+  deductionSummary?: DeductionSummary | null;
 }

@@ -1,10 +1,9 @@
-// app/hooks/usePegawaiAuth.ts
-
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 export interface PegawaiAuthData {
   sisaCuti: number;
+  [key: string]: any; // Tambahkan ini agar bisa menampung data lain
 }
 
 export const usePegawaiAuth = () => {
@@ -25,6 +24,7 @@ export const usePegawaiAuth = () => {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ token }),
+            cache: "no-store", // Wajib anti-cache
           });
           const data = await res.json();
 
@@ -37,16 +37,37 @@ export const usePegawaiAuth = () => {
             localStorage.setItem("accessToken", data.accessToken);
           }
 
-          setUserData({ sisaCuti: data.user.sisaCuti ?? 0 });
+          // Smart Extractor
+          const userObj = data.user?.data || data.user;
+          setUserData({
+            ...userObj,
+            sisaCuti: userObj?.sisaCuti ?? 0,
+          });
         } else {
           // Mode Akses Langsung (Cookie Session)
-          const meRes = await fetch("/api/auth/me");
+          const meRes = await fetch("/api/auth/me", {
+            // Mencegah Next.js / Browser melakukan cache data basi
+            cache: "no-store",
+            headers: {
+              "Cache-Control": "no-cache",
+              Pragma: "no-cache",
+            },
+          });
+
           if (meRes.status === 401) {
             throw new Error("Anda belum login. Silakan login via WhatsApp.");
           }
 
           const meData = await meRes.json();
-          setUserData({ sisaCuti: meData.user?.sisaCuti ?? 0 });
+          console.log("=== DATA FRESH DARI BROWSER ===", meData); // Cek konsol browser
+
+          // Smart Extractor: Jaga-jaga NestJS membungkus data dalam properti 'data'
+          const userObj = meData.user?.data || meData.user || {};
+
+          setUserData({
+            ...userObj,
+            sisaCuti: userObj?.sisaCuti ?? 0,
+          });
         }
       } catch (err: any) {
         setError(err.message || "Terjadi kesalahan saat memverifikasi sesi.");
@@ -66,11 +87,5 @@ export const usePegawaiAuth = () => {
     router.push("/pegawai/dashboard");
   };
 
-  return {
-    loading,
-    error,
-    userData,
-    handleSuccess,
-    handleBack,
-  };
+  return { loading, error, userData, handleSuccess, handleBack };
 };

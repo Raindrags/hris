@@ -10,7 +10,7 @@ export async function GET(request: Request) {
   // Jika token tidak ada, langsung arahkan ke halaman error
   if (!token) {
     return NextResponse.redirect(
-      new URL("/error?code=401&err=NoToken", request.url)
+      new URL("/error?code=401&err=NoToken", request.url),
     );
   }
 
@@ -127,8 +127,11 @@ export async function POST(request: Request) {
     // Jika verifikasi gagal di backend NestJS
     if (!verifyResponse.ok || !data.success) {
       return NextResponse.json(
-        { success: false, error: data.message || "Verifikasi token gagal di backend" },
-        { status: 401 }
+        {
+          success: false,
+          error: data.message || "Verifikasi token gagal di backend",
+        },
+        { status: 401 },
       );
     }
 
@@ -153,14 +156,15 @@ export async function POST(request: Request) {
           niy: data.user.niy || "-",
           role: data.user.role || "PEGAWAI",
           divisi: data.user.divisi || "-",
+          sisaCuti: data.user.sisaCuti ?? 0,
         }),
         {
           httpOnly: false, // WAJIB FALSE agar bisa dibaca dari frontend
           secure: process.env.NODE_ENV === "production",
           sameSite: "lax",
           path: "/",
-          maxAge: 7 * 24 * 60 * 60, 
-        }
+          maxAge: 7 * 24 * 60 * 60,
+        },
       );
     }
 
@@ -179,8 +183,11 @@ export async function POST(request: Request) {
   } catch (error: any) {
     console.error("WA Login POST Error:", error.message);
     return NextResponse.json(
-      { success: false, error: "Terjadi kesalahan pada server (Network/Backend)" },
-      { status: 500 }
+      {
+        success: false,
+        error: "Terjadi kesalahan pada server (Network/Backend)",
+      },
+      { status: 500 },
     );
   }
 }

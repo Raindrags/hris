@@ -51,7 +51,8 @@ export async function getDashboardData() {
       recentRequests: data.recentRequests || [],
       incomingRequests: data.incomingRequests || [],
       potentialSubstitutes: data.potentialSubstitutes || [],
-      attendanceSummary: data.attendanceSummary || null, // ← tambahkan ini
+      attendanceSummary: data.attendanceSummary || null,
+      deductionSummary: data.deductionSummary || null,
     };
   } catch (error: any) {
     console.error("[DEBUG] Fetch error:", error.message);

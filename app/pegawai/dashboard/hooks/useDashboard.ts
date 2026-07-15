@@ -9,6 +9,7 @@ import {
   SubstituteUser,
   AttendanceSummary,
   AuthUser,
+  DeductionSummary, // 1. Tambahkan import ini
 } from "../types";
 
 export const useDashboard = () => {
@@ -26,6 +27,10 @@ export const useDashboard = () => {
     useState<AttendanceSummary | null>(null);
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
 
+  // 2. Tambahkan state untuk deductionSummary
+  const [deductionSummary, setDeductionSummary] =
+    useState<DeductionSummary | null>(null);
+
   const refreshData = useCallback(async () => {
     setLoading(true);
     try {
@@ -39,6 +44,9 @@ export const useDashboard = () => {
       setIncomingRequests(data.incomingRequests || []);
       setPotentialSubstitutes(data.potentialSubstitutes || []);
       setAttendanceSummary(data.attendanceSummary || null);
+
+      // 3. Set data deductionSummary dari response API
+      setDeductionSummary(data.deductionSummary || null);
     } catch (error) {
       console.error("Refresh dashboard error:", error);
     } finally {
@@ -78,6 +86,7 @@ export const useDashboard = () => {
       potentialSubstitutes,
       attendanceSummary,
       currentUser,
+      deductionSummary,
     },
     actions: {
       refreshData,

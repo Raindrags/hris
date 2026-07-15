@@ -57,7 +57,6 @@ export default function AdminDashboardView({
           />
         </div>
 
-        {/* Komponen Tabel yang sangat bersih */}
         <LeaveHistoryTable leaveHistory={leaveHistory} divisions={divisions} />
       </main>
     </div>

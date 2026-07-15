@@ -15,11 +15,14 @@ export const useAdminLeaveForm = () => {
   const [page, setPage] = useState<number>(1);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // 1. Fetch Users dengan Smart Extractor
+  // 1. Fetch Users dengan Smart Extractor & Anti-Cache
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const res = await fetch("/api/users");
+        const res = await fetch("/api/users", {
+          cache: "no-store",
+          headers: { "Cache-Control": "no-cache" },
+        });
         const responseData = await res.json();
 
         let extractedUsers: AdminUser[] = [];
@@ -47,17 +50,15 @@ export const useAdminLeaveForm = () => {
     fetchUsers();
   }, []);
 
-  // 2. Debounce Pencarian
   const handleSearchChange = useCallback((value: string) => {
     setSearch(value);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       setDebouncedSearch(value);
-      setPage(1); // Reset ke halaman 1 saat mencari
+      setPage(1);
     }, 300);
   }, []);
 
-  // 3. Filtering & Paginasi (Menggunakan useMemo agar optimal)
   const { pagedUsers, totalPages } = useMemo(() => {
     const safeUsers = Array.isArray(users) ? users : [];
 
@@ -72,7 +73,6 @@ export const useAdminLeaveForm = () => {
     const finalUsers = Array.isArray(filteredUsers) ? filteredUsers : [];
     const calculatedTotalPages =
       Math.ceil(finalUsers.length / ITEMS_PER_PAGE) || 1;
-
     const calculatedPagedUsers = finalUsers.slice(
       (page - 1) * ITEMS_PER_PAGE,
       page * ITEMS_PER_PAGE,
@@ -94,11 +94,18 @@ export const useAdminLeaveForm = () => {
     if (!user) return;
 
     try {
-      const res = await fetch(`/api/users/${userId}`);
+      // ANTI-CACHE DITAMBAHKAN DI SINI JUGA
+      const res = await fetch(`/api/users/${userId}`, {
+        cache: "no-store",
+        headers: { "Cache-Control": "no-cache" },
+      });
       const data = await res.json();
-      setUserDetail(
-        data.data || data.user || { sisaCuti: user?.sisaCuti ?? 0 },
-      );
+
+      const detailObj = data.data || data.user || {};
+      setUserDetail({
+        ...detailObj,
+        sisaCuti: detailObj.sisaCuti ?? user?.sisaCuti ?? 0,
+      });
     } catch {
       setUserDetail({ sisaCuti: user?.sisaCuti ?? 0 });
     }
@@ -111,7 +118,6 @@ export const useAdminLeaveForm = () => {
   };
 
   return {
-    // States
     open,
     setOpen,
     search,
@@ -123,8 +129,6 @@ export const useAdminLeaveForm = () => {
     showForm,
     userDetail,
     pagedUsers,
-
-    // Actions
     handleSelectUser,
     handleAjukan,
   };

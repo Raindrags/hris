@@ -4,10 +4,8 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useApprovalForm } from "./hooks/useApprovalForm";
 import { ApprovalRequestData, SubstituteUser } from "./types";
@@ -29,8 +27,6 @@ export function ApprovalForm({
     loading,
     noDeduction,
     setNoDeduction,
-    isSakit,
-    isIzinPribadi,
     handleProcess,
   } = useApprovalForm(request, potentialSubstitutes, onClose);
 
@@ -125,119 +121,40 @@ export function ApprovalForm({
     );
   }
 
-  // 4. Tampilan Form PERSETUJUAN (Khusus IZIN - Tanpa Penyerahan Tugas)
   return (
     <form
       onSubmit={handleProcess}
       className="space-y-4 max-h-[60vh] overflow-y-auto px-1 text-gray-200"
     >
-      <div className="space-y-4 mt-2">
-        <div className="flex items-center space-x-2 mb-2">
-          <Checkbox
-            id="no_deduction"
-            checked={noDeduction}
-            onCheckedChange={(c) => setNoDeduction(c as boolean)}
-          />
-          <Label
-            htmlFor="no_deduction"
-            className="font-semibold text-emerald-400"
-          >
-            Tidak Dikenakan Pemotongan
-          </Label>
-        </div>
-
-        {!noDeduction && (
-          <div className="pl-4 space-y-4 border-l-2 border-gray-800">
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold uppercase text-gray-400">
-                Jenis Potongan
-              </Label>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="p_gaji"
-                  name="potongGaji"
-                  defaultChecked={isIzinPribadi}
-                />
-                <label htmlFor="p_gaji" className="text-sm text-gray-300">
-                  Potong Gaji
-                </label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="p_konsum"
-                  name="potongKonsumsi"
-                  defaultChecked={isSakit || isIzinPribadi}
-                />
-                <label htmlFor="p_konsum" className="text-sm text-gray-300">
-                  Tunjangan Konsumsi
-                </label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="p_trans"
-                  name="potongTransport"
-                  defaultChecked={isSakit || isIzinPribadi}
-                />
-                <label htmlFor="p_trans" className="text-sm text-gray-300">
-                  Tunjangan Transportasi
-                </label>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold uppercase text-gray-400">
-                Denda Telat
-              </Label>
-              <RadioGroup defaultValue="0" name="lateFine">
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="0" id="t_0" />
-                  <Label htmlFor="t_0" className="text-gray-300">
-                    Tidak ada
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="5000" id="t_5000" />
-                  <Label htmlFor="t_5000" className="text-gray-300">
-                    Rp 5.000
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="10000" id="t_10000" />
-                  <Label htmlFor="t_10000" className="text-gray-300">
-                    Rp 10.000
-                  </Label>
-                </div>
-              </RadioGroup>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <Label className="text-xs text-gray-400">Jumlah Inval</Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    name="invalCount"
-                    className="w-16 bg-gray-900 border-gray-700 text-gray-200"
-                    defaultValue={0}
-                  />
-                  <span className="text-xs text-gray-500">x Rp 5.000</span>
-                </div>
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs text-gray-400">Jumlah Shift</Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    name="shiftCount"
-                    className="w-16 bg-gray-900 border-gray-700 text-gray-200"
-                    defaultValue={0}
-                  />
-                  <span className="text-xs text-gray-500">x Rp 30.000</span>
-                </div>
-              </div>
-            </div>
+      <div className="space-y-4 mt-2 p-4 bg-gray-900 border border-gray-800 rounded-md">
+        <Label className="text-sm font-semibold uppercase text-gray-400">
+          Status Pemotongan
+        </Label>
+        <RadioGroup
+          name="deductionStatus"
+          defaultValue={noDeduction ? "no_deduction" : "yes_deduction"}
+          onValueChange={(val) => setNoDeduction(val === "no_deduction")}
+          className="flex flex-col space-y-3 mt-2"
+        >
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="no_deduction" id="no_deduction" />
+            <Label
+              htmlFor="no_deduction"
+              className="font-semibold text-emerald-400 cursor-pointer"
+            >
+              Tidak Dikenakan Pemotongan
+            </Label>
           </div>
-        )}
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="yes_deduction" id="yes_deduction" />
+            <Label
+              htmlFor="yes_deduction"
+              className="font-semibold text-red-400 cursor-pointer"
+            >
+              Dikenakan Potongan
+            </Label>
+          </div>
+        </RadioGroup>
       </div>
 
       <div className="flex justify-end gap-2 pt-4">
