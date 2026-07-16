@@ -36,7 +36,6 @@ export async function getDashboardData() {
       },
     });
     const data = await res.json();
-    console.log("===== CEK DATA DARI NESTJS =====", data.user);
     if (!res.ok) {
       return {
         success: false,

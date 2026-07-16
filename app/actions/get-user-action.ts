@@ -20,7 +20,6 @@ export async function getUsers() {
       headers: { Authorization: `Bearer ${token}` },
     });
     const data = await res.json();
-    console.log("sisaCuti from backend:", data.user.sisaCuti);
     return data;
   } catch (error) {
     console.error(`[getUsers] Error:`, error);

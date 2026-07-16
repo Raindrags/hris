@@ -31,13 +31,15 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Clock, Filter, Eye, Calculator, Loader2 } from "lucide-react";
+import { Clock, Filter, Eye, Calculator, Loader2, Ban } from "lucide-react";
 
 export function LeaveHistoryTable({ leaveHistory, divisions }: any) {
   const router = useRouter();
@@ -48,10 +50,12 @@ export function LeaveHistoryTable({ leaveHistory, divisions }: any) {
   // State untuk Modal
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isDeductionModalOpen, setIsDeductionModalOpen] = useState(false);
+  const [isDiscardModalOpen, setIsDiscardModalOpen] = useState(false);
 
-  // State khusus untuk form Denda
+  // State form
   const [noDeduction, setNoDeduction] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isDiscarding, setIsDiscarding] = useState<boolean>(false);
 
   const filteredHistory =
     selectedDivisionId === "ALL"
@@ -67,9 +71,13 @@ export function LeaveHistoryTable({ leaveHistory, divisions }: any) {
 
   const handleOpenDeduction = (req: any) => {
     setSelectedRequest(req);
-    // Set default checkbox berdasarkan status sebelumnya (jika ada)
     setNoDeduction(req.deductionOptions === "TIDAK_DIPOTONG");
     setIsDeductionModalOpen(true);
+  };
+
+  const handleOpenDiscard = (req: any) => {
+    setSelectedRequest(req);
+    setIsDiscardModalOpen(true);
   };
 
   const handleSubmitDeduction = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -80,7 +88,6 @@ export function LeaveHistoryTable({ leaveHistory, divisions }: any) {
     const payload = Object.fromEntries(formData);
 
     try {
-      // Fetch ke Next.js API route lokal.
       const res = await fetch(
         `/api/requests/${selectedRequest.id}/deductions`,
         {
@@ -99,14 +106,35 @@ export function LeaveHistoryTable({ leaveHistory, divisions }: any) {
 
       toast.success("Denda dan potongan berhasil diperbarui");
       setIsDeductionModalOpen(false);
-
-      // Refresh halaman di background agar tabel dan dashboard stats terupdate seketika
       router.refresh();
     } catch (error: any) {
       console.error(error);
       toast.error(error.message || "Terjadi kesalahan pada server");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDiscard = async () => {
+    setIsDiscarding(true);
+    try {
+      const res = await fetch(`/api/requests/${selectedRequest.id}/discard`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || "Gagal membatalkan pengajuan");
+      }
+
+      toast.success("Pengajuan berhasil dibatalkan");
+      setIsDiscardModalOpen(false);
+      router.refresh();
+    } catch (error: any) {
+      toast.error(error.message || "Terjadi kesalahan pada server");
+    } finally {
+      setIsDiscarding(false);
     }
   };
 
@@ -177,14 +205,18 @@ export function LeaveHistoryTable({ leaveHistory, divisions }: any) {
                           ? "bg-emerald-950 text-emerald-400"
                           : req.status === "REJECTED"
                             ? "bg-red-950 text-red-400"
-                            : "bg-yellow-950 text-yellow-400"
+                            : req.status === "CANCELLED"
+                              ? "bg-gray-800 text-gray-400"
+                              : "bg-yellow-950 text-yellow-400"
                       }
                     >
                       {req.status === "APPROVED"
                         ? "Disetujui"
                         : req.status === "REJECTED"
                           ? "Ditolak"
-                          : "Pending"}
+                          : req.status === "CANCELLED"
+                            ? "Dibatalkan"
+                            : "Pending"}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -198,15 +230,36 @@ export function LeaveHistoryTable({ leaveHistory, divisions }: any) {
                         <Eye className="h-4 w-4 mr-1" />
                         Detail
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleOpenDeduction(req)}
-                        className="text-orange-400 hover:text-orange-300 hover:bg-orange-900/20"
-                      >
-                        <Calculator className="h-4 w-4 mr-1" />
-                        Atur Denda
-                      </Button>
+
+                      {/* Logika untuk menyembunyikan tombol denda jika Cuti & Tidak Dipotong */}
+                      {!(
+                        req.type === "CUTI" &&
+                        req.deductionOptions !== "DIPOTONG"
+                      ) && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleOpenDeduction(req)}
+                          className="text-orange-400 hover:text-orange-300 hover:bg-orange-900/20"
+                        >
+                          <Calculator className="h-4 w-4 mr-1" />
+                          Atur Denda
+                        </Button>
+                      )}
+
+                      {/* Tombol Batal hanya muncul jika pengajuan belum Dibatalkan/Ditolak */}
+                      {req.status !== "REJECTED" &&
+                        req.status !== "CANCELLED" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleOpenDiscard(req)}
+                            className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                          >
+                            <Ban className="h-4 w-4 mr-1" />
+                            Batalkan
+                          </Button>
+                        )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -216,9 +269,7 @@ export function LeaveHistoryTable({ leaveHistory, divisions }: any) {
         </CardContent>
       </Card>
 
-      {/* ========================================= */}
       {/* 1. Modal Detail Pengajuan */}
-      {/* ========================================= */}
       <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
         <DialogContent className="bg-gray-900 border-gray-800 text-gray-200 sm:max-w-md">
           <DialogHeader>
@@ -308,9 +359,7 @@ export function LeaveHistoryTable({ leaveHistory, divisions }: any) {
         </DialogContent>
       </Dialog>
 
-      {/* ========================================= */}
       {/* 2. Modal Form Denda & Potongan */}
-      {/* ========================================= */}
       <Dialog
         open={isDeductionModalOpen}
         onOpenChange={setIsDeductionModalOpen}
@@ -351,7 +400,6 @@ export function LeaveHistoryTable({ leaveHistory, divisions }: any) {
                     Jenis Potongan
                   </Label>
                   <div className="flex items-center space-x-2">
-                    {/* Default value disesuaikan dengan data yang mungkin sudah tersimpan sebelumnya */}
                     <Checkbox
                       id="p_gaji"
                       name="potongGaji"
@@ -493,6 +541,65 @@ export function LeaveHistoryTable({ leaveHistory, divisions }: any) {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* 3. Modal Konfirmasi Pembatalan (Baru) */}
+      <Dialog open={isDiscardModalOpen} onOpenChange={setIsDiscardModalOpen}>
+        <DialogContent className="bg-gray-900 border-gray-800 text-gray-200 sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-2">
+              <Ban className="h-5 w-5 text-red-500" /> Konfirmasi Pembatalan
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Apakah Anda yakin ingin membatalkan pengajuan ini secara paksa?
+              Tindakan ini tidak dapat diurungkan.
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedRequest && (
+            <div className="bg-gray-950 p-4 rounded-md border border-gray-800 text-sm space-y-2">
+              <p>
+                <span className="text-gray-500">Pegawai:</span>{" "}
+                <span className="text-white">{selectedRequest.user.name}</span>
+              </p>
+              <p>
+                <span className="text-gray-500">Tipe:</span>{" "}
+                <span className="text-white">{selectedRequest.type}</span>
+              </p>
+              <p>
+                <span className="text-gray-500">Status Saat Ini:</span>{" "}
+                <span className="text-white">{selectedRequest.status}</span>
+              </p>
+            </div>
+          )}
+
+          <DialogFooter className="mt-4 flex gap-2 justify-end sm:gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setIsDiscardModalOpen(false)}
+              className="text-gray-400 hover:text-white"
+              disabled={isDiscarding}
+            >
+              Kembali
+            </Button>
+            <Button
+              type="button"
+              onClick={handleDiscard}
+              className="bg-red-700 hover:bg-red-800 text-white"
+              disabled={isDiscarding}
+            >
+              {isDiscarding ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Memproses...
+                </>
+              ) : (
+                "Ya, Batalkan"
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

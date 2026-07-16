@@ -46,7 +46,7 @@ export async function middleware(request: NextRequest) {
     "/error",
     "/login",
     "/unauthorized",
-    "/api", // (Ini aman karena /api/proxy sudah ditangkap di atas)
+    "/api",
     "/_next",
     "/favicon.ico",
     "/uploads",
@@ -80,13 +80,16 @@ export async function middleware(request: NextRequest) {
       const { payload } = await jwtVerify(token, SECRET_KEY);
       const userRole = payload.role as string;
 
-      // Hapus log di production agar rapi, tapi kita biarkan untuk debugging jika perlu
-      // console.log("=== CEK ROLE DARI JWT ===");
-      // console.log("Tujuan Route:", pathname);
-      // console.log("Role User:", userRole);
-
-      if (isAdminHrisRoute && userRole !== "ADMIN") {
-        return NextResponse.redirect(new URL("/unauthorized", request.url));
+      if (isAdminHrisRoute) {
+        const allowedAdminRoles = [
+          "ADMIN",
+          "ADMIN_SD",
+          "ADMIN_SMP",
+          "ADMIN_SMA",
+        ];
+        if (!allowedAdminRoles.includes(userRole)) {
+          return NextResponse.redirect(new URL("/unauthorized", request.url));
+        }
       }
 
       if (isCarfleetAdminRoute && userRole !== "ADMIN_GA") {

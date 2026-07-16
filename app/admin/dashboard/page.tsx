@@ -71,10 +71,8 @@ export default async function DashboardPage() {
       />
     );
   } catch (error: unknown) {
-    // PERBAIKAN 1: Mengubah 'error: any' menjadi 'error: unknown' agar lolos TypeScript Vercel
     console.error("Gagal memuat data dashboard:", error);
 
-    // PERBAIKAN 2: Ekstraksi pesan error yang aman untuk Strict Mode
     const errorMessage =
       error instanceof Error
         ? error.message

@@ -6,8 +6,6 @@ import { cookies } from "next/headers";
 
 const API_URL =
   process.env.BACKEND_API_URL || "https://hris.maitreyawirads.dpdns.org";
-console.log("[DEBUG] BACKEND_API_URL:", API_URL);
-
 /**
  * Helper untuk mengambil token dengan nama "access_token"
  */
@@ -232,7 +230,7 @@ export async function createSpecialWorkDate(payload: any) {
       body: JSON.stringify(payload),
     });
     const data = await res.json();
-    
+
     if (data.success) revalidatePath("/admin/pengaturan-jadwal");
     return data;
   } catch (error: any) {
@@ -294,7 +292,10 @@ export async function deleteSpecialWorkDate(id: string) {
 // ============================================================================
 // 11. Assign Pegawai ke Hari Kerja Khusus
 // ============================================================================
-export async function assignEmployeesToSpecialDate(specialDateId: string, userIds: string[]) {
+export async function assignEmployeesToSpecialDate(
+  specialDateId: string,
+  userIds: string[],
+) {
   try {
     const headers = await getHeaders();
     const res = await fetch(`${API_URL}/special-work-dates/assign`, {

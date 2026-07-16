@@ -17,15 +17,56 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { UserMenu } from "./components/UserMenu";
 import { SidebarNav } from "./components/SidebarNav";
 
-const navItems = [
-  { title: "Dashboard", href: "/admin/dashboard", icon: Home },
-  { title: "Pegawai", href: "/admin/dashboard/pegawai", icon: Users },
-  { title: "Absensi", href: "/admin/dashboard/absensi", icon: CalendarDays },
-  { title: "Periode", href: "/admin/dashboard/period", icon: CalendarRange },
-  { title: "Form Cuti", href: "/admin/dashboard/form-cuti", icon: FileText },
-  { title: "Form Izin", href: "/admin/dashboard/form-izin", icon: FileText },
-  { title: "Jadwal", href: "/admin/dashboard/jadwal", icon: CalendarDays },
-  { title: "Laporan", href: "/admin/dashboard/laporan", icon: LineChart },
+// 1. Definisikan array role apa saja yang diizinkan untuk melihat menu tertentu
+const allNavItems = [
+  {
+    title: "Dashboard",
+    href: "/admin/dashboard",
+    icon: Home,
+    allowedRoles: ["ADMIN", "ADMIN_SD", "ADMIN_SMP", "ADMIN_SMA"],
+  },
+  {
+    title: "Pegawai",
+    href: "/admin/dashboard/pegawai",
+    icon: Users,
+    allowedRoles: ["ADMIN"], // Hanya Super Admin
+  },
+  {
+    title: "Absensi",
+    href: "/admin/dashboard/absensi",
+    icon: CalendarDays,
+    allowedRoles: ["ADMIN"], // Hanya Super Admin
+  },
+  {
+    title: "Periode",
+    href: "/admin/dashboard/period",
+    icon: CalendarRange,
+    allowedRoles: ["ADMIN"], // Hanya Super Admin
+  },
+  {
+    title: "Form Cuti",
+    href: "/admin/dashboard/form-cuti",
+    icon: FileText,
+    allowedRoles: ["ADMIN", "ADMIN_SD", "ADMIN_SMP", "ADMIN_SMA"],
+  },
+  {
+    title: "Form Izin",
+    href: "/admin/dashboard/form-izin",
+    icon: FileText,
+    allowedRoles: ["ADMIN", "ADMIN_SD", "ADMIN_SMP", "ADMIN_SMA"],
+  },
+  {
+    title: "Jadwal",
+    href: "/admin/dashboard/jadwal",
+    icon: CalendarDays,
+    allowedRoles: ["ADMIN"], // Hanya Super Admin
+  },
+  {
+    title: "Laporan",
+    href: "/admin/dashboard/laporan",
+    icon: LineChart,
+    allowedRoles: ["ADMIN", "ADMIN_SD", "ADMIN_SMP", "ADMIN_SMA"],
+  },
 ];
 
 export default function DashboardLayout({
@@ -38,10 +79,17 @@ export default function DashboardLayout({
     name?: string;
     email?: string;
     image?: string;
+    role?: string;
   } | null>(null);
 
   useEffect(() => {
-    setUser({ name: "Admin Sekolah", email: "admin@maitreyawira.sch.id" });
+    // TODO: Idealnya ini memanggil endpoint backend (misal /api/auth/me)
+    // atau mengambil data dari localStorage/decode cookie yang berisi `role` asli
+    setUser({
+      name: "Admin Sekolah",
+      email: "admin@maitreyawira.sch.id",
+      role: "ADMIN", // Contoh: ubah ini jadi "ADMIN_SD" untuk mencoba test hide menu
+    });
   }, []);
 
   const handleLogout = async () => {
@@ -49,6 +97,12 @@ export default function DashboardLayout({
     router.push("/login");
     router.refresh();
   };
+
+  // 2. Filter menu berdasarkan role yang dimiliki oleh user
+  const filteredNavItems = allNavItems.filter((item) => {
+    if (!user || !user.role) return false;
+    return item.allowedRoles.includes(user.role);
+  });
 
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[240px_1fr] lg:grid-cols-[280px_1fr] bg-gray-950 text-gray-100">
@@ -65,8 +119,8 @@ export default function DashboardLayout({
           </div>
         </div>
 
-        {/* Menggunakan Komponen Reusable */}
-        <SidebarNav items={navItems} />
+        {/* 3. Gunakan filteredNavItems */}
+        <SidebarNav items={filteredNavItems} />
       </aside>
 
       <div className="flex flex-col min-h-screen">
@@ -80,8 +134,8 @@ export default function DashboardLayout({
               side="left"
               className="bg-gray-900 border-gray-800 p-0 w-72"
             >
-              {/* Menggunakan Komponen Reusable yang SAMA! */}
-              <SidebarNav items={navItems} isMobile />
+              {/* 4. Gunakan filteredNavItems untuk versi Mobile */}
+              <SidebarNav items={filteredNavItems} isMobile />
             </SheetContent>
           </Sheet>
 
