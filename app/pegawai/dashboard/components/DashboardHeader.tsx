@@ -5,9 +5,10 @@ import { APP_ROUTES } from "../constants";
 
 interface DashboardHeaderProps {
   userName: string;
+  isGuru?: boolean;
 }
 
-export const DashboardHeader = ({ userName }: DashboardHeaderProps) => {
+export const DashboardHeader = ({ userName, isGuru }: DashboardHeaderProps) => {
   return (
     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div>
@@ -25,11 +26,15 @@ export const DashboardHeader = ({ userName }: DashboardHeaderProps) => {
             <FileText className="h-4 w-4 mr-2" /> Izin
           </Button>
         </Link>
-        <Link href={APP_ROUTES.FORM_CUTI}>
-          <Button className="bg-crimson-700 hover:bg-crimson-800 text-white shadow-md shadow-crimson-900/30">
-            <CalendarDays className="h-4 w-4 mr-2" /> Cuti
-          </Button>
-        </Link>
+
+        {/* 2. Sembunyikan tombol cuti jika isGuru bernilai true */}
+        {!isGuru && (
+          <Link href={APP_ROUTES.FORM_CUTI}>
+            <Button className="bg-crimson-700 hover:bg-crimson-800 text-white shadow-md shadow-crimson-900/30">
+              <CalendarDays className="h-4 w-4 mr-2" /> Cuti
+            </Button>
+          </Link>
+        )}
       </div>
     </div>
   );

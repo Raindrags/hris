@@ -24,6 +24,9 @@ export const DashboardStats = ({
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+      {/* ========================================= */}
+      {/* 1. Card Sisa Cuti */}
+      {/* ========================================= */}
       <Card className="border-gray-800 bg-gray-900 shadow-md text-gray-100">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-sm font-medium text-gray-400">
@@ -32,12 +35,21 @@ export const DashboardStats = ({
           <CalendarDays className="h-5 w-5 text-crimson-500" />
         </CardHeader>
         <CardContent>
-          <div className="text-3xl font-bold text-white">
-            {userData.sisaCuti ?? 0} Hari
-          </div>
+          {userData.isGuru ? (
+            <div className="text-sm font-medium text-gray-500 mt-1 italic">
+              Tidak ada jatah cuti untuk guru.
+            </div>
+          ) : (
+            <div className="text-3xl font-bold text-white">
+              {userData.sisaCuti ?? 0} Hari
+            </div>
+          )}
         </CardContent>
       </Card>
 
+      {/* ========================================= */}
+      {/* 2. Card Atasan */}
+      {/* ========================================= */}
       <Card className="border-gray-800 bg-gray-900 shadow-md text-gray-100">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-sm font-medium text-gray-400">
@@ -54,6 +66,9 @@ export const DashboardStats = ({
 
       {attendanceSummary && (
         <>
+          {/* ========================================= */}
+          {/* 3. Card Kehadiran Bulan Ini */}
+          {/* ========================================= */}
           <Card className="border-gray-800 bg-gray-900 shadow-md text-gray-100">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-gray-400">
@@ -85,6 +100,9 @@ export const DashboardStats = ({
             </CardContent>
           </Card>
 
+          {/* ========================================= */}
+          {/* 4. Card Ketidakhadiran */}
+          {/* ========================================= */}
           <Card className="border-gray-800 bg-gray-900 shadow-md text-gray-100">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-gray-400">
@@ -100,12 +118,17 @@ export const DashboardStats = ({
                   </p>
                   <p className="text-xs text-gray-500">Izin</p>
                 </div>
-                <div>
-                  <p className="text-2xl font-bold text-purple-400">
-                    {attendanceSummary.cuti}
-                  </p>
-                  <p className="text-xs text-gray-500">Cuti</p>
-                </div>
+
+                {/* Rincian Cuti (Hanya Tampil Jika BUKAN Guru) */}
+                {!userData.isGuru && (
+                  <div>
+                    <p className="text-2xl font-bold text-purple-400">
+                      {attendanceSummary.cuti}
+                    </p>
+                    <p className="text-xs text-gray-500">Cuti</p>
+                  </div>
+                )}
+
                 <div>
                   <p className="text-2xl font-bold text-red-500">
                     {attendanceSummary.off}
@@ -119,7 +142,7 @@ export const DashboardStats = ({
       )}
 
       {/* ========================================= */}
-      {/* CARD: Ringkasan Potongan (Selalu Tampil)  */}
+      {/* 5. Card Ringkasan Potongan */}
       {/* ========================================= */}
       <Card className="border-gray-800 bg-gray-900 shadow-md text-gray-100">
         <CardHeader className="flex flex-row items-center justify-between pb-2">

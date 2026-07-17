@@ -73,7 +73,7 @@ export function ApprovalSection({
                   >
                     {req.type === "CUTI"
                       ? "Cuti Tahunan"
-                      : `Izin (${req.user?.category || "Umum"})`}
+                      : `(${req.user?.category || "Izin Umum"})`}
                   </Badge>
 
                   <div className="flex items-center gap-1 text-xs text-blue-300 bg-blue-900/20 px-2 py-1 rounded border border-blue-800/50">

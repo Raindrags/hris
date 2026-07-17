@@ -1,4 +1,3 @@
-// app/pegawai/dashboard/page.tsx
 "use client";
 
 import { useDashboard } from "./hooks/useDashboard";
@@ -57,7 +56,8 @@ export default function PegawaiDashboardPage() {
   return (
     <main className="min-h-screen bg-gray-950 p-6 md:p-10 text-gray-100">
       <div className="max-w-6xl mx-auto space-y-8">
-        <DashboardHeader userName={userData.name} />
+        <DashboardHeader userName={userData.name} isGuru={userData.isGuru} />
+
         <DashboardStats
           userData={userData}
           attendanceSummary={attendanceSummary}

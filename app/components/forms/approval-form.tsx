@@ -43,7 +43,7 @@ export function ApprovalForm({
             <strong>Tipe:</strong>{" "}
             {request.type === "CUTI"
               ? "Cuti Tahunan"
-              : `Izin (${request.user.category || "Umum"})`}
+              : `(${request.user.category || "Izin Umum"})`}
           </p>
           <p>
             <strong>Alasan:</strong> {request.reason}
