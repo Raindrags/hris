@@ -94,10 +94,18 @@ export default function PermissionForm({
     processSubmit,
     setShowWarning,
   } = actions;
-  const [dinasMethod, setDinasMethod] = useState<"file" | "link">("file");
+
+  // Mengubah nama agar lebih umum digunakan untuk Dinas dan Sakit
+  const [attachmentMethod, setAttachmentMethod] = useState<"file" | "link">(
+    "file",
+  );
   const isHourlyPermission = ["Terlambat", "PulangAwal", "IzinKeluar"].includes(
     category,
   );
+
+  // Variabel untuk menampilkan opsi upload dokumen (Dinas atau Sakit > 2 hari)
+  const showAttachmentUI =
+    category === "Dinas" || (category === "Sakit" && calculatedDays > 1);
 
   const onCategorySelect = (val: string | null) => {
     handleCategoryChange(val);
@@ -113,7 +121,6 @@ export default function PermissionForm({
     }
   };
 
-  // MENCEGAT SUBMIT UNTUK VALIDASI EXTRA
   const onFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -124,10 +131,18 @@ export default function PermissionForm({
       }
     }
 
-    // 🆕 Validasi Lampiran Dinas
-    if (category === "Dinas") {
-      if (dinasMethod === "link" && !attachmentLink.trim()) {
-        alert("Link Surat Tugas wajib diisi!");
+    // Validasi Lampiran File / Link
+    if (showAttachmentUI) {
+      if (attachmentMethod === "link" && !attachmentLink.trim()) {
+        alert(
+          `Link ${category === "Dinas" ? "Surat Tugas" : "Bukti Surat Dokter"} wajib diisi!`,
+        );
+        return;
+      }
+      if (attachmentMethod === "file" && !states.file) {
+        alert(
+          `File ${category === "Dinas" ? "Surat Tugas" : "Bukti Surat Dokter"} wajib diunggah!`,
+        );
         return;
       }
     }
@@ -328,24 +343,27 @@ export default function PermissionForm({
           </div>
         )}
 
-        {/* 🆕 INPUT DOKUMEN KHUSUS DINAS LUAR */}
-        {category === "Dinas" && (
+        {/* INPUT DOKUMEN KHUSUS DINAS LUAR ATAU SAKIT > 2 HARI */}
+        {showAttachmentUI && (
           <div className="p-3 bg-slate-900/50 rounded-md border border-slate-700 space-y-3">
             <div className="flex justify-between items-center">
               <Label className="text-blue-400 flex items-center gap-1.5 font-medium">
-                <FileText className="h-4 w-4" /> Dokumen Surat Tugas
+                <FileText className="h-4 w-4" />{" "}
+                {category === "Dinas"
+                  ? "Dokumen Surat Tugas"
+                  : "Bukti Foto Surat Dokter"}
               </Label>
               {/* Toggle Opsi File / Link */}
               <div className="flex rounded-md border border-slate-700 p-0.5 bg-slate-950 text-xs">
                 <button
                   type="button"
                   onClick={() => {
-                    setDinasMethod("file");
+                    setAttachmentMethod("file");
                     setAttachmentLink("");
                   }}
                   className={cn(
                     "px-2 py-1 rounded",
-                    dinasMethod === "file"
+                    attachmentMethod === "file"
                       ? "bg-blue-600 text-white"
                       : "text-slate-400 hover:text-slate-200",
                   )}
@@ -355,12 +373,12 @@ export default function PermissionForm({
                 <button
                   type="button"
                   onClick={() => {
-                    setDinasMethod("link");
+                    setAttachmentMethod("link");
                     setFile(null);
                   }}
                   className={cn(
                     "px-2 py-1 rounded",
-                    dinasMethod === "link"
+                    attachmentMethod === "link"
                       ? "bg-blue-600 text-white"
                       : "text-slate-400 hover:text-slate-200",
                   )}
@@ -370,14 +388,14 @@ export default function PermissionForm({
               </div>
             </div>
 
-            {dinasMethod === "file" ? (
+            {attachmentMethod === "file" ? (
               <div className="space-y-1.5">
                 <div className="relative flex items-center justify-center border-2 border-dashed border-slate-700 rounded-lg p-4 bg-slate-900 hover:bg-slate-800/80 transition-colors cursor-pointer group">
                   <Input
                     type="file"
                     name="file"
-                    // Membatasi ekstensi dokumen yang diminta: PDF, Word (.doc, .docx), PowerPoint (.ppt, .pptx)
-                    accept=".pdf,.doc,.docx,.ppt,.pptx"
+                    // Menambahkan dukungan format foto (.jpg, .jpeg, .png)
+                    accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png"
                     onChange={(e) => setFile(e.target.files?.[0] || null)}
                     className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                     required
@@ -388,7 +406,7 @@ export default function PermissionForm({
                       Klik atau seret file ke sini
                     </p>
                     <p className="text-[10px] text-slate-500">
-                      PDF, DOC, DOCX, PPT, PPTX (Maks 5MB)
+                      PDF, DOC, DOCX, PPT, PPTX, JPG, PNG (Maks 5MB)
                     </p>
                   </div>
                 </div>
@@ -399,7 +417,7 @@ export default function PermissionForm({
                   <Link2 className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
                   <Input
                     type="url"
-                    placeholder="https://drive.google.com/share-link-surat-tugas"
+                    placeholder="https://drive.google.com/share-link-dokumen"
                     value={attachmentLink}
                     onChange={(e) => setAttachmentLink(e.target.value)}
                     className="pl-9 bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-600"
@@ -489,7 +507,10 @@ export default function PermissionForm({
                   if (category === "IzinKeluar") {
                     pendingPayload.returnTime = returnTime;
                   }
-                  if (category === "Dinas") {
+                  if (
+                    category === "Dinas" ||
+                    (category === "Sakit" && calculatedDays > 2)
+                  ) {
                     pendingPayload.attachmentLink = attachmentLink;
                   }
                   processSubmit(pendingPayload);
