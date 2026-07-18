@@ -10,6 +10,10 @@ export interface Holiday {
 export interface UserOption {
   id: string;
   name: string;
-  niy: string;
-  divisi?: { id: string; name: string };
+  niy?: string | null;
+  jabatan?: string | null;
+  divisi?: {
+    id: string;
+    name: string;
+  } | null;
 }
