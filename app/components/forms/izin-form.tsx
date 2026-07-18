@@ -78,6 +78,7 @@ export default function PermissionForm({
     pendingPayload,
     calculatedDays,
     isAutoEndDate,
+    file,
   } = states;
 
   const {
