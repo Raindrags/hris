@@ -45,6 +45,15 @@ export function ApprovalForm({
               ? "Cuti Tahunan"
               : `(${request.user.category || "Izin Umum"})`}
           </p>
+
+          {/* Tampilkan Waktu / Jam Izin jika tersedia */}
+          {(request.startTime || request.endTime) && (
+            <p>
+              <strong>Waktu:</strong> {request.startTime}{" "}
+              {request.endTime ? `- ${request.endTime}` : ""}
+            </p>
+          )}
+
           <p>
             <strong>Alasan:</strong> {request.reason}
           </p>
@@ -121,6 +130,7 @@ export function ApprovalForm({
     );
   }
 
+  // 4. Tampilan Form PERSETUJUAN (Untuk Izin Biasa)
   return (
     <form
       onSubmit={handleProcess}

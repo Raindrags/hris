@@ -16,7 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { CheckSquare, Paperclip, Calendar } from "lucide-react";
+import { CheckSquare, Paperclip, Calendar, Clock } from "lucide-react";
 import { ApprovalRequestData, SubstituteUser } from "./types";
 import { useApprovalSection } from "./hooks/useApprovalSection";
 import { ApprovalForm } from "./approval-form";
@@ -80,6 +80,16 @@ export function ApprovalSection({
                     <Calendar className="w-3.5 h-3.5 text-blue-400" />
                     <span>{formatDateRange(req.startDate, req.endDate)}</span>
                   </div>
+
+                  {/* Badge untuk waktu/durasi jika ada property startTime / endTime */}
+                  {(req.startTime || req.endTime) && (
+                    <div className="flex items-center gap-1 text-xs text-orange-300 bg-orange-900/20 px-2 py-1 rounded border border-orange-800/50">
+                      <Clock className="w-3.5 h-3.5 text-orange-400" />
+                      <span>
+                        {req.startTime} {req.endTime ? `- ${req.endTime}` : ""}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {req.reason && (

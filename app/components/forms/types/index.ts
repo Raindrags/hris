@@ -33,6 +33,8 @@ export interface ApprovalRequestData {
   reason?: string;
   startDate: Date | string;
   endDate: Date | string;
+  startTime?: string;
+  endTime?: string;
   attachmentUrl?: string | null;
   user: {
     id: string;
