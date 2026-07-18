@@ -390,6 +390,26 @@ export function LeaveHistoryTable({ leaveHistory, divisions }: any) {
                     "id-ID",
                   )}
                 </span>
+                {selectedRequest.time && (
+                  <>
+                    <span className="text-gray-400">
+                      {selectedRequest.category === "Terlambat"
+                        ? "Estimasi Hadir"
+                        : selectedRequest.category === "PulangAwal"
+                          ? "Jam Pulang"
+                          : selectedRequest.category === "IzinKeluar"
+                            ? "Waktu Izin"
+                            : "Jam"}
+                    </span>
+                    <span className="col-span-2 font-medium text-white">
+                      : {selectedRequest.time}
+                      {selectedRequest.category === "IzinKeluar" &&
+                      selectedRequest.returnTime
+                        ? ` s/d ${selectedRequest.returnTime}`
+                        : ""}
+                    </span>
+                  </>
+                )}
               </div>
 
               <div className="space-y-2">
