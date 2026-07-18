@@ -131,17 +131,10 @@ export default function PermissionForm({
       }
     }
 
-    // Validasi Lampiran File / Link
     if (showAttachmentUI) {
       if (attachmentMethod === "link" && !attachmentLink.trim()) {
         alert(
           `Link ${category === "Dinas" ? "Surat Tugas" : "Bukti Surat Dokter"} wajib diisi!`,
-        );
-        return;
-      }
-      if (attachmentMethod === "file" && !states.file) {
-        alert(
-          `File ${category === "Dinas" ? "Surat Tugas" : "Bukti Surat Dokter"} wajib diunggah!`,
         );
         return;
       }
