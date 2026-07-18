@@ -14,6 +14,8 @@ export interface AttendanceLog {
   status: string;
   leaveType?: string | null;
   partialLeave?: any;
+  isLateApproved?: boolean;
+  isEarlyApproved?: boolean;
 }
 
 export interface EmployeeReport {

@@ -1,8 +1,6 @@
-// lib/excel-helper.ts
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 
-// Type definitions
 interface AttendanceLog {
   date: string;
   dayName: string;
@@ -13,6 +11,8 @@ interface AttendanceLog {
   out: string | null;
   lateDuration: string;
   earlyLeaveDuration: string;
+  isLateApproved?: boolean; // ✨
+  isEarlyApproved?: boolean; // ✨
   isAbsent: boolean;
   status: string;
   leaveType?: string | null;
@@ -36,30 +36,28 @@ interface EmployeeReport {
   logs: AttendanceLog[];
 }
 
-// Helper untuk menentukan warna berdasarkan tipe cuti/izin
 const getStatusStyle = (
   leaveType: string | null,
   leaveCategory?: string | null,
 ) => {
   if (!leaveType) return null;
 
-  // Default colors
-  let bgColor = "FFEEEEEE"; // abu-abu muda
+  let bgColor = "FFEEEEEE";
   let textColor = "FF000000";
 
   const category = (leaveCategory || "").toLowerCase();
   const type = leaveType.toLowerCase();
 
   if (type === "cuti") {
-    bgColor = "FFD9EAF7"; // biru muda
-    textColor = "FF1E429F"; // biru tua
+    bgColor = "FFD9EAF7";
+    textColor = "FF1E429F";
   } else if (type === "izin") {
     if (category.includes("sakit")) {
-      bgColor = "FFDCF5E6"; // hijau muda
-      textColor = "FF0E6245"; // hijau tua
+      bgColor = "FFDCF5E6";
+      textColor = "FF0E6245";
     } else {
-      bgColor = "FFF0E6F7"; // ungu muda
-      textColor = "FF6A0DAD"; // ungu tua
+      bgColor = "FFF0E6F7";
+      textColor = "FF6A0DAD";
     }
   }
   return { bgColor, textColor };
@@ -91,15 +89,15 @@ export const exportAttendanceToExcel = async (
     { width: 11 },
     { width: 7 },
     { width: 7 },
-    { width: 7 },
-    { width: 7 },
+    { width: 10 },
+    { width: 10 },
     { width: 2 },
     { width: 4 },
     { width: 11 },
     { width: 7 },
     { width: 7 },
-    { width: 7 },
-    { width: 7 },
+    { width: 10 },
+    { width: 10 },
   ];
 
   let currentRow = 1;
@@ -126,13 +124,13 @@ export const exportAttendanceToExcel = async (
     return days[dayName] || dayName.toUpperCase();
   };
 
-  const formatTime = (time: string) => (time ? time.substring(0, 5) : "");
+  const formatTime = (time: string | null) =>
+    time ? time.substring(0, 5) : "";
 
   for (let i = 0; i < dataToExport.length; i += 2) {
     const emp1 = dataToExport[i];
     const emp2 = dataToExport[i + 1];
 
-    // HEADER ORANG 1
     const shiftText1 = `${emp1.isGuruRole ? "GURU" : "STAFF"} 22 HARI KERJA : ${formatTime(emp1.checkIn)}-${formatTime(emp1.checkOut)} / ${emp1.isGuruRole ? "PARENTING 08:00-11:30" : `SABTU ${formatTime(emp1.checkIn)}-${formatTime(emp1.checkOut)}`}`;
     worksheet.mergeCells(`A${currentRow}:F${currentRow}`);
     const shiftCell1 = worksheet.getCell(`A${currentRow}`);
@@ -140,7 +138,6 @@ export const exportAttendanceToExcel = async (
     shiftCell1.font = { bold: true, size: 8, name: "Arial" };
     shiftCell1.alignment = { horizontal: "center", vertical: "middle" };
 
-    // HEADER ORANG 2
     if (emp2) {
       const shiftText2 = `${emp2.isGuruRole ? "GURU" : "STAFF"} 22 HARI KERJA : ${formatTime(emp2.checkIn)}-${formatTime(emp2.checkOut)} / ${emp2.isGuruRole ? "PARENTING 08:00-11:30" : `SABTU ${formatTime(emp2.checkIn)}-${formatTime(emp2.checkOut)}`}`;
       worksheet.mergeCells(`H${currentRow}:M${currentRow}`);
@@ -151,7 +148,6 @@ export const exportAttendanceToExcel = async (
     }
     currentRow++;
 
-    // NAMA
     worksheet.mergeCells(`A${currentRow}:F${currentRow}`);
     worksheet.getCell(`A${currentRow}`).value =
       `${emp1.name.toUpperCase()}/${emp1.niy || "-"}/${emp1.jabatan?.toUpperCase() || "-"}`;
@@ -173,7 +169,6 @@ export const exportAttendanceToExcel = async (
     }
     currentRow++;
 
-    // TABLE HEADERS
     const headers = [
       "DAYS",
       "DATE",
@@ -212,14 +207,11 @@ export const exportAttendanceToExcel = async (
       const row = worksheet.getRow(currentRow);
       row.height = 12.5;
 
-      // ============================================
-      // RENDER ORANG 1
-      // ============================================
+      // === RENDER ORANG 1 ===
       if (log1) {
         row.getCell(1).value = d + 1;
         row.getCell(2).value = log1.date;
 
-        // Tentukan sel target untuk merge (kolom C sampai F)
         let targetCell = row.getCell(3);
         let mergeRange = `C${currentRow}:F${currentRow}`;
 
@@ -235,14 +227,12 @@ export const exportAttendanceToExcel = async (
           targetCell.fill = {
             type: "pattern",
             pattern: "solid",
-            fgColor: { argb: "FFFFE6E6" }, // merah muda
+            fgColor: { argb: "FFFFE6E6" },
           };
         } else if (log1.leaveType && !log1.in) {
           const style = getStatusStyle(log1.leaveType, log1.leaveCategory);
           let leaveText = log1.leaveType;
-          if (log1.leaveCategory) {
-            leaveText += ` (${log1.leaveCategory})`;
-          }
+          if (log1.leaveCategory) leaveText += ` (${log1.leaveCategory})`;
           targetCell.value = leaveText;
           worksheet.mergeCells(mergeRange);
           if (style) {
@@ -257,8 +247,6 @@ export const exportAttendanceToExcel = async (
               pattern: "solid",
               fgColor: { argb: style.bgColor },
             };
-          } else {
-            targetCell.font = { bold: true, size: 8, name: "Arial" };
           }
         } else if (!log1.in && log1.status === "ALPHA") {
           targetCell.value = "ALPA";
@@ -283,34 +271,44 @@ export const exportAttendanceToExcel = async (
           worksheet.mergeCells(mergeRange);
           targetCell.font = {
             bold: true,
-            color: { argb: "FFB45F06" }, // oranye tua
+            color: { argb: "FFB45F06" },
             size: 8,
             name: "Arial",
           };
           targetCell.fill = {
             type: "pattern",
             pattern: "solid",
-            fgColor: { argb: "FFFFE5CC" }, // oranye muda
+            fgColor: { argb: "FFFFE5CC" },
           };
         } else {
-          // Normal hadir atau setengah hari (ada tap)
           row.getCell(3).value = log1.in ? log1.in.substring(0, 5) : "-";
           row.getCell(4).value = log1.out ? log1.out.substring(0, 5) : "-";
+
+          // ✨ Cek status izin untuk LATE
           row.getCell(5).value =
-            log1.lateDuration !== "-" ? log1.lateDuration : "-";
+            log1.isLateApproved && log1.lateDuration !== "-"
+              ? `(Izin - ${log1.lateDuration})`
+              : log1.lateDuration !== "-"
+                ? log1.lateDuration
+                : "-";
+
+          // ✨ Cek status izin untuk EARLY
           row.getCell(6).value =
-            log1.earlyLeaveDuration !== "-" ? log1.earlyLeaveDuration : "-";
+            log1.isEarlyApproved && log1.earlyLeaveDuration !== "-"
+              ? `(Izin - ${log1.earlyLeaveDuration})`
+              : log1.earlyLeaveDuration !== "-"
+                ? log1.earlyLeaveDuration
+                : "-";
 
           if (log1.partialLeave) {
-            const note = `${log1.partialLeave.type}: ${log1.partialLeave.timeRange}`;
-            row.getCell(3).note = note;
+            row.getCell(3).note =
+              `${log1.partialLeave.type}: ${log1.partialLeave.timeRange}`;
           }
         }
       } else {
         for (let col = 1; col <= 6; col++) row.getCell(col).value = "-";
       }
 
-      // Apply border dan alignment untuk kolom 1-6
       for (let c = 1; c <= 6; c++) {
         const cell = row.getCell(c);
         if (!cell.font) cell.font = { size: 8, name: "Arial" };
@@ -318,9 +316,7 @@ export const exportAttendanceToExcel = async (
         applyBorder(cell);
       }
 
-      // ============================================
-      // RENDER ORANG 2
-      // ============================================
+      // === RENDER ORANG 2 ===
       if (emp2) {
         if (log2) {
           row.getCell(8).value = d + 1;
@@ -346,9 +342,7 @@ export const exportAttendanceToExcel = async (
           } else if (log2.leaveType && !log2.in) {
             const style = getStatusStyle(log2.leaveType, log2.leaveCategory);
             let leaveText = log2.leaveType;
-            if (log2.leaveCategory) {
-              leaveText += ` (${log2.leaveCategory})`;
-            }
+            if (log2.leaveCategory) leaveText += ` (${log2.leaveCategory})`;
             targetCell.value = leaveText;
             worksheet.mergeCells(mergeRange);
             if (style) {
@@ -363,8 +357,6 @@ export const exportAttendanceToExcel = async (
                 pattern: "solid",
                 fgColor: { argb: style.bgColor },
               };
-            } else {
-              targetCell.font = { bold: true, size: 8, name: "Arial" };
             }
           } else if (!log2.in && log2.status === "ALPHA") {
             targetCell.value = "ALPA";
@@ -401,14 +393,26 @@ export const exportAttendanceToExcel = async (
           } else {
             row.getCell(10).value = log2.in ? log2.in.substring(0, 5) : "-";
             row.getCell(11).value = log2.out ? log2.out.substring(0, 5) : "-";
+
+            // ✨ Cek status izin untuk LATE
             row.getCell(12).value =
-              log2.lateDuration !== "-" ? log2.lateDuration : "-";
+              log2.isLateApproved && log2.lateDuration !== "-"
+                ? `(Izin - ${log2.lateDuration})`
+                : log2.lateDuration !== "-"
+                  ? log2.lateDuration
+                  : "-";
+
+            // ✨ Cek status izin untuk EARLY
             row.getCell(13).value =
-              log2.earlyLeaveDuration !== "-" ? log2.earlyLeaveDuration : "-";
+              log2.isEarlyApproved && log2.earlyLeaveDuration !== "-"
+                ? `(Izin - ${log2.earlyLeaveDuration})`
+                : log2.earlyLeaveDuration !== "-"
+                  ? log2.earlyLeaveDuration
+                  : "-";
 
             if (log2.partialLeave) {
-              const note = `${log2.partialLeave.type}: ${log2.partialLeave.timeRange}`;
-              row.getCell(10).note = note;
+              row.getCell(10).note =
+                `${log2.partialLeave.type}: ${log2.partialLeave.timeRange}`;
             }
           }
         } else {

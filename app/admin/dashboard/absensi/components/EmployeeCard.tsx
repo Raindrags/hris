@@ -153,8 +153,14 @@ export function EmployeeCard({ emp }: EmployeeCardProps) {
                         <span className="text-gray-600">-</span>
                       )}
                     </TableCell>
+
+                    {/* ✨ Modifikasi UI: Kolom Telat */}
                     <TableCell className="text-center font-medium">
-                      {log.lateDuration && log.lateDuration !== "-" ? (
+                      {log.isLateApproved && log.lateDuration !== "-" ? (
+                        <span className="text-emerald-400 bg-emerald-900/20 border border-emerald-900/50 px-2 py-1 rounded text-sm whitespace-nowrap">
+                          (Izin - {log.lateDuration})
+                        </span>
+                      ) : log.lateDuration && log.lateDuration !== "-" ? (
                         <span className="text-red-400 bg-red-900/20 px-2 py-1 rounded text-sm">
                           {log.lateDuration}
                         </span>
@@ -162,9 +168,15 @@ export function EmployeeCard({ emp }: EmployeeCardProps) {
                         <span className="text-gray-600">-</span>
                       )}
                     </TableCell>
+
+                    {/* ✨ Modifikasi UI: Kolom Awal Pulang */}
                     <TableCell className="text-center font-medium">
-                      {log.earlyLeaveDuration &&
-                      log.earlyLeaveDuration !== "-" ? (
+                      {log.isEarlyApproved && log.earlyLeaveDuration !== "-" ? (
+                        <span className="text-emerald-400 bg-emerald-900/20 border border-emerald-900/50 px-2 py-1 rounded text-sm whitespace-nowrap">
+                          (Izin - {log.earlyLeaveDuration})
+                        </span>
+                      ) : log.earlyLeaveDuration &&
+                        log.earlyLeaveDuration !== "-" ? (
                         <span className="text-orange-400 bg-orange-900/20 px-2 py-1 rounded text-sm">
                           {log.earlyLeaveDuration}
                         </span>
