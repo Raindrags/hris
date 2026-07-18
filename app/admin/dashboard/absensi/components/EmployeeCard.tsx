@@ -154,11 +154,10 @@ export function EmployeeCard({ emp }: EmployeeCardProps) {
                       )}
                     </TableCell>
 
-                    {/* ✨ Modifikasi UI: Kolom Telat */}
                     <TableCell className="text-center font-medium">
                       {log.isLateApproved && log.lateDuration !== "-" ? (
                         <span className="text-emerald-400 bg-emerald-900/20 border border-emerald-900/50 px-2 py-1 rounded text-sm whitespace-nowrap">
-                          (Izin - {log.lateDuration})
+                          izin - {log.lateDuration}
                         </span>
                       ) : log.lateDuration && log.lateDuration !== "-" ? (
                         <span className="text-red-400 bg-red-900/20 px-2 py-1 rounded text-sm">
@@ -169,11 +168,10 @@ export function EmployeeCard({ emp }: EmployeeCardProps) {
                       )}
                     </TableCell>
 
-                    {/* ✨ Modifikasi UI: Kolom Awal Pulang */}
                     <TableCell className="text-center font-medium">
                       {log.isEarlyApproved && log.earlyLeaveDuration !== "-" ? (
                         <span className="text-emerald-400 bg-emerald-900/20 border border-emerald-900/50 px-2 py-1 rounded text-sm whitespace-nowrap">
-                          (Izin - {log.earlyLeaveDuration})
+                          izin - {log.earlyLeaveDuration}
                         </span>
                       ) : log.earlyLeaveDuration &&
                         log.earlyLeaveDuration !== "-" ? (

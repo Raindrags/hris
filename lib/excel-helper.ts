@@ -1,3 +1,4 @@
+// lib/excel-helper.ts
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 
@@ -11,8 +12,8 @@ interface AttendanceLog {
   out: string | null;
   lateDuration: string;
   earlyLeaveDuration: string;
-  isLateApproved?: boolean; // ✨
-  isEarlyApproved?: boolean; // ✨
+  isLateApproved?: boolean;
+  isEarlyApproved?: boolean;
   isAbsent: boolean;
   status: string;
   leaveType?: string | null;
@@ -209,7 +210,7 @@ export const exportAttendanceToExcel = async (
 
       // === RENDER ORANG 1 ===
       if (log1) {
-        row.getCell(1).value = d + 1;
+        row.getCell(1).value = d + 1; // Penomoran hari bekerja berurutan tanpa hari minggu
         row.getCell(2).value = log1.date;
 
         let targetCell = row.getCell(3);
@@ -284,18 +285,16 @@ export const exportAttendanceToExcel = async (
           row.getCell(3).value = log1.in ? log1.in.substring(0, 5) : "-";
           row.getCell(4).value = log1.out ? log1.out.substring(0, 5) : "-";
 
-          // ✨ Cek status izin untuk LATE
           row.getCell(5).value =
             log1.isLateApproved && log1.lateDuration !== "-"
-              ? `(Izin - ${log1.lateDuration})`
+              ? `izin - ${log1.lateDuration}`
               : log1.lateDuration !== "-"
                 ? log1.lateDuration
                 : "-";
 
-          // ✨ Cek status izin untuk EARLY
           row.getCell(6).value =
             log1.isEarlyApproved && log1.earlyLeaveDuration !== "-"
-              ? `(Izin - ${log1.earlyLeaveDuration})`
+              ? `izin - ${log1.earlyLeaveDuration}`
               : log1.earlyLeaveDuration !== "-"
                 ? log1.earlyLeaveDuration
                 : "-";
@@ -306,6 +305,7 @@ export const exportAttendanceToExcel = async (
           }
         }
       } else {
+        // Jika pegawai ini tidak punya data di hari itu (misal Guru di hari Sabtu), render strip
         for (let col = 1; col <= 6; col++) row.getCell(col).value = "-";
       }
 
@@ -394,18 +394,16 @@ export const exportAttendanceToExcel = async (
             row.getCell(10).value = log2.in ? log2.in.substring(0, 5) : "-";
             row.getCell(11).value = log2.out ? log2.out.substring(0, 5) : "-";
 
-            // ✨ Cek status izin untuk LATE
             row.getCell(12).value =
               log2.isLateApproved && log2.lateDuration !== "-"
-                ? `(Izin - ${log2.lateDuration})`
+                ? `izin - ${log2.lateDuration}`
                 : log2.lateDuration !== "-"
                   ? log2.lateDuration
                   : "-";
 
-            // ✨ Cek status izin untuk EARLY
             row.getCell(13).value =
               log2.isEarlyApproved && log2.earlyLeaveDuration !== "-"
-                ? `(Izin - ${log2.earlyLeaveDuration})`
+                ? `izin - ${log2.earlyLeaveDuration}`
                 : log2.earlyLeaveDuration !== "-"
                   ? log2.earlyLeaveDuration
                   : "-";
@@ -416,6 +414,7 @@ export const exportAttendanceToExcel = async (
             }
           }
         } else {
+          // Jika pegawai ini tidak punya data di hari itu (misal Guru di hari Sabtu), render strip
           for (let col = 8; col <= 13; col++) row.getCell(col).value = "-";
         }
 
