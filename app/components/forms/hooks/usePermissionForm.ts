@@ -36,7 +36,6 @@ export const usePermissionForm = ({
   const [reason, setReason] = useState<string>("");
   const [file, setFile] = useState<File | null>(null);
 
-  // 🆕 State baru untuk Dinas & Izin Keluar
   const [returnTime, setReturnTime] = useState<string>("");
   const [attachmentLink, setAttachmentLink] = useState<string>("");
 
@@ -54,22 +53,17 @@ export const usePermissionForm = ({
 
   const filteredSubstitutes = safeSubstitutesList.filter((sub) => {
     if (sub.id === user?.id) return false;
-
     const myDivisi = user?.divisi;
     const subDivisi = sub?.divisi;
-
     const myDivisiName =
       typeof myDivisi === "object" && myDivisi !== null
         ? myDivisi.name
         : myDivisi;
-
     const subDivisiName =
       typeof subDivisi === "object" && subDivisi !== null
         ? subDivisi.name
         : subDivisi;
-
     if (!myDivisiName || !subDivisiName) return false;
-
     return (
       String(subDivisiName).toLowerCase() === String(myDivisiName).toLowerCase()
     );
@@ -84,11 +78,11 @@ export const usePermissionForm = ({
         let holidaysArray: string[] = [];
         if (Array.isArray(data)) {
           holidaysArray = data.map((item: any) =>
-            typeof item === "string" ? item : item.date ?? item.tanggal,
+            typeof item === "string" ? item : (item.date ?? item.tanggal),
           );
         } else if (data?.data && Array.isArray(data.data)) {
           holidaysArray = data.data.map((item: any) =>
-            typeof item === "string" ? item : item.date ?? item.tanggal,
+            typeof item === "string" ? item : (item.date ?? item.tanggal),
           );
         }
         setHolidays(holidaysArray);
@@ -108,11 +102,11 @@ export const usePermissionForm = ({
         let daysArray: string[] = [];
         if (Array.isArray(data)) {
           daysArray = data.map((item: any) =>
-            typeof item === "string" ? item : item.date ?? item.tanggal,
+            typeof item === "string" ? item : (item.date ?? item.tanggal),
           );
         } else if (data?.data && Array.isArray(data.data)) {
           daysArray = data.data.map((item: any) =>
-            typeof item === "string" ? item : item.date ?? item.tanggal,
+            typeof item === "string" ? item : (item.date ?? item.tanggal),
           );
         }
         setSpecialWorkDays(daysArray);
@@ -121,65 +115,6 @@ export const usePermissionForm = ({
       }
     };
     fetchSpecialWorkDays();
-  }, []);
-
-  useEffect(() => {
-    if (category === "IzinKhusus" && subCategory && startDate) {
-      const newEndDate = new Date(startDate);
-      let isAutoSet = true;
-      switch (subCategory) {
-        case "IstriMelahirkan":
-        case "MenikahkanAnak":
-          newEndDate.setDate(newEndDate.getDate() + 1);
-          break;
-        case "Menikah":
-        case "KeluargaMeninggal":
-          newEndDate.setDate(newEndDate.getDate() + 4);
-          break;
-        case "WisudaBaptis":
-        case "Bencana":
-          break;
-        case "Melahirkan":
-          newEndDate.setMonth(newEndDate.getMonth() + 1);
-          newEndDate.setDate(newEndDate.getDate() - 1);
-          break;
-        default:
-          isAutoSet = false;
-          break;
-      }
-      if (isAutoSet) setEndDate(newEndDate);
-    }
-  }, [category, subCategory, startDate]);
-
-  useEffect(() => {
-    const fetchSubstitutes = async () => {
-      try {
-        const res = await fetch("/api/users");
-        if (!res.ok) throw new Error("Gagal fetch users");
-        const responseData = await res.json();
-
-        let usersData: SubstituteUser[] = [];
-
-        if (Array.isArray(responseData)) {
-          usersData = responseData;
-        } else if (responseData?.data && Array.isArray(responseData.data)) {
-          usersData = responseData.data;
-        } else if (
-          responseData?.data?.data &&
-          Array.isArray(responseData.data.data)
-        ) {
-          usersData = responseData.data.data;
-        } else if (responseData?.users && Array.isArray(responseData.users)) {
-          usersData = responseData.users;
-        }
-
-        setSubstitutesList(usersData);
-      } catch (error) {
-        console.error("Gagal menarik data rekan pengganti:", error);
-        setSubstitutesList([]);
-      }
-    };
-    fetchSubstitutes();
   }, []);
 
   const isHolidayOrSunday = (date: Date) => {
@@ -191,6 +126,78 @@ export const usePermissionForm = ({
     if (date.getDay() === 0) return true;
     return holidays.includes(dateString);
   };
+
+  // LOGIKA MENGHITUNG OTOMATIS END DATE UNTUK IZIN KHUSUS
+  useEffect(() => {
+    if (category === "IzinKhusus" && subCategory && startDate) {
+      // 🔄 REVISI: Disesuaikan dengan tabel Pasal 47
+      const daysMap: Record<string, number> = {
+        "Pegawai menikah (5 Hari)": 5,
+        "Pegawai menikahkan anaknya (2 Hari)": 2,
+        "Pegawai mengkhitankan/membaptiskan anaknya/Wisuda/meja hijau (1 Hari)": 1,
+        "Istri pegawai melahirkan/keguguran kandungan (2 Hari)": 2,
+        "Suami/istri/anak/orang tua/mertua/menantu/saudara kandung meninggal dunia (5 Hari)": 5,
+        "Force Majeur/musibah bencana alam (1 Hari)": 1,
+      };
+
+      const duration = daysMap[subCategory] || 1;
+      const divisiName =
+        typeof user?.divisi === "object" && user?.divisi !== null
+          ? user.divisi.name
+          : user?.divisi;
+      const isTeacher = String(divisiName || "")
+        .toLowerCase()
+        .includes("guru");
+
+      let currentDate = new Date(startDate);
+      let daysCount = 1;
+
+      while (daysCount < duration) {
+        currentDate.setDate(currentDate.getDate() + 1);
+        const isSaturday = currentDate.getDay() === 6;
+        const isSunday = currentDate.getDay() === 0;
+        const isHoliday = isHolidayOrSunday(currentDate);
+        const isOff = isHoliday || isSunday || (isTeacher && isSaturday);
+        if (!isOff) {
+          daysCount++;
+        }
+      }
+      setEndDate(new Date(currentDate));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    category,
+    subCategory,
+    startDate,
+    user.divisi,
+    holidays,
+    specialWorkDays,
+  ]);
+
+  useEffect(() => {
+    const fetchSubstitutes = async () => {
+      try {
+        const res = await fetch("/api/users");
+        if (!res.ok) throw new Error("Gagal fetch users");
+        const responseData = await res.json();
+        let usersData: SubstituteUser[] = [];
+        if (Array.isArray(responseData)) usersData = responseData;
+        else if (responseData?.data && Array.isArray(responseData.data))
+          usersData = responseData.data;
+        else if (
+          responseData?.data?.data &&
+          Array.isArray(responseData.data.data)
+        )
+          usersData = responseData.data.data;
+        else if (responseData?.users && Array.isArray(responseData.users))
+          usersData = responseData.users;
+        setSubstitutesList(usersData);
+      } catch (error) {
+        setSubstitutesList([]);
+      }
+    };
+    fetchSubstitutes();
+  }, []);
 
   const calculatedDays = useMemo(() => {
     if (!startDate || !endDate) return 0;
@@ -219,17 +226,20 @@ export const usePermissionForm = ({
       formDataObj.append("endDate", new Date(payload.endDate).toISOString());
       formDataObj.append("reason", payload.reason);
       formDataObj.append("category", payload.category);
-      
-      if (payload.subCategory) formDataObj.append("subCategory", payload.subCategory);
+
+      if (payload.subCategory)
+        formDataObj.append("subCategory", payload.subCategory);
       if (payload.time) formDataObj.append("time", payload.time);
       if (payload.file) formDataObj.append("file", payload.file);
       if (userId) formDataObj.append("userId", userId);
-      if (payload.delegatedToId) formDataObj.append("delegatedToId", payload.delegatedToId);
-      if (payload.taskDetail) formDataObj.append("taskDetail", payload.taskDetail);
-      
-      // 🛠️ TAMBAHKAN APPEND KE FORMDATA UNTUK FITUR BARU
-      if (payload.returnTime) formDataObj.append("returnTime", payload.returnTime);
-      if (payload.attachmentLink) formDataObj.append("attachmentLink", payload.attachmentLink);
+      if (payload.delegatedToId)
+        formDataObj.append("delegatedToId", payload.delegatedToId);
+      if (payload.taskDetail)
+        formDataObj.append("taskDetail", payload.taskDetail);
+      if (payload.returnTime)
+        formDataObj.append("returnTime", payload.returnTime);
+      if (payload.attachmentLink)
+        formDataObj.append("attachmentLink", payload.attachmentLink);
 
       const res = await fetch("/api/izin", {
         method: "POST",
@@ -253,6 +263,7 @@ export const usePermissionForm = ({
     }
   };
 
+  // 🔴 SEMUA VALIDASI DISATUKAN DI SINI
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!startDate || !endDate)
@@ -260,20 +271,38 @@ export const usePermissionForm = ({
     if (calculatedDays < 0)
       return toast.error("Tanggal selesai tidak boleh sebelum tanggal mulai.");
     if (!category) return toast.error("Mohon pilih jenis izin.");
-    if (category === "IzinKhusus" && !subCategory)
-      return toast.error("Mohon pilih detail izin khusus.");
-    
-    // 🛠️ Validasi Waktu
-    if (["Terlambat", "PulangAwal", "IzinKeluar"].includes(category) && !timeValue)
-      return toast.error("Mohon masukkan jam keluar/masuk.");
-    if (category === "IzinKeluar" && !returnTime)
-      return toast.error("Mohon masukkan jam kembali untuk Izin Keluar.");
 
-    // 🛠️ Validasi Lampiran File
-    if (category === "Sakit" && calculatedDays > 1 && !file)
-      return toast.error("Mohon lampirkan surat dokter untuk izin sakit > 1 hari.");
-    if (category === "Dinas" && !file && !attachmentLink)
-      return toast.error("Surat tugas (file atau link) wajib dilampirkan untuk Dinas Luar.");
+    if (category === "IzinKhusus" && !subCategory) {
+      return toast.error("Kategori Izin Khusus wajib dipilih.");
+    }
+
+    if (
+      ["Terlambat", "PulangAwal", "IzinKeluar"].includes(category) &&
+      !timeValue
+    ) {
+      return toast.error("Mohon masukkan jam keluar/masuk.");
+    }
+
+    if (category === "IzinKeluar" && !returnTime) {
+      return toast.error("Mohon masukkan jam kembali untuk Izin Keluar.");
+    }
+
+    if (
+      category === "Sakit" &&
+      calculatedDays > 1 &&
+      !file &&
+      !attachmentLink
+    ) {
+      return toast.error(
+        "Bukti Surat Dokter (file atau link) wajib dilampirkan untuk izin sakit > 1 hari.",
+      );
+    }
+
+    if (category === "Dinas" && !file && !attachmentLink) {
+      return toast.error(
+        "Surat tugas (file atau link) wajib dilampirkan untuk Dinas Luar.",
+      );
+    }
 
     if (!reason.trim()) return toast.error("Mohon isi keterangan lengkap.");
 
@@ -283,20 +312,16 @@ export const usePermissionForm = ({
       reason,
       category,
       subCategory: category === "IzinKhusus" ? subCategory : null,
-      
-      // 🛠️ Update Payload Mapping
-      time: ["Terlambat", "PulangAwal", "IzinKeluar"].includes(category) ? timeValue : null,
+      time: ["Terlambat", "PulangAwal", "IzinKeluar"].includes(category)
+        ? timeValue
+        : null,
       returnTime: category === "IzinKeluar" ? returnTime : null,
-      attachmentLink: category === "Dinas" ? attachmentLink : null,
-      
-      // File dikirim kalau dia Sakit > 1 hari ATAU kalau dia Dinas
-      file: (category === "Sakit" && calculatedDays > 1) || category === "Dinas" ? file : null,
-      
+      attachmentLink: attachmentLink || null,
+      file: file || null,
       delegatedToId: delegatedTo || null,
       taskDetail: taskDetail || null,
     };
 
-    // Peringatan Warning untuk Izin Pribadi & Izin Keluar
     if (category === "Izin" || category === "IzinKeluar") {
       setPendingPayload(finalData);
       setShowWarning(true);
@@ -312,22 +337,12 @@ export const usePermissionForm = ({
     if (!["Terlambat", "PulangAwal", "IzinKeluar"].includes(safeVal)) {
       setTimeValue("");
     }
-    // 🛠️ Reset field jika pindah kategori
     setReturnTime("");
     setAttachmentLink("");
     setFile(null);
   };
 
-  const isAutoEndDate =
-    category === "IzinKhusus" &&
-    [
-      "IstriMelahirkan",
-      "Menikah",
-      "WisudaBaptis",
-      "MenikahkanAnak",
-      "KeluargaMeninggal",
-      "Melahirkan",
-    ].includes(subCategory);
+  const isAutoEndDate = category === "IzinKhusus";
 
   return {
     states: {
@@ -337,8 +352,8 @@ export const usePermissionForm = ({
       category,
       subCategory,
       timeValue,
-      returnTime,       // 🆕 Export
-      attachmentLink,   // 🆕 Export
+      returnTime,
+      attachmentLink,
       reason,
       delegatedTo,
       taskDetail,
@@ -353,8 +368,8 @@ export const usePermissionForm = ({
       setEndDate,
       setSubCategory,
       setTimeValue,
-      setReturnTime,     // 🆕 Export
-      setAttachmentLink, // 🆕 Export
+      setReturnTime,
+      setAttachmentLink,
       setReason,
       setFile,
       setDelegatedTo,

@@ -69,6 +69,7 @@ export default function PermissionForm({
     startDate,
     endDate,
     category,
+    subCategory,
     timeValue,
     returnTime,
     attachmentLink,
@@ -82,6 +83,7 @@ export default function PermissionForm({
   const {
     setStartDate,
     setEndDate,
+    setSubCategory,
     setTimeValue,
     setReturnTime,
     setAttachmentLink,
@@ -90,29 +92,24 @@ export default function PermissionForm({
     setPendingPayload,
     handleCategoryChange,
     isHolidayOrSunday,
-    handleSubmit,
+    handleSubmit, // Langsung diteruskan ke Form
     processSubmit,
     setShowWarning,
   } = actions;
 
-  // Mengubah nama agar lebih umum digunakan untuk Dinas dan Sakit
+  // Attachment Method murni untuk toggle UI tampilan file vs link. Validasi diurus hooks.
   const [attachmentMethod, setAttachmentMethod] = useState<"file" | "link">(
     "file",
   );
+
   const isHourlyPermission = ["Terlambat", "PulangAwal", "IzinKeluar"].includes(
     category,
   );
-
-  // Variabel untuk menampilkan opsi upload dokumen (Dinas atau Sakit > 2 hari)
   const showAttachmentUI =
     category === "Dinas" || (category === "Sakit" && calculatedDays > 1);
 
   const onCategorySelect = (val: string | null) => {
     handleCategoryChange(val);
-    setReturnTime("");
-    setAttachmentLink("");
-    setFile(null); // Reset file bawaan hook
-
     if (val === "IzinKeluar") {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -121,31 +118,9 @@ export default function PermissionForm({
     }
   };
 
-  const onFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    if (category === "IzinKeluar") {
-      if (!timeValue || !returnTime) {
-        alert("Jam Keluar dan Jam Kembali wajib diisi!");
-        return;
-      }
-    }
-
-    if (showAttachmentUI) {
-      if (attachmentMethod === "link" && !attachmentLink.trim()) {
-        alert(
-          `Link ${category === "Dinas" ? "Surat Tugas" : "Bukti Surat Dokter"} wajib diisi!`,
-        );
-        return;
-      }
-    }
-
-    handleSubmit(e);
-  };
-
   return (
     <>
-      <form onSubmit={onFormSubmit} className="space-y-4 px-1 pb-4">
+      <form onSubmit={handleSubmit} className="space-y-4 px-1 pb-4">
         {/* INFO USER */}
         <div className="bg-slate-900/50 p-3 rounded-md text-sm border border-slate-700 space-y-1 text-slate-200">
           <div className="flex justify-between items-center">
@@ -289,6 +264,40 @@ export default function PermissionForm({
           </Select>
         </div>
 
+        {/* TIPE IZIN KHUSUS - Bind Langsung ke setSubCategory */}
+        {category === "IzinKhusus" && (
+          <div className="space-y-2">
+            <Label className="text-slate-300">Kategori Izin Khusus</Label>
+            <Select value={subCategory} onValueChange={setSubCategory} required>
+              <SelectTrigger className="bg-slate-900 border-slate-700 text-slate-100">
+                <SelectValue placeholder="Pilih kategori izin khusus" />
+              </SelectTrigger>
+              <SelectContent className="bg-slate-800 border-slate-700 text-slate-100">
+                <SelectItem value="Pegawai menikah (5 Hari)">
+                  Pegawai menikah (5 Hari)
+                </SelectItem>
+                <SelectItem value="Pegawai menikahkan anaknya (2 Hari)">
+                  Pegawai menikahkan anaknya (2 Hari)
+                </SelectItem>
+                <SelectItem value="Pegawai mengkhitankan/membaptiskan anaknya/Wisuda/meja hijau (1 Hari)">
+                  Pegawai mengkhitankan/membaptiskan anaknya/Wisuda/meja hijau
+                  (1 Hari)
+                </SelectItem>
+                <SelectItem value="Istri pegawai melahirkan/keguguran kandungan (2 Hari)">
+                  Istri pegawai melahirkan/keguguran kandungan (2 Hari)
+                </SelectItem>
+                <SelectItem value="Suami/istri/anak/orang tua/mertua/menantu/saudara kandung meninggal dunia (5 Hari)">
+                  Suami/istri/anak/orang tua/mertua/menantu/saudara kandung
+                  meninggal dunia (5 Hari)
+                </SelectItem>
+                <SelectItem value="Force Majeur/musibah bencana alam (1 Hari)">
+                  Force Majeur/musibah bencana alam (1 Hari)
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
         {/* INPUT WAKTU (IZIN KELUAR / JAM-JAMAN) */}
         {isHourlyPermission && (
           <div
@@ -336,7 +345,7 @@ export default function PermissionForm({
           </div>
         )}
 
-        {/* INPUT DOKUMEN KHUSUS DINAS LUAR ATAU SAKIT > 2 HARI */}
+        {/* INPUT DOKUMEN KHUSUS DINAS LUAR ATAU SAKIT > 1 HARI */}
         {showAttachmentUI && (
           <div className="p-3 bg-slate-900/50 rounded-md border border-slate-700 space-y-3">
             <div className="flex justify-between items-center">
@@ -346,7 +355,6 @@ export default function PermissionForm({
                   ? "Dokumen Surat Tugas"
                   : "Bukti Foto Surat Dokter"}
               </Label>
-              {/* Toggle Opsi File / Link */}
               <div className="flex rounded-md border border-slate-700 p-0.5 bg-slate-950 text-xs">
                 <button
                   type="button"
@@ -387,11 +395,10 @@ export default function PermissionForm({
                   <Input
                     type="file"
                     name="file"
-                    // Menambahkan dukungan format foto (.jpg, .jpeg, .png)
                     accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png"
                     onChange={(e) => setFile(e.target.files?.[0] || null)}
                     className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                    required
+                    required={!attachmentLink}
                   />
                   <div className="text-center space-y-1 text-slate-400 group-hover:text-slate-300">
                     <UploadCloud className="h-8 w-8 mx-auto text-slate-500 group-hover:text-blue-400 transition-colors" />
@@ -414,6 +421,7 @@ export default function PermissionForm({
                     value={attachmentLink}
                     onChange={(e) => setAttachmentLink(e.target.value)}
                     className="pl-9 bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-600"
+                    required={!file}
                   />
                 </div>
                 <p className="text-[10px] text-slate-500 pl-1">
@@ -435,10 +443,6 @@ export default function PermissionForm({
             className="bg-slate-900 border-slate-700 text-slate-100 min-h-[80px]"
           />
         </div>
-
-        {/* HIDDEN INPUTS UNTUK COMPATIBILITY FORMDATA HOOK */}
-        <input type="hidden" name="returnTime" value={returnTime} />
-        <input type="hidden" name="attachmentLink" value={attachmentLink} />
 
         <Button
           type="submit"
@@ -497,15 +501,6 @@ export default function PermissionForm({
               className="bg-red-600 hover:bg-red-700 text-white"
               onClick={() => {
                 if (pendingPayload) {
-                  if (category === "IzinKeluar") {
-                    pendingPayload.returnTime = returnTime;
-                  }
-                  if (
-                    category === "Dinas" ||
-                    (category === "Sakit" && calculatedDays > 2)
-                  ) {
-                    pendingPayload.attachmentLink = attachmentLink;
-                  }
                   processSubmit(pendingPayload);
                 }
               }}
