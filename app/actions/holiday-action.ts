@@ -14,7 +14,8 @@ export async function getHolidays() {
 }
 
 export async function createHoliday(data: {
-  date: string;
+  startDate: string;
+  endDate: string;
   description: string;
   userIds?: string[] | null;
 }) {
@@ -33,7 +34,12 @@ export async function createHoliday(data: {
 
 export async function updateHoliday(
   id: string,
-  data: { date?: string; description?: string; userIds?: string[] | null },
+  data: {
+    startDate?: string;
+    endDate?: string;
+    description?: string;
+    userIds?: string[] | null;
+  },
 ) {
   try {
     const res = await fetch(`${API_BASE}/holiday/${id}`, {
