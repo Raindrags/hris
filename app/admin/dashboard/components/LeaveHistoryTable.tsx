@@ -39,13 +39,26 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Clock, Filter, Eye, Calculator, Loader2, Ban } from "lucide-react";
+import {
+  Clock,
+  Filter,
+  Eye,
+  Calculator,
+  Loader2,
+  Ban,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 
 export function LeaveHistoryTable({ leaveHistory, divisions }: any) {
   const router = useRouter();
 
   const [selectedDivisionId, setSelectedDivisionId] = useState<string>("ALL");
   const [selectedRequest, setSelectedRequest] = useState<any | null>(null);
+
+  // State untuk Pagination
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 10;
 
   // State untuk Modal
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -57,12 +70,25 @@ export function LeaveHistoryTable({ leaveHistory, divisions }: any) {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isDiscarding, setIsDiscarding] = useState<boolean>(false);
 
+  // Logika Filter Data
   const filteredHistory =
     selectedDivisionId === "ALL"
       ? leaveHistory
       : leaveHistory.filter(
           (req: any) => req.user.divisi?.id === selectedDivisionId,
         );
+
+  // Logika Pagination
+  const totalPages = Math.ceil(filteredHistory.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedHistory = filteredHistory.slice(startIndex, endIndex);
+
+  // Handler Ganti Filter Divisi
+  const handleDivisionChange = (v: string) => {
+    setSelectedDivisionId(v);
+    setCurrentPage(1); // Reset halaman ke 1 setiap kali filter berubah
+  };
 
   const handleOpenDetail = (req: any) => {
     setSelectedRequest(req);
@@ -155,7 +181,7 @@ export function LeaveHistoryTable({ leaveHistory, divisions }: any) {
               <Filter className="h-4 w-4 text-gray-400 hidden sm:block" />
               <Select
                 value={selectedDivisionId}
-                onValueChange={(v) => setSelectedDivisionId(v ?? "ALL")}
+                onValueChange={(v) => handleDivisionChange(v ?? "ALL")}
               >
                 <SelectTrigger className="w-full sm:w-[200px] bg-gray-800 border-gray-700 text-gray-200">
                   <SelectValue placeholder="Semua Divisi" />
@@ -172,100 +198,161 @@ export function LeaveHistoryTable({ leaveHistory, divisions }: any) {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader className="bg-gray-800/50">
-              <TableRow className="border-gray-800 hover:bg-transparent">
-                <TableHead className="text-gray-300">Pegawai</TableHead>
-                <TableHead className="text-gray-300">Divisi</TableHead>
-                <TableHead className="text-gray-300">Tanggal</TableHead>
-                <TableHead className="text-gray-300">Status</TableHead>
-                <TableHead className="text-gray-300 text-center">
-                  Aksi
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredHistory.map((req: any) => (
-                <TableRow key={req.id} className="border-b border-gray-800">
-                  <TableCell className="font-medium text-white">
-                    {req.user.name}
-                  </TableCell>
-                  <TableCell className="text-gray-400">
-                    {req.user.divisi?.name || "-"}
-                  </TableCell>
-                  <TableCell className="text-gray-300">
-                    {new Date(req.startDate).toLocaleDateString("id-ID")} -{" "}
-                    {new Date(req.endDate).toLocaleDateString("id-ID")}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      className={
-                        req.status === "APPROVED"
-                          ? "bg-emerald-950 text-emerald-400"
-                          : req.status === "REJECTED"
-                            ? "bg-red-950 text-red-400"
-                            : req.status === "CANCELLED"
-                              ? "bg-gray-800 text-gray-400"
-                              : "bg-yellow-950 text-yellow-400"
-                      }
-                    >
-                      {req.status === "APPROVED"
-                        ? "Disetujui"
-                        : req.status === "REJECTED"
-                          ? "Ditolak"
-                          : req.status === "CANCELLED"
-                            ? "Dibatalkan"
-                            : "Pending"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleOpenDetail(req)}
-                        className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/20"
-                      >
-                        <Eye className="h-4 w-4 mr-1" />
-                        Detail
-                      </Button>
-
-                      {/* Logika untuk menyembunyikan tombol denda jika Cuti & Tidak Dipotong */}
-                      {!(
-                        req.type === "CUTI" &&
-                        req.deductionOptions !== "DIPOTONG"
-                      ) && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleOpenDeduction(req)}
-                          className="text-orange-400 hover:text-orange-300 hover:bg-orange-900/20"
+        <CardContent className="p-0 flex flex-col min-h-[400px] justify-between">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-gray-800/50">
+                <TableRow className="border-gray-800 hover:bg-transparent">
+                  <TableHead className="text-gray-300">Pegawai</TableHead>
+                  <TableHead className="text-gray-300">Divisi</TableHead>
+                  <TableHead className="text-gray-300">Tanggal</TableHead>
+                  <TableHead className="text-gray-300">Status</TableHead>
+                  <TableHead className="text-gray-300 text-center">
+                    Aksi
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedHistory.length > 0 ? (
+                  paginatedHistory.map((req: any) => (
+                    <TableRow key={req.id} className="border-b border-gray-800">
+                      <TableCell className="font-medium text-white">
+                        {req.user.name}
+                      </TableCell>
+                      <TableCell className="text-gray-400">
+                        {req.user.divisi?.name || "-"}
+                      </TableCell>
+                      <TableCell className="text-gray-300">
+                        {new Date(req.startDate).toLocaleDateString("id-ID")} -{" "}
+                        {new Date(req.endDate).toLocaleDateString("id-ID")}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          className={
+                            req.status === "APPROVED"
+                              ? "bg-emerald-950 text-emerald-400 hover:bg-emerald-950"
+                              : req.status === "REJECTED"
+                                ? "bg-red-950 text-red-400 hover:bg-red-950"
+                                : req.status === "CANCELLED"
+                                  ? "bg-gray-800 text-gray-400 hover:bg-gray-800"
+                                  : "bg-yellow-950 text-yellow-400 hover:bg-yellow-950"
+                          }
                         >
-                          <Calculator className="h-4 w-4 mr-1" />
-                          Atur Denda
-                        </Button>
-                      )}
-
-                      {/* Tombol Batal hanya muncul jika pengajuan belum Dibatalkan/Ditolak */}
-                      {req.status !== "REJECTED" &&
-                        req.status !== "CANCELLED" && (
+                          {req.status === "APPROVED"
+                            ? "Disetujui"
+                            : req.status === "REJECTED"
+                              ? "Ditolak"
+                              : req.status === "CANCELLED"
+                                ? "Dibatalkan"
+                                : "Pending"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-center gap-2">
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleOpenDiscard(req)}
-                            className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                            onClick={() => handleOpenDetail(req)}
+                            className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/20"
                           >
-                            <Ban className="h-4 w-4 mr-1" />
-                            Batalkan
+                            <Eye className="h-4 w-4 mr-1" />
+                            Detail
                           </Button>
-                        )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+
+                          {/* Logika untuk menyembunyikan tombol denda jika Cuti & Tidak Dipotong */}
+                          {!(
+                            req.type === "CUTI" &&
+                            req.deductionOptions !== "DIPOTONG"
+                          ) && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleOpenDeduction(req)}
+                              className="text-orange-400 hover:text-orange-300 hover:bg-orange-900/20"
+                            >
+                              <Calculator className="h-4 w-4 mr-1" />
+                              Atur Denda
+                            </Button>
+                          )}
+
+                          {/* Tombol Batal hanya muncul jika pengajuan belum Dibatalkan/Ditolak */}
+                          {req.status !== "REJECTED" &&
+                            req.status !== "CANCELLED" && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleOpenDiscard(req)}
+                                className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                              >
+                                <Ban className="h-4 w-4 mr-1" />
+                                Batalkan
+                              </Button>
+                            )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={5}
+                      className="text-center py-6 text-gray-500"
+                    >
+                      Tidak ada data pengajuan yang ditemukan.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Area Pagination Control */}
+          {totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 border-t border-gray-800 gap-4">
+              <div className="text-sm text-gray-400">
+                Menampilkan{" "}
+                <span className="font-medium text-white">{startIndex + 1}</span>{" "}
+                -{" "}
+                <span className="font-medium text-white">
+                  {Math.min(endIndex, filteredHistory.length)}
+                </span>{" "}
+                dari{" "}
+                <span className="font-medium text-white">
+                  {filteredHistory.length}
+                </span>{" "}
+                data
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
+                  disabled={currentPage === 1}
+                  className="bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700 hover:text-white disabled:opacity-50"
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Prev
+                </Button>
+                <div className="text-sm text-gray-400 font-medium px-2">
+                  Halaman {currentPage} / {totalPages}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  }
+                  disabled={currentPage === totalPages}
+                  className="bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700 hover:text-white disabled:opacity-50"
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -544,7 +631,7 @@ export function LeaveHistoryTable({ leaveHistory, divisions }: any) {
         </DialogContent>
       </Dialog>
 
-      {/* 3. Modal Konfirmasi Pembatalan (Baru) */}
+      {/* 3. Modal Konfirmasi Pembatalan */}
       <Dialog open={isDiscardModalOpen} onOpenChange={setIsDiscardModalOpen}>
         <DialogContent className="bg-gray-900 border-gray-800 text-gray-200 sm:max-w-md">
           <DialogHeader>
