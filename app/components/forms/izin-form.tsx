@@ -268,7 +268,11 @@ export default function PermissionForm({
         {category === "IzinKhusus" && (
           <div className="space-y-2">
             <Label className="text-slate-300">Kategori Izin Khusus</Label>
-            <Select value={subCategory} onValueChange={setSubCategory} required>
+            <Select
+              value={subCategory}
+              onValueChange={(val) => setSubCategory(val || "")}
+              required
+            >
               <SelectTrigger className="bg-slate-900 border-slate-700 text-slate-100">
                 <SelectValue placeholder="Pilih kategori izin khusus" />
               </SelectTrigger>
