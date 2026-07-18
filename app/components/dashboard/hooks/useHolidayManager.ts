@@ -24,7 +24,11 @@ export const useHolidayManager = () => {
   // State Form
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [formState, setFormState] = useState({ date: "", description: "" });
+  const [formState, setFormState] = useState({
+    startDate: "",
+    endDate: "",
+    description: "",
+  });
 
   // State Assign Modal
   const [isAssignOpen, setIsAssignOpen] = useState(false);
@@ -78,7 +82,7 @@ export const useHolidayManager = () => {
 
   const resetForm = useCallback(() => {
     setEditingId(null);
-    setFormState({ date: "", description: "" });
+    setFormState({ startDate: "", endDate: "", description: "" });
   }, []);
 
   const toggleForm = useCallback(() => {
@@ -89,7 +93,11 @@ export const useHolidayManager = () => {
   }, [resetForm]);
 
   const handleSave = async () => {
-    if (!formState.date || !formState.description.trim()) {
+    if (
+      !formState.startDate ||
+      !formState.endDate ||
+      !formState.description.trim()
+    ) {
       toast.error("Tanggal dan deskripsi wajib diisi!");
       return;
     }
