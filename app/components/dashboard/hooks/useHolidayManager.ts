@@ -59,7 +59,7 @@ export const useHolidayManager = () => {
 
         // Ekstrak list divisi unik dari data user untuk keperluan dropdown filter
         const uniqueDivs = new Map<string, Division>();
-        fetchedUsers.forEach((u) => {
+        fetchedUsers.forEach((u: any) => {
           if (u.divisi?.id && u.divisi?.name) {
             uniqueDivs.set(u.divisi.id, {
               id: u.divisi.id,
