@@ -105,10 +105,9 @@ export const useHolidayManager = () => {
     setIsLoading(true);
     try {
       const payload = {
-        date: formState.date,
+        startDate: formState.startDate,
+        endDate: formState.endDate,
         description: formState.description.trim(),
-        // Jika sedang mode tambah, otomatis apply ke semua pegawai (null).
-        // Jika mode edit, kita pertahankan userIds sebelumnya kecuali diubah via Assign Modal.
       };
 
       const res = editingId
