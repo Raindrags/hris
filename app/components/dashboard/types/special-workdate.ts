@@ -1,6 +1,7 @@
 export interface SpecialWorkDate {
   id: string;
-  date: string;
+  startDate: string;
+  endDate: string;
   description?: string;
   name?: string;
   checkIn?: string;

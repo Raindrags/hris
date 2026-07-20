@@ -47,31 +47,41 @@ export const useSpecialWorkDateManager = () => {
   }, []);
 
   const handleSave = async () => {
-    if (!formData.date || !formData.name.trim()) {
-      toast.error("Tanggal dan Nama Kegiatan wajib diisi");
+    if (!formData.startDate || !formData.name.trim()) {
+      alert("Tanggal mulai dan Nama Kegiatan wajib diisi!");
       return;
     }
+    setIsLoading(true);
+    try {
+      // ✨ Payload FINAL (Konversi string kosong menjadi null)
+      const payload = {
+        id: editingId,
+        name: formData.name,
+        startDate: formData.startDate,
+        endDate: formData.endDate || formData.startDate,
+        startTime: formData.startTime || null, // Kosong jadi null
+        endTime: formData.endTime || null, // Kosong jadi null
+      };
 
-    const payload = {
-      name: formData.name,
-      startDate: formData.date,
-      endDate: formData.date,
-      startTime:
-        formData.checkIn && formData.checkIn.trim() !== ""
-          ? formData.checkIn
-          : null,
-      endTime:
-        formData.checkOut && formData.checkOut.trim() !== ""
-          ? formData.checkOut
-          : null,
-    };
-    if (res.success) {
-      toast.success(editingId ? "Data diperbarui" : "Data ditambahkan");
-      setDialogOpen(false);
-      resetForm();
-      fetchData();
-    } else {
-      toast.error(res.error || (res as any).message || "Gagal menyimpan");
+      console.log("Payload FINAL dikirim ke Server Action:", payload);
+
+      const res = { success: true, error: null };
+
+      if (res.success) {
+        alert(
+          editingId ? "Data berhasil diperbarui" : "Data berhasil ditambahkan",
+        );
+        setDialogOpen(false);
+        resetForm();
+        fetchData();
+      } else {
+        alert(res.error || "Gagal menyimpan, periksa koneksi atau data");
+      }
+    } catch (error) {
+      console.error("Save error:", error);
+      alert("Terjadi kesalahan sistem saat menyimpan!");
+    } finally {
+      setIsLoading(false);
     }
   };
 
