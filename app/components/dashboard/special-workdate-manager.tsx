@@ -119,7 +119,7 @@ export function SpecialWorkDateManager() {
                       </Badge>
                     ) : (
                       <div className="flex flex-wrap gap-1">
-                        {item.users.slice(0, 2).map((u) => (
+                        {item.users.slice(0, 2).map((u: any) => (
                           <Badge
                             key={u.id}
                             variant="outline"
