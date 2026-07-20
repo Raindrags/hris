@@ -52,7 +52,16 @@ export const RecentRequestsList = ({ requests }: RecentRequestsListProps) => {
                         : "⏳"}
                   </div>
                   <p className="text-sm text-gray-400">
-                    {formatDate(req.startDate)} - {formatDate(req.endDate)}
+                    {formatDate(req.startDate)}
+                    {req.startDate !== req.endDate &&
+                      ` - ${formatDate(req.endDate)}`}
+
+                    {/* ✨ TAMBAHAN DATA JAM DI SINI */}
+                    {req.time && (
+                      <span className="ml-2 px-2 py-0.5 rounded text-xs bg-gray-800 text-amber-400 border border-gray-700">
+                        ⏰ {req.time}
+                      </span>
+                    )}
                   </p>
                 </div>
               </div>
