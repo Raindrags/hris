@@ -8,10 +8,8 @@ import { HolidayTable } from "./subs/HolidayTable";
 import { HolidayAssignModal } from "./subs/HolidayAssignModal";
 
 export function HolidayManager() {
-  // Inisialisasi hook logika yang berisi semua state dan fungsi
   const logic = useHolidayManager();
 
-  // Destructure yang dibutuhkan khusus untuk halaman ini
   const {
     holidays,
     isLoading,

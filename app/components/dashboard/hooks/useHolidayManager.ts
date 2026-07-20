@@ -35,7 +35,7 @@ export const useHolidayManager = () => {
   const [selectedTarget, setSelectedTarget] = useState<Holiday | null>(null);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
 
-  // State Filter & Pagination (Seragam dengan Special Work Date)
+  // State Filter & Pagination
   const [searchTerm, setSearchTerm] = useState("");
   const [divisiFilter, setDivisiFilter] = useState("all");
   const [modalPage, setModalPage] = useState(1);
@@ -49,26 +49,42 @@ export const useHolidayManager = () => {
         getUsers(),
       ]);
 
-      if (holidayRes?.success) {
-        setHolidays(Array.isArray(holidayRes.data) ? holidayRes.data : []);
+      // 1. Baca Data Libur dengan aman
+      if (Array.isArray(holidayRes)) {
+        setHolidays(holidayRes);
+      } else if (holidayRes?.data && Array.isArray(holidayRes.data)) {
+        setHolidays(holidayRes.data);
+      } else {
+        setHolidays([]);
       }
 
-      if (userRes?.success) {
-        const fetchedUsers = Array.isArray(userRes.data) ? userRes.data : [];
-        setUsers(fetchedUsers);
+      // 2. Baca Data Pegawai dari berbagai variasi respons backend
+      let fetchedUsers: UserOption[] = [];
 
-        // Ekstrak list divisi unik dari data user untuk keperluan dropdown filter
-        const uniqueDivs = new Map<string, Division>();
-        fetchedUsers.forEach((u: any) => {
-          if (u.divisi?.id && u.divisi?.name) {
-            uniqueDivs.set(u.divisi.id, {
-              id: u.divisi.id,
-              name: u.divisi.name,
-            });
-          }
-        });
-        setDivisions(Array.from(uniqueDivs.values()));
+      if (Array.isArray(userRes)) {
+        fetchedUsers = userRes;
+      } else if (userRes?.data?.data && Array.isArray(userRes.data.data)) {
+        // ✨ TANGKAPAN BARU: Ternyata datanya sembunyi di dalam data.data!
+        fetchedUsers = userRes.data.data;
+      } else if (userRes?.data && Array.isArray(userRes.data)) {
+        fetchedUsers = userRes.data;
+      } else if (userRes?.users && Array.isArray(userRes.users)) {
+        fetchedUsers = userRes.users;
       }
+
+      setUsers(fetchedUsers);
+
+      // 3. Ekstrak list divisi unik dari data user untuk keperluan dropdown filter
+      const uniqueDivs = new Map<string, Division>();
+      fetchedUsers.forEach((u: any) => {
+        if (u?.divisi?.id && u?.divisi?.name) {
+          uniqueDivs.set(u.divisi.id, {
+            id: String(u.divisi.id),
+            name: u.divisi.name,
+          });
+        }
+      });
+      setDivisions(Array.from(uniqueDivs.values()));
     } catch (error) {
       toast.error("Terjadi kesalahan saat memuat data.");
     } finally {
@@ -104,6 +120,7 @@ export const useHolidayManager = () => {
 
     setIsLoading(true);
     try {
+      // HANYA mengirimkan properti yang diizinkan oleh backend
       const payload = {
         startDate: formState.startDate,
         endDate: formState.endDate,
@@ -114,7 +131,7 @@ export const useHolidayManager = () => {
         ? await updateHoliday(editingId, payload)
         : await createHoliday(payload);
 
-      if (res?.success || res?.id) {
+      if (res?.success || res?.id || (res && !res.error)) {
         toast.success(editingId ? "Libur diperbarui" : "Libur ditambahkan");
         setShowForm(false);
         resetForm();
@@ -135,7 +152,7 @@ export const useHolidayManager = () => {
       endDate: data.endDate || data.date || "",
       description: data.description || "",
     });
-    setEditingId(data.id);
+    setEditingId(data.id || data._id);
     setShowForm(true);
   };
 
@@ -144,7 +161,7 @@ export const useHolidayManager = () => {
     setIsLoading(true);
     try {
       const res = await deleteHoliday(id);
-      if (res?.success) {
+      if (res?.success || (res && !res.error)) {
         toast.success("Libur dihapus");
         fetchData();
       } else {
@@ -170,10 +187,12 @@ export const useHolidayManager = () => {
     if (!selectedTarget) return;
     setIsLoading(true);
     try {
-      const res = await updateHoliday(selectedTarget.id, {
+      const targetId = selectedTarget.id || (selectedTarget as any)._id;
+      const res = await updateHoliday(targetId, {
         userIds: selectedUserIds.length ? selectedUserIds : null,
       });
-      if (res?.success) {
+
+      if (res?.success || res?.id || (res && !res.error)) {
         toast.success("Penugasan pegawai diperbarui");
         setIsAssignOpen(false);
         fetchData();
@@ -205,16 +224,16 @@ export const useHolidayManager = () => {
     }
   };
 
-  // Filter & Pagination Logic
+  // Filter & Pagination Logic (Aman dari null/undefined dan string/number mismatch)
   const filteredEmployees = useMemo(() => {
     const term = searchTerm.toLowerCase();
     return users.filter((emp) => {
       const matchSearch =
-        emp.name.toLowerCase().includes(term) ||
+        (emp.name || "").toLowerCase().includes(term) ||
         (emp.niy || "").toLowerCase().includes(term) ||
         (emp.jabatan || "").toLowerCase().includes(term);
       const matchDivisi =
-        divisiFilter === "all" || emp.divisi?.id === divisiFilter;
+        divisiFilter === "all" || String(emp.divisi?.id) === divisiFilter;
       return matchSearch && matchDivisi;
     });
   }, [users, searchTerm, divisiFilter]);
