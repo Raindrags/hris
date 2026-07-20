@@ -34,6 +34,7 @@ export interface RecentRequest {
   status: "APPROVED" | "REJECTED" | "PENDING" | string;
   startDate: Date | string;
   endDate: Date | string;
+  time?: string | null;
 }
 
 export interface AttendanceSummary {
