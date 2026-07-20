@@ -65,83 +65,91 @@ export const useSpecialWorkDateManager = () => {
           ? formData.checkOut
           : null,
     };
+    if (res.success) {
+      toast.success(editingId ? "Data diperbarui" : "Data ditambahkan");
+      setDialogOpen(false);
+      resetForm();
+      fetchData();
+    } else {
+      toast.error(res.error || (res as any).message || "Gagal menyimpan");
+    }
+  };
 
-    const handleDelete = useCallback(
-      async (id: string) => {
-        if (!confirm("Hapus hari kerja khusus ini?")) return;
-        const res = await deleteSpecialWorkDate(id);
-        if (res.success) {
-          toast.success("Data dihapus");
-          fetchData();
-        } else {
-          toast.error(res.error || "Gagal menghapus");
-        }
-      },
-      [fetchData],
-    );
-
-    const openEdit = useCallback((item: SpecialWorkDate) => {
-      setEditingId(item.id);
-      setFormData({
-        date: item.date,
-        name: item.name || item.description || "",
-        checkIn: item.checkIn || "07:00",
-        checkOut: item.checkOut || "11:00",
-      });
-      setDialogOpen(true);
-    }, []);
-
-    const openAssignModal = useCallback((item: SpecialWorkDate) => {
-      setAssignItemId(item.id);
-      setAssignSelectedIds(item.users.map((u) => u.id));
-      setAssignModalOpen(true);
-    }, []);
-
-    const handleAssignSave = async () => {
-      if (!assignItemId) return;
-      const res = await updateSpecialWorkDate(assignItemId, {
-        userIds: assignSelectedIds.length ? assignSelectedIds : null,
-      });
+  const handleDelete = useCallback(
+    async (id: string) => {
+      if (!confirm("Hapus hari kerja khusus ini?")) return;
+      const res = await deleteSpecialWorkDate(id);
       if (res.success) {
-        toast.success("Penugasan pegawai diperbarui");
-        setAssignModalOpen(false);
+        toast.success("Data dihapus");
         fetchData();
       } else {
-        toast.error(res.error || "Gagal menyimpan penugasan");
+        toast.error(res.error || "Gagal menghapus");
       }
-    };
+    },
+    [fetchData],
+  );
 
-    const toggleAssignUser = useCallback((userId: string) => {
-      setAssignSelectedIds((prev) =>
-        prev.includes(userId)
-          ? prev.filter((id) => id !== userId)
-          : [...prev, userId],
-      );
-    }, []);
+  const openEdit = useCallback((item: SpecialWorkDate) => {
+    setEditingId(item.id);
+    setFormData({
+      date: item.date,
+      name: item.name || item.description || "",
+      checkIn: item.checkIn || "07:00",
+      checkOut: item.checkOut || "11:00",
+    });
+    setDialogOpen(true);
+  }, []);
 
-    return {
-      // States
-      items,
-      users,
-      isLoading,
-      dialogOpen,
-      setDialogOpen,
-      editingId,
-      formData,
-      setFormData,
-      assignModalOpen,
-      setAssignModalOpen,
-      assignSelectedIds,
-      setAssignSelectedIds,
+  const openAssignModal = useCallback((item: SpecialWorkDate) => {
+    setAssignItemId(item.id);
+    setAssignSelectedIds(item.users.map((u) => u.id));
+    setAssignModalOpen(true);
+  }, []);
 
-      // Handlers
-      handleSave,
-      handleDelete,
-      openEdit,
-      resetForm,
-      openAssignModal,
-      handleAssignSave,
-      toggleAssignUser,
-    };
+  const handleAssignSave = async () => {
+    if (!assignItemId) return;
+    const res = await updateSpecialWorkDate(assignItemId, {
+      userIds: assignSelectedIds.length ? assignSelectedIds : null,
+    });
+    if (res.success) {
+      toast.success("Penugasan pegawai diperbarui");
+      setAssignModalOpen(false);
+      fetchData();
+    } else {
+      toast.error(res.error || "Gagal menyimpan penugasan");
+    }
+  };
+
+  const toggleAssignUser = useCallback((userId: string) => {
+    setAssignSelectedIds((prev) =>
+      prev.includes(userId)
+        ? prev.filter((id) => id !== userId)
+        : [...prev, userId],
+    );
+  }, []);
+
+  return {
+    // States
+    items,
+    users,
+    isLoading,
+    dialogOpen,
+    setDialogOpen,
+    editingId,
+    formData,
+    setFormData,
+    assignModalOpen,
+    setAssignModalOpen,
+    assignSelectedIds,
+    setAssignSelectedIds,
+
+    // Handlers
+    handleSave,
+    handleDelete,
+    openEdit,
+    resetForm,
+    openAssignModal,
+    handleAssignSave,
+    toggleAssignUser,
   };
 };
