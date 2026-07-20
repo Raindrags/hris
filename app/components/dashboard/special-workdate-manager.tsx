@@ -95,22 +95,24 @@ export function SpecialWorkDateManager() {
               items.map((item) => (
                 <TableRow key={item.id} className="border-gray-800">
                   <TableCell className="text-white">
-                    {new Date(item.date).toLocaleDateString("id-ID", {
-                      day: "numeric",
-                      month: "long",
-                      year: "numeric",
-                    })}
+                    {item.startDate
+                      ? new Date(item.startDate).toLocaleDateString("id-ID", {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        })
+                      : "-"}
                   </TableCell>
                   <TableCell className="text-gray-200">
                     {item.name || item.description || "-"}
                   </TableCell>
                   <TableCell className="text-gray-200">
-                    {item.checkIn && item.checkOut
-                      ? `${item.checkIn.substring(0, 5)} - ${item.checkOut.substring(0, 5)}`
+                    {item.startTime && item.endTime
+                      ? `${item.startTime.substring(0, 5)} - ${item.endTime.substring(0, 5)}`
                       : "-"}
                   </TableCell>
                   <TableCell>
-                    {item.users.length === 0 ? (
+                    {!item.users || item.users.length === 0 ? (
                       <Badge
                         variant="secondary"
                         className="bg-gray-800 text-gray-300"
@@ -185,9 +187,9 @@ export function SpecialWorkDateManager() {
               <Label className="text-gray-300">Tanggal</Label>
               <Input
                 type="date"
-                value={formData.date}
+                value={formData.startDate}
                 onChange={(e) =>
-                  setFormData({ ...formData, date: e.target.value })
+                  setFormData({ ...formData, startDate: e.target.value })
                 }
                 className="bg-gray-800 border-gray-700 text-gray-100 focus:border-crimson-700"
               />
@@ -208,9 +210,9 @@ export function SpecialWorkDateManager() {
                 <Label className="text-gray-300">Jam Masuk</Label>
                 <Input
                   type="time"
-                  value={formData.checkIn}
+                  value={formData.startTime}
                   onChange={(e) =>
-                    setFormData({ ...formData, checkIn: e.target.value })
+                    setFormData({ ...formData, startTime: e.target.value })
                   }
                   className="bg-gray-800 border-gray-700 text-gray-100 focus:border-crimson-700"
                 />
@@ -219,9 +221,9 @@ export function SpecialWorkDateManager() {
                 <Label className="text-gray-300">Jam Pulang</Label>
                 <Input
                   type="time"
-                  value={formData.checkOut}
+                  value={formData.endTime}
                   onChange={(e) =>
-                    setFormData({ ...formData, checkOut: e.target.value })
+                    setFormData({ ...formData, endTime: e.target.value })
                   }
                   className="bg-gray-800 border-gray-700 text-gray-100 focus:border-crimson-700"
                 />
