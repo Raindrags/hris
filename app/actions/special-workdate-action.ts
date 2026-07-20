@@ -1,49 +1,18 @@
-// app/actions/special-workdate-action.ts
-"use server";
-
-const API_BASE = process.env.BACKEND_API_URL;
-
-export async function getSpecialWorkDates() {
-  try {
-    const res = await fetch(`${API_BASE}/special-workdates`, {
-      cache: "no-store",
-    });
-
-    const result = await res.json();
-
-    // Pastikan format return selalu seragam agar frontend tidak bingung
-    if (Array.isArray(result)) {
-      return { success: true, data: result };
-    }
-    return { success: true, data: result.data || result };
-  } catch (error) {
-    console.error("getSpecialWorkDates error:", error);
-    return { success: false, error: "Gagal terhubung ke server" };
-  }
-}
-
 export async function createSpecialWorkDate(formData: {
-  date: string;
-  reason: string;
-  checkIn?: string | null;
-  checkOut?: string | null;
+  name: string;
+  startDate: string;
+  endDate: string;
+  startTime?: string | null;
+  endTime?: string | null;
 }) {
   try {
-    // PEMETAAN & SANITISASI JAM KOSONG
-    // Jika string kosong ("") atau null, paksa jadi "00:00" agar lolos validasi format jam di API utama
+    // Sesuaikan payload dengan struktur baru backend NestJS
     const apiPayload = {
-      date: formData.date,
-      reason: formData.reason || "Hari Kerja Khusus",
-      checkIn:
-        formData.checkIn && formData.checkIn.trim() !== ""
-          ? formData.checkIn
-          : "00:00",
-      checkOut:
-        formData.checkOut && formData.checkOut.trim() !== ""
-          ? formData.checkOut
-          : "00:00",
-      divisiId: null,
-      userIds: null,
+      name: formData.name,
+      startDate: formData.startDate,
+      endDate: formData.endDate,
+      startTime: formData.startTime || null,
+      endTime: formData.endTime || null,
     };
 
     const res = await fetch(`${API_BASE}/special-workdates`, {
@@ -71,35 +40,27 @@ export async function createSpecialWorkDate(formData: {
 export async function updateSpecialWorkDate(
   id: string,
   formData: Partial<{
-    date: string;
-    reason: string;
-    checkIn: string | null;
-    checkOut: string | null;
+    name: string;
+    startDate: string;
+    endDate: string;
+    startTime: string | null;
+    endTime: string | null;
     userIds: string[] | null;
   }>,
 ) {
   try {
-    // PEMETAAN & SANITISASI JAM KOSONG UNTUK UPDATE
     const apiPayload: any = {};
 
-    if (formData.date) apiPayload.date = formData.date;
-    if (formData.reason) apiPayload.reason = formData.reason;
+    if (formData.name) apiPayload.name = formData.name;
+    if (formData.startDate) apiPayload.startDate = formData.startDate;
+    if (formData.endDate) apiPayload.endDate = formData.endDate;
 
-    // Amankan Jam Mulai jika dikirim oleh frontend
-    if (formData.checkIn !== undefined) {
-      apiPayload.checkIn =
-        formData.checkIn && formData.checkIn.trim() !== ""
-          ? formData.checkIn
-          : "00:00";
-    }
-
-    // Amankan Jam Selesai jika dikirim oleh frontend
-    if (formData.checkOut !== undefined) {
-      apiPayload.checkOut =
-        formData.checkOut && formData.checkOut.trim() !== ""
-          ? formData.checkOut
-          : "00:00";
-    }
+    // Pastikan menangani startTime dan endTime jika dikirim
+    if (formData.startTime !== undefined)
+      apiPayload.startTime = formData.startTime || null;
+    if (formData.endTime !== undefined)
+      apiPayload.endTime = formData.endTime || null;
+    if (formData.userIds !== undefined) apiPayload.userIds = formData.userIds;
 
     const res = await fetch(`${API_BASE}/special-workdates/${id}`, {
       method: "PATCH",
@@ -119,28 +80,6 @@ export async function updateSpecialWorkDate(
     return { success: true, data: result };
   } catch (error) {
     console.error("updateSpecialWorkDate error:", error);
-    return { success: false, error: "Gagal terhubung ke server" };
-  }
-}
-
-export async function deleteSpecialWorkDate(id: string) {
-  try {
-    const res = await fetch(`${API_BASE}/special-workdates/${id}`, {
-      method: "DELETE",
-    });
-
-    const result = await res.json();
-
-    if (!res.ok) {
-      return {
-        success: false,
-        error: result.message || "Gagal menghapus data di API utama",
-      };
-    }
-
-    return { success: true, data: result };
-  } catch (error) {
-    console.error("deleteSpecialWorkDate error:", error);
     return { success: false, error: "Gagal terhubung ke server" };
   }
 }
