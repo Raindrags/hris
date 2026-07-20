@@ -71,9 +71,10 @@ export function ApprovalSection({
                     variant="outline"
                     className="bg-gray-800 text-gray-300 border-gray-700"
                   >
+                    {/* ✨ PERBAIKAN: Ambil category langsung dari request, bukan user */}
                     {req.type === "CUTI"
                       ? "Cuti Tahunan"
-                      : `(${req.user?.category || "Izin Umum"})`}
+                      : req.category || "Izin"}
                   </Badge>
 
                   <div className="flex items-center gap-1 text-xs text-blue-300 bg-blue-900/20 px-2 py-1 rounded border border-blue-800/50">
@@ -81,12 +82,14 @@ export function ApprovalSection({
                     <span>{formatDateRange(req.startDate, req.endDate)}</span>
                   </div>
 
-                  {/* Badge untuk waktu/durasi jika ada property startTime / endTime */}
-                  {(req.startTime || req.endTime) && (
+                  {/* ✨ PERBAIKAN: Tampilkan req.time jika tersedia */}
+                  {(req.time || req.startTime || req.endTime) && (
                     <div className="flex items-center gap-1 text-xs text-orange-300 bg-orange-900/20 px-2 py-1 rounded border border-orange-800/50">
                       <Clock className="w-3.5 h-3.5 text-orange-400" />
                       <span>
-                        {req.startTime} {req.endTime ? `- ${req.endTime}` : ""}
+                        {req.time
+                          ? req.time
+                          : `${req.startTime || ""} ${req.endTime ? `- ${req.endTime}` : ""}`.trim()}
                       </span>
                     </div>
                   )}
