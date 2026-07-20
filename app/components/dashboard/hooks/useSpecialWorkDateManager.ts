@@ -46,12 +46,12 @@ export const useSpecialWorkDateManager = () => {
     setFormData({ date: "", name: "", checkIn: "07:00", checkOut: "11:00" });
   }, []);
 
- const handleSave = async () => {
+  const handleSave = async () => {
     if (!formData.date || !formData.name.trim()) {
       toast.error("Tanggal dan Nama Kegiatan wajib diisi");
       return;
     }
-    
+
     const payload = {
       name: formData.name,
       startDate: formData.date,
@@ -66,81 +66,82 @@ export const useSpecialWorkDateManager = () => {
           : null,
     };
 
-  const handleDelete = useCallback(
-    async (id: string) => {
-      if (!confirm("Hapus hari kerja khusus ini?")) return;
-      const res = await deleteSpecialWorkDate(id);
+    const handleDelete = useCallback(
+      async (id: string) => {
+        if (!confirm("Hapus hari kerja khusus ini?")) return;
+        const res = await deleteSpecialWorkDate(id);
+        if (res.success) {
+          toast.success("Data dihapus");
+          fetchData();
+        } else {
+          toast.error(res.error || "Gagal menghapus");
+        }
+      },
+      [fetchData],
+    );
+
+    const openEdit = useCallback((item: SpecialWorkDate) => {
+      setEditingId(item.id);
+      setFormData({
+        date: item.date,
+        name: item.name || item.description || "",
+        checkIn: item.checkIn || "07:00",
+        checkOut: item.checkOut || "11:00",
+      });
+      setDialogOpen(true);
+    }, []);
+
+    const openAssignModal = useCallback((item: SpecialWorkDate) => {
+      setAssignItemId(item.id);
+      setAssignSelectedIds(item.users.map((u) => u.id));
+      setAssignModalOpen(true);
+    }, []);
+
+    const handleAssignSave = async () => {
+      if (!assignItemId) return;
+      const res = await updateSpecialWorkDate(assignItemId, {
+        userIds: assignSelectedIds.length ? assignSelectedIds : null,
+      });
       if (res.success) {
-        toast.success("Data dihapus");
+        toast.success("Penugasan pegawai diperbarui");
+        setAssignModalOpen(false);
         fetchData();
       } else {
-        toast.error(res.error || "Gagal menghapus");
+        toast.error(res.error || "Gagal menyimpan penugasan");
       }
-    },
-    [fetchData],
-  );
+    };
 
-  const openEdit = useCallback((item: SpecialWorkDate) => {
-    setEditingId(item.id);
-    setFormData({
-      date: item.date,
-      name: item.name || item.description || "",
-      checkIn: item.checkIn || "07:00",
-      checkOut: item.checkOut || "11:00",
-    });
-    setDialogOpen(true);
-  }, []);
+    const toggleAssignUser = useCallback((userId: string) => {
+      setAssignSelectedIds((prev) =>
+        prev.includes(userId)
+          ? prev.filter((id) => id !== userId)
+          : [...prev, userId],
+      );
+    }, []);
 
-  const openAssignModal = useCallback((item: SpecialWorkDate) => {
-    setAssignItemId(item.id);
-    setAssignSelectedIds(item.users.map((u) => u.id));
-    setAssignModalOpen(true);
-  }, []);
+    return {
+      // States
+      items,
+      users,
+      isLoading,
+      dialogOpen,
+      setDialogOpen,
+      editingId,
+      formData,
+      setFormData,
+      assignModalOpen,
+      setAssignModalOpen,
+      assignSelectedIds,
+      setAssignSelectedIds,
 
-  const handleAssignSave = async () => {
-    if (!assignItemId) return;
-    const res = await updateSpecialWorkDate(assignItemId, {
-      userIds: assignSelectedIds.length ? assignSelectedIds : null,
-    });
-    if (res.success) {
-      toast.success("Penugasan pegawai diperbarui");
-      setAssignModalOpen(false);
-      fetchData();
-    } else {
-      toast.error(res.error || "Gagal menyimpan penugasan");
-    }
-  };
-
-  const toggleAssignUser = useCallback((userId: string) => {
-    setAssignSelectedIds((prev) =>
-      prev.includes(userId)
-        ? prev.filter((id) => id !== userId)
-        : [...prev, userId],
-    );
-  }, []);
-
-  return {
-    // States
-    items,
-    users,
-    isLoading,
-    dialogOpen,
-    setDialogOpen,
-    editingId,
-    formData,
-    setFormData,
-    assignModalOpen,
-    setAssignModalOpen,
-    assignSelectedIds,
-    setAssignSelectedIds,
-
-    // Handlers
-    handleSave,
-    handleDelete,
-    openEdit,
-    resetForm,
-    openAssignModal,
-    handleAssignSave,
-    toggleAssignUser,
+      // Handlers
+      handleSave,
+      handleDelete,
+      openEdit,
+      resetForm,
+      openAssignModal,
+      handleAssignSave,
+      toggleAssignUser,
+    };
   };
 };

@@ -6,7 +6,6 @@ interface RecentRequestsListProps {
   requests: RecentRequest[];
 }
 
-// ✨ Fungsi pembantu untuk merapikan nama kategori Izin
 const getDisplayType = (req: RecentRequest) => {
   if (req.type === "IZIN" && req.category) {
     const cat = req.category.toLowerCase();
