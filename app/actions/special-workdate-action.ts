@@ -1,3 +1,27 @@
+// app/actions/special-workdate-action.ts
+"use server";
+
+const API_BASE = process.env.BACKEND_API_URL;
+
+export async function getSpecialWorkDates() {
+  try {
+    const res = await fetch(`${API_BASE}/special-workdates`, {
+      cache: "no-store",
+    });
+
+    const result = await res.json();
+
+    // Pastikan format return selalu seragam agar frontend tidak bingung
+    if (Array.isArray(result)) {
+      return { success: true, data: result };
+    }
+    return { success: true, data: result.data || result };
+  } catch (error) {
+    console.error("getSpecialWorkDates error:", error);
+    return { success: false, error: "Gagal terhubung ke server" };
+  }
+}
+
 export async function createSpecialWorkDate(formData: {
   name: string;
   startDate: string;
@@ -80,6 +104,28 @@ export async function updateSpecialWorkDate(
     return { success: true, data: result };
   } catch (error) {
     console.error("updateSpecialWorkDate error:", error);
+    return { success: false, error: "Gagal terhubung ke server" };
+  }
+}
+
+export async function deleteSpecialWorkDate(id: string) {
+  try {
+    const res = await fetch(`${API_BASE}/special-workdates/${id}`, {
+      method: "DELETE",
+    });
+
+    const result = await res.json();
+
+    if (!res.ok) {
+      return {
+        success: false,
+        error: result.message || "Gagal menghapus data di API utama",
+      };
+    }
+
+    return { success: true, data: result };
+  } catch (error) {
+    console.error("deleteSpecialWorkDate error:", error);
     return { success: false, error: "Gagal terhubung ke server" };
   }
 }
