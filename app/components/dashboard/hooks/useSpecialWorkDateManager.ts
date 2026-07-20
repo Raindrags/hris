@@ -46,22 +46,16 @@ export const useSpecialWorkDateManager = () => {
     setFormData({ date: "", name: "", checkIn: "07:00", checkOut: "11:00" });
   }, []);
 
-  const handleSave = async () => {
-    if (
-      !formData.date ||
-      !formData.name ||
-      !formData.checkIn ||
-      !formData.checkOut
-    ) {
-      toast.error("Semua field wajib diisi");
+ const handleSave = async () => {
+    if (!formData.date || !formData.name.trim()) {
+      toast.error("Tanggal dan Nama Kegiatan wajib diisi");
       return;
     }
+    
     const payload = {
       name: formData.name,
-
       startDate: formData.date,
       endDate: formData.date,
-
       startTime:
         formData.checkIn && formData.checkIn.trim() !== ""
           ? formData.checkIn
@@ -71,23 +65,6 @@ export const useSpecialWorkDateManager = () => {
           ? formData.checkOut
           : null,
     };
-
-    let res;
-    if (editingId) {
-      res = await updateSpecialWorkDate(editingId, payload);
-    } else {
-      res = await createSpecialWorkDate(payload);
-    }
-
-    if (res.success) {
-      toast.success(editingId ? "Data diperbarui" : "Data ditambahkan");
-      setDialogOpen(false);
-      resetForm();
-      fetchData();
-    } else {
-      toast.error(res.error || (res as any).message || "Gagal menyimpan");
-    }
-  };
 
   const handleDelete = useCallback(
     async (id: string) => {

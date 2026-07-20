@@ -6,6 +6,22 @@ interface RecentRequestsListProps {
   requests: RecentRequest[];
 }
 
+// ✨ Fungsi pembantu untuk merapikan nama kategori Izin
+const getDisplayType = (req: RecentRequest) => {
+  if (req.type === "IZIN" && req.category) {
+    const cat = req.category.toLowerCase();
+
+    // Ganti izin umum/pribadi menjadi "Izin" saja
+    if (cat.includes("umum") || cat.includes("pribadi")) return "Izin";
+    // Rapikan IzinKeluar
+    if (cat === "izinkeluar") return "Izin Keluar";
+
+    // Selain itu kembalikan nama aslinya (Sakit, Telat, Pulang Cepat, dll)
+    return req.category;
+  }
+  return req.type; // Jika CUTI, biarkan CUTI
+};
+
 export const RecentRequestsList = ({ requests }: RecentRequestsListProps) => {
   return (
     <Card className="border-gray-800 bg-gray-900 shadow-md text-gray-100">
@@ -28,7 +44,8 @@ export const RecentRequestsList = ({ requests }: RecentRequestsListProps) => {
               >
                 <div>
                   <div className="flex items-center gap-2 mb-1 font-semibold text-white">
-                    {req.type}{" "}
+                    {/* ✨ Panggil fungsinya di sini */}
+                    {getDisplayType(req)}{" "}
                     {req.status === "APPROVED"
                       ? "✅"
                       : req.status === "REJECTED"

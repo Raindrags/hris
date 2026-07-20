@@ -30,6 +30,7 @@ export interface UserData {
 export interface RecentRequest {
   id: string;
   type: string;
+  category?: string;
   status: "APPROVED" | "REJECTED" | "PENDING" | string;
   startDate: Date | string;
   endDate: Date | string;
