@@ -57,10 +57,19 @@ export const useSpecialWorkDateManager = () => {
       return;
     }
     const payload = {
-      date: formData.date,
-      reason: formData.name,
-      checkIn: formData.checkIn,
-      checkOut: formData.checkOut,
+      name: formData.name,
+
+      startDate: formData.date,
+      endDate: formData.date,
+
+      startTime:
+        formData.checkIn && formData.checkIn.trim() !== ""
+          ? formData.checkIn
+          : null,
+      endTime:
+        formData.checkOut && formData.checkOut.trim() !== ""
+          ? formData.checkOut
+          : null,
     };
 
     let res;

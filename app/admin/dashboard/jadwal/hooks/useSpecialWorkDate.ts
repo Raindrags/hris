@@ -1,7 +1,12 @@
 // app/admin/pengaturan-jadwal/hooks/useSpecialWorkDate.ts
 
 import { useState, useCallback, useMemo } from "react";
-import { Employee, Division, SpecialWorkDate, SpecialWorkDateFormState } from "../types";
+import {
+  Employee,
+  Division,
+  SpecialWorkDate,
+  SpecialWorkDateFormState,
+} from "../types";
 import {
   getSpecialWorkDates,
   createSpecialWorkDate,
@@ -17,7 +22,7 @@ const formatToInputDate = (dateInput: any): string => {
   try {
     const d = new Date(dateInput);
     if (isNaN(d.getTime())) return "";
-    return d.toISOString().split("T")[0]; 
+    return d.toISOString().split("T")[0];
   } catch {
     return "";
   }
@@ -26,24 +31,26 @@ const formatToInputDate = (dateInput: any): string => {
 export function useSpecialWorkDate() {
   const [specialDates, setSpecialDates] = useState<SpecialWorkDate[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  
+
   const [formState, setFormState] = useState<SpecialWorkDateFormState>({
     name: "",
     startDate: "",
     endDate: "",
-    startTime: "", 
-    endTime: "",   
+    startTime: "",
+    endTime: "",
   });
 
   const [isAssignOpen, setIsAssignOpen] = useState(false);
-  const [selectedTarget, setSelectedTarget] = useState<SpecialWorkDate | null>(null);
+  const [selectedTarget, setSelectedTarget] = useState<SpecialWorkDate | null>(
+    null,
+  );
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [divisions, setDivisions] = useState<Division[]>([]);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
-  
+
   const [searchTerm, setSearchTerm] = useState("");
   const [divisiFilter, setDivisiFilter] = useState("all");
   const [modalPage, setModalPage] = useState(1);
@@ -55,7 +62,10 @@ export function useSpecialWorkDate() {
       const res = await getSpecialWorkDates();
       if (res?.success) {
         setSpecialDates(res.data || []);
-        console.log("FETCH DATA: Berhasil memuat data hari kerja khusus.", res.data);
+        console.log(
+          "FETCH DATA: Berhasil memuat data hari kerja khusus.",
+          res.data,
+        );
       } else {
         console.log("FETCH DATA GAGAL:", res?.error || "Gagal memuat data");
       }
@@ -68,12 +78,12 @@ export function useSpecialWorkDate() {
 
   const resetForm = useCallback(() => {
     setEditingId(null);
-    setFormState({ 
-      name: "", 
-      startDate: "", 
-      endDate: "", 
-      startTime: "", 
-      endTime: ""    
+    setFormState({
+      name: "",
+      startDate: "",
+      endDate: "",
+      startTime: "",
+      endTime: "",
     });
   }, []);
 
@@ -93,20 +103,27 @@ export function useSpecialWorkDate() {
 
     // Validasi dasar frontend untuk kolom wajib
     if (!formState.name.trim() || !formState.startDate || !formState.endDate) {
-      console.log("VALIDASI FRONTEND GAGAL: Nama, Tanggal Mulai, atau Tanggal Selesai wajib diisi!");
+      console.log(
+        "VALIDASI FRONTEND GAGAL: Nama, Tanggal Mulai, atau Tanggal Selesai wajib diisi!",
+      );
       return;
     }
-    
+
     try {
       setIsLoading(true);
-      
-      // PERBAIKAN UTAMA: Jika string kosong "", paksa jadi null agar backend tidak crash
+
       const payload = {
         name: formState.name.trim(),
         startDate: formState.startDate,
         endDate: formState.endDate,
-        startTime: formState.startTime && formState.startTime.trim() !== "" ? formState.startTime : null,
-        endTime: formState.endTime && formState.endTime.trim() !== "" ? formState.endTime : null,
+        startTime:
+          formState.startTime && formState.startTime.trim() !== ""
+            ? formState.startTime
+            : null,
+        endTime:
+          formState.endTime && formState.endTime.trim() !== ""
+            ? formState.endTime
+            : null,
       };
 
       console.log("Payload FINAL dikirim ke Server Action:", payload);
@@ -117,13 +134,16 @@ export function useSpecialWorkDate() {
 
       console.log("RESPON BALASAN DARI SERVER ACTION:", res);
 
-      if (res && (res.success || res.id)) { 
+      if (res && (res.success || res.id)) {
         console.log("DATABASE SAKSES: Data berhasil disimpan/diperbarui.");
         setShowForm(false);
         resetForm();
         await fetchData();
       } else {
-        console.log("DATABASE GAGAL MENYIMPAN:", res?.error || "Unknown Server Error");
+        console.log(
+          "DATABASE GAGAL MENYIMPAN:",
+          res?.error || "Unknown Server Error",
+        );
       }
     } catch (error) {
       console.log("FATAL ERROR (CRASH DI FRONTEND JALUR HANDLE SAVE):", error);
@@ -138,10 +158,10 @@ export function useSpecialWorkDate() {
     console.log("MEMULAI MODE EDIT DATA:", data);
     setFormState({
       name: data.name,
-      startDate: formatToInputDate(data.startDate), 
-      endDate: formatToInputDate(data.endDate),     
-      startTime: data.startTime || "", 
-      endTime: data.endTime || "",     
+      startDate: formatToInputDate(data.startDate),
+      endDate: formatToInputDate(data.endDate),
+      startTime: data.startTime || "",
+      endTime: data.endTime || "",
     });
     setEditingId(data.id);
     setShowForm(true);
@@ -194,7 +214,10 @@ export function useSpecialWorkDate() {
     if (!selectedTarget) return;
     setIsLoading(true);
     try {
-      const res = await assignEmployeesToSpecialDate(selectedTarget.id, selectedUserIds);
+      const res = await assignEmployeesToSpecialDate(
+        selectedTarget.id,
+        selectedUserIds,
+      );
       if (res?.success) {
         console.log("SAVE ASSIGNMENT BERHASIL");
         setIsAssignOpen(false);
@@ -211,15 +234,19 @@ export function useSpecialWorkDate() {
 
   const toggleEmployee = (id: string) => {
     setSelectedUserIds((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
     );
   };
 
   const toggleAllEmployees = (checked: boolean, filteredIds: string[]) => {
     if (checked) {
-      setSelectedUserIds((prev) => Array.from(new Set([...prev, ...filteredIds])));
+      setSelectedUserIds((prev) =>
+        Array.from(new Set([...prev, ...filteredIds])),
+      );
     } else {
-      setSelectedUserIds((prev) => prev.filter((id) => !filteredIds.includes(id)));
+      setSelectedUserIds((prev) =>
+        prev.filter((id) => !filteredIds.includes(id)),
+      );
     }
   };
 
@@ -230,7 +257,8 @@ export function useSpecialWorkDate() {
         emp.name.toLowerCase().includes(term) ||
         (emp.niy || "").toLowerCase().includes(term) ||
         (emp.jabatan || "").toLowerCase().includes(term);
-      const matchDivisi = divisiFilter === "all" || emp.divisi?.id === divisiFilter;
+      const matchDivisi =
+        divisiFilter === "all" || emp.divisi?.id === divisiFilter;
       return matchSearch && matchDivisi;
     });
   }, [employees, searchTerm, divisiFilter]);
