@@ -66,12 +66,7 @@ export function useAttendanceReport() {
           const filteredLogs = emp.logs.filter((log: AttendanceLog) => {
             const isSundayOff =
               log.dayName === "Sunday" && !log.in && !log.isSpecialWorkDay;
-            const isTeacherSatOff =
-              emp.isGuruRole &&
-              log.dayName === "Saturday" &&
-              !log.in &&
-              !log.isSpecialWorkDay;
-            return !isSundayOff && !isTeacherSatOff;
+            return !isSundayOff;
           });
           return { ...emp, logs: filteredLogs };
         });
