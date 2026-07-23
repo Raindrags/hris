@@ -55,6 +55,13 @@ const allNavItems = [
     icon: FileText,
     allowedRoles: ["ADMIN", "ADMIN_SD", "ADMIN_SMP", "ADMIN_SMA"],
   },
+  // INI MENU BARU UNTUK NO FP
+  {
+    title: "Form No FP",
+    href: "/admin/dashboard/fp", // Sesuaikan dengan nama folder page Bos
+    icon: FileText, // Bos juga bisa import dan pakai icon 'Fingerprint' dari lucide-react jika mau berbeda
+    allowedRoles: ["ADMIN", "ADMIN_SD", "ADMIN_SMP", "ADMIN_SMA"],
+  },
   {
     title: "Jadwal",
     href: "/admin/dashboard/jadwal",
