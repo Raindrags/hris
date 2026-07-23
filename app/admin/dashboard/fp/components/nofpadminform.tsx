@@ -62,7 +62,7 @@ export default function NoFpAdminForm({ onSuccess }: NoFpAdminFormProps) {
             Pilih Pegawai <span className="text-red-400">*</span>
           </Label>
           <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
-            <PopoverTrigger asChild>
+            <PopoverTrigger>
               <Button
                 variant="outline"
                 role="combobox"
@@ -92,7 +92,7 @@ export default function NoFpAdminForm({ onSuccess }: NoFpAdminFormProps) {
                     {states.users.map((user) => (
                       <CommandItem
                         key={user.id}
-                        value={user.name} // CommandItem mencari berdasarkan value ini
+                        value={user.name}
                         onSelect={() => {
                           actions.setUserId(user.id);
                           setOpenCombobox(false);
@@ -165,6 +165,15 @@ export default function NoFpAdminForm({ onSuccess }: NoFpAdminFormProps) {
               </span>
             </label>
           </div>
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Jam Kejadian</label>
+          <input
+            type="time"
+            value={states.time}
+            onChange={(e) => actions.setTime(e.target.value)}
+            className="w-full rounded-md border p-2 bg-transparent"
+          />
         </div>
 
         {/* KETERANGAN */}

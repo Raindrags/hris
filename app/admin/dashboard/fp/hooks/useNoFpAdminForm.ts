@@ -1,4 +1,3 @@
-// hooks/useNoFpAdminForm.ts
 import { useState, useEffect, FormEvent } from "react";
 import { toast } from "sonner";
 import { SelectUser } from "../types";
@@ -11,6 +10,7 @@ export const useNoFpAdminForm = (onSuccess?: () => void) => {
   // Form States
   const [userId, setUserId] = useState("");
   const [date, setDate] = useState("");
+  const [time, setTime] = useState(""); // ✨ TAMBAHAN: State untuk Jam No FP
   const [fpDatang, setFpDatang] = useState(false);
   const [fpPulang, setFpPulang] = useState(false);
   const [reason, setReason] = useState("");
@@ -31,8 +31,10 @@ export const useNoFpAdminForm = (onSuccess?: () => void) => {
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    // Validasi Form
     if (!userId) return toast.error("Silakan pilih pegawai.");
     if (!date) return toast.error("Silakan pilih tanggal kejadian.");
+    if (!time) return toast.error("Silakan isi jam kejadian."); // ✨ TAMBAHAN: Validasi Jam
     if (!fpDatang && !fpPulang)
       return toast.error("Pilih minimal satu: FP Datang atau FP Pulang.");
     if (!reason.trim()) return toast.error("Alasan wajib diisi.");
@@ -43,6 +45,7 @@ export const useNoFpAdminForm = (onSuccess?: () => void) => {
       const formDataObj = new FormData();
       formDataObj.append("userId", userId);
       formDataObj.append("date", date);
+      formDataObj.append("time", time); // ✨ TAMBAHAN: Masukkan Jam ke dalam payload
       formDataObj.append("fpDatang", String(fpDatang));
       formDataObj.append("fpPulang", String(fpPulang));
       formDataObj.append("reason", reason);
@@ -57,6 +60,7 @@ export const useNoFpAdminForm = (onSuccess?: () => void) => {
       // Reset form
       setUserId("");
       setDate("");
+      setTime(""); // ✨ TAMBAHAN: Reset Jam
       setFpDatang(false);
       setFpPulang(false);
       setReason("");
@@ -64,7 +68,6 @@ export const useNoFpAdminForm = (onSuccess?: () => void) => {
 
       if (onSuccess) onSuccess();
     } catch (error: any) {
-      // Pesan error dari pengecekan token di service akan muncul di sini
       toast.error(error.message || "Terjadi kesalahan sistem.");
     } finally {
       setLoading(false);
@@ -72,10 +75,21 @@ export const useNoFpAdminForm = (onSuccess?: () => void) => {
   };
 
   return {
-    states: { loading, users, userId, date, fpDatang, fpPulang, reason, file },
+    states: {
+      loading,
+      users,
+      userId,
+      date,
+      time,
+      fpDatang,
+      fpPulang,
+      reason,
+      file,
+    },
     actions: {
       setUserId,
       setDate,
+      setTime,
       setFpDatang,
       setFpPulang,
       setReason,
