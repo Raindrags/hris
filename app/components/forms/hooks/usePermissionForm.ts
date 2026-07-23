@@ -36,6 +36,10 @@ export const usePermissionForm = ({
   const [reason, setReason] = useState<string>("");
   const [file, setFile] = useState<File | null>(null);
 
+  // State untuk No FP
+  const [fpDatang, setFpDatang] = useState<boolean>(false);
+  const [fpPulang, setFpPulang] = useState<boolean>(false);
+
   const [returnTime, setReturnTime] = useState<string>("");
   const [attachmentLink, setAttachmentLink] = useState<string>("");
 
@@ -127,15 +131,13 @@ export const usePermissionForm = ({
     return holidays.includes(dateString);
   };
 
-  // LOGIKA MENGHITUNG OTOMATIS END DATE UNTUK IZIN KHUSUS
   useEffect(() => {
     if (category === "IzinKhusus" && subCategory && startDate) {
-      // 🔄 REVISI: Disesuaikan dengan tabel Pasal 47
       const daysMap: Record<string, number> = {
         "Pegawai menikah (5 Hari)": 5,
         "Pegawai menikahkan anaknya (2 Hari)": 2,
         "Pegawai mengkhitankan/membaptiskan anaknya/Wisuda/meja hijau (1 Hari)": 1,
-        "Pegawai melahirkan (2 Bulan)": 60,
+        "Pegawai melahirkan (2 Bulan)": 50, // Anggap ~50 hari kerja aktif
         "Istri pegawai melahirkan/keguguran kandungan (2 Hari)": 2,
         "Suami/istri/anak/orang tua/mertua/menantu/saudara kandung meninggal dunia (5 Hari)": 5,
         "Force Majeur/musibah bencana alam (1 Hari)": 1,
@@ -242,6 +244,12 @@ export const usePermissionForm = ({
       if (payload.attachmentLink)
         formDataObj.append("attachmentLink", payload.attachmentLink);
 
+      // Data untuk No FP
+      if (payload.category === "NoFP") {
+        formDataObj.append("fpDatang", String(fpDatang));
+        formDataObj.append("fpPulang", String(fpPulang));
+      }
+
       const res = await fetch("/api/izin", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
@@ -264,7 +272,6 @@ export const usePermissionForm = ({
     }
   };
 
-  // 🔴 SEMUA VALIDASI DISATUKAN DI SINI
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!startDate || !endDate)
@@ -275,6 +282,10 @@ export const usePermissionForm = ({
 
     if (category === "IzinKhusus" && !subCategory) {
       return toast.error("Kategori Izin Khusus wajib dipilih.");
+    }
+
+    if (category === "NoFP" && !fpDatang && !fpPulang) {
+      return toast.error("Mohon pilih minimal satu: FP Datang atau FP Pulang.");
     }
 
     if (
@@ -341,6 +352,8 @@ export const usePermissionForm = ({
     setReturnTime("");
     setAttachmentLink("");
     setFile(null);
+    setFpDatang(false);
+    setFpPulang(false);
   };
 
   const isAutoEndDate = category === "IzinKhusus";
@@ -364,6 +377,8 @@ export const usePermissionForm = ({
       filteredSubstitutes,
       isAutoEndDate,
       file,
+      fpDatang,
+      fpPulang,
     },
     actions: {
       setStartDate,
@@ -382,6 +397,8 @@ export const usePermissionForm = ({
       isHolidayOrSunday,
       handleSubmit,
       processSubmit,
+      setFpDatang,
+      setFpPulang,
     },
   };
 };

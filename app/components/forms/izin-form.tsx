@@ -79,6 +79,8 @@ export default function PermissionForm({
     calculatedDays,
     isAutoEndDate,
     file,
+    fpDatang,
+    fpPulang,
   } = states;
 
   const {
@@ -93,12 +95,13 @@ export default function PermissionForm({
     setPendingPayload,
     handleCategoryChange,
     isHolidayOrSunday,
-    handleSubmit, // Langsung diteruskan ke Form
+    handleSubmit,
     processSubmit,
     setShowWarning,
+    setFpDatang,
+    setFpPulang,
   } = actions;
 
-  // Attachment Method murni untuk toggle UI tampilan file vs link. Validasi diurus hooks.
   const [attachmentMethod, setAttachmentMethod] = useState<"file" | "link">(
     "file",
   );
@@ -106,8 +109,11 @@ export default function PermissionForm({
   const isHourlyPermission = ["Terlambat", "PulangAwal", "IzinKeluar"].includes(
     category,
   );
+
   const showAttachmentUI =
-    category === "Dinas" || (category === "Sakit" && calculatedDays > 1);
+    category === "Dinas" ||
+    (category === "Sakit" && calculatedDays > 1) ||
+    category === "NoFP";
 
   const onCategorySelect = (val: string | null) => {
     handleCategoryChange(val);
@@ -214,7 +220,7 @@ export default function PermissionForm({
           <div
             className={cn(
               "flex flex-col gap-1 p-3 text-sm rounded-md border",
-              calculatedDays > 0 || isHourlyPermission
+              calculatedDays > 0 || isHourlyPermission || category === "NoFP"
                 ? "bg-blue-950/40 border-blue-900/50 text-blue-200"
                 : "bg-red-950/40 border-red-900/50 text-red-200",
             )}
@@ -224,12 +230,19 @@ export default function PermissionForm({
               <span>
                 {calculatedDays < 0 ? (
                   "Tanggal selesai tidak valid!"
-                ) : calculatedDays === 0 && !isHourlyPermission ? (
+                ) : calculatedDays === 0 &&
+                  !isHourlyPermission &&
+                  category !== "NoFP" ? (
                   "Durasi 0 hari (Hari libur)."
                 ) : isHourlyPermission ? (
                   <>
                     Tipe Pengajuan:{" "}
                     <b className="text-blue-400">Izin Berbasis Jam</b>
+                  </>
+                ) : category === "NoFP" ? (
+                  <>
+                    Tipe Pengajuan:{" "}
+                    <b className="text-blue-400">Lupa/Error Fingerprint</b>
                   </>
                 ) : (
                   <>
@@ -252,6 +265,9 @@ export default function PermissionForm({
             <SelectContent className="bg-slate-800 border-slate-700 text-slate-100">
               <SelectItem value="Sakit">Sakit</SelectItem>
               <SelectItem value="Izin">Izin Pribadi</SelectItem>
+              <SelectItem value="NoFP">
+                Lupa / Error Fingerprint (No FP)
+              </SelectItem>
               <SelectItem value="Dinas">
                 Dinas Luar (Wajib Surat Tugas)
               </SelectItem>
@@ -265,7 +281,36 @@ export default function PermissionForm({
           </Select>
         </div>
 
-        {/* TIPE IZIN KHUSUS - Bind Langsung ke setSubCategory */}
+        {/* INPUT NO FP (CHECKBOX) */}
+        {category === "NoFP" && (
+          <div className="p-3 bg-slate-900/50 rounded border border-slate-700 space-y-3">
+            <Label className="text-slate-300">
+              Pilih Jenis Lupa/Error FP (Bisa Keduanya)
+            </Label>
+            <div className="flex gap-6 mt-2">
+              <label className="flex items-center gap-2 text-slate-200 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={fpDatang}
+                  onChange={(e) => setFpDatang(e.target.checked)}
+                  className="w-4 h-4 rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-blue-600"
+                />
+                FP Datang (Masuk)
+              </label>
+              <label className="flex items-center gap-2 text-slate-200 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={fpPulang}
+                  onChange={(e) => setFpPulang(e.target.checked)}
+                  className="w-4 h-4 rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-blue-600"
+                />
+                FP Pulang (Keluar)
+              </label>
+            </div>
+          </div>
+        )}
+
+        {/* TIPE IZIN KHUSUS */}
         {category === "IzinKhusus" && (
           <div className="space-y-2">
             <Label className="text-slate-300">Kategori Izin Khusus</Label>
@@ -353,7 +398,7 @@ export default function PermissionForm({
           </div>
         )}
 
-        {/* INPUT DOKUMEN KHUSUS DINAS LUAR ATAU SAKIT > 1 HARI */}
+        {/* INPUT DOKUMEN KHUSUS DINAS LUAR, SAKIT > 1 HARI, NO FP */}
         {showAttachmentUI && (
           <div className="p-3 bg-slate-900/50 rounded-md border border-slate-700 space-y-3">
             <div className="flex justify-between items-center">
@@ -361,7 +406,9 @@ export default function PermissionForm({
                 <FileText className="h-4 w-4" />{" "}
                 {category === "Dinas"
                   ? "Dokumen Surat Tugas"
-                  : "Bukti Foto Surat Dokter"}
+                  : category === "NoFP"
+                    ? "Bukti Foto (Opsional jika mesin error)"
+                    : "Bukti Foto Surat Dokter"}
               </Label>
               <div className="flex rounded-md border border-slate-700 p-0.5 bg-slate-950 text-xs">
                 <button
@@ -406,7 +453,7 @@ export default function PermissionForm({
                     accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png"
                     onChange={(e) => setFile(e.target.files?.[0] || null)}
                     className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                    required={!attachmentLink}
+                    required={category !== "NoFP" && !attachmentLink}
                   />
                   <div className="text-center space-y-1 text-slate-400 group-hover:text-slate-300">
                     <UploadCloud className="h-8 w-8 mx-auto text-slate-500 group-hover:text-blue-400 transition-colors" />
@@ -429,7 +476,7 @@ export default function PermissionForm({
                     value={attachmentLink}
                     onChange={(e) => setAttachmentLink(e.target.value)}
                     className="pl-9 bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-600"
-                    required={!file}
+                    required={category !== "NoFP" && !file}
                   />
                 </div>
                 <p className="text-[10px] text-slate-500 pl-1">
@@ -457,7 +504,10 @@ export default function PermissionForm({
           className="w-full bg-blue-600 hover:bg-blue-700 text-white"
           disabled={
             loading ||
-            (!isHourlyPermission && category !== "Dinas" && calculatedDays <= 0)
+            (!isHourlyPermission &&
+              category !== "Dinas" &&
+              category !== "NoFP" &&
+              calculatedDays <= 0)
           }
         >
           {loading ? (
