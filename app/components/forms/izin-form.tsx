@@ -288,6 +288,9 @@ export default function PermissionForm({
                   Pegawai mengkhitankan/membaptiskan anaknya/Wisuda/meja hijau
                   (1 Hari)
                 </SelectItem>
+                <SelectItem value="Pegawai melahirkan (2 Bulan)">
+                  Pegawai melahirkan (2 Bulan)
+                </SelectItem>
                 <SelectItem value="Istri pegawai melahirkan/keguguran kandungan (2 Hari)">
                   Istri pegawai melahirkan/keguguran kandungan (2 Hari)
                 </SelectItem>

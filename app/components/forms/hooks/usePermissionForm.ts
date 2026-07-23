@@ -135,6 +135,7 @@ export const usePermissionForm = ({
         "Pegawai menikah (5 Hari)": 5,
         "Pegawai menikahkan anaknya (2 Hari)": 2,
         "Pegawai mengkhitankan/membaptiskan anaknya/Wisuda/meja hijau (1 Hari)": 1,
+        "Pegawai melahirkan (2 Bulan)": 60,
         "Istri pegawai melahirkan/keguguran kandungan (2 Hari)": 2,
         "Suami/istri/anak/orang tua/mertua/menantu/saudara kandung meninggal dunia (5 Hari)": 5,
         "Force Majeur/musibah bencana alam (1 Hari)": 1,

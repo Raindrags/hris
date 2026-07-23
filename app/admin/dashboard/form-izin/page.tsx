@@ -44,7 +44,6 @@ export default function AdminFormIzinPage() {
   const [showForm, setShowForm] = useState(false);
   const [userDetail, setUserDetail] = useState<any>(null);
 
-  // Pencarian & pagination
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -56,7 +55,6 @@ export default function AdminFormIzinPage() {
         const res = await fetch("/api/users");
         const responseData = await res.json();
 
-        // Pencari otomatis (Smart Extractor) yang sudah di-upgrade!
         let extractedUsers: any[] = [];
 
         if (Array.isArray(responseData)) {
@@ -85,7 +83,6 @@ export default function AdminFormIzinPage() {
     fetchUsers();
   }, []);
 
-  // Debounce pencarian
   const handleSearchChange = useCallback((value: string) => {
     setSearch(value);
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -95,7 +92,6 @@ export default function AdminFormIzinPage() {
     }, 300);
   }, []);
 
-  // --- BAGIAN YANG SUDAH KITA AMANKAN 100% ---
   const safeUsers = Array.isArray(users) ? users : [];
 
   const filteredUsers = debouncedSearch
