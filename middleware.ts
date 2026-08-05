@@ -83,6 +83,7 @@ export async function middleware(request: NextRequest) {
       if (isAdminHrisRoute) {
         const allowedAdminRoles = [
           "ADMIN",
+          "ADMIN_PAUD",
           "ADMIN_SD",
           "ADMIN_SMP",
           "ADMIN_SMA",
