@@ -50,27 +50,27 @@ import {
   ChevronRight,
 } from "lucide-react";
 
-export function LeaveHistoryTable({ leaveHistory, divisions }: any) {
+export function LeaveHistoryTable({
+  leaveHistory,
+  divisions,
+  isSuperAdmin = true,
+}: any) {
   const router = useRouter();
 
   const [selectedDivisionId, setSelectedDivisionId] = useState<string>("ALL");
   const [selectedRequest, setSelectedRequest] = useState<any | null>(null);
 
-  // State untuk Pagination
   const [currentPage, setCurrentPage] = useState<number>(1);
   const itemsPerPage = 10;
 
-  // State untuk Modal
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isDeductionModalOpen, setIsDeductionModalOpen] = useState(false);
   const [isDiscardModalOpen, setIsDiscardModalOpen] = useState(false);
 
-  // State form
   const [noDeduction, setNoDeduction] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isDiscarding, setIsDiscarding] = useState<boolean>(false);
 
-  // Logika Filter Data
   const filteredHistory =
     selectedDivisionId === "ALL"
       ? leaveHistory
@@ -78,16 +78,14 @@ export function LeaveHistoryTable({ leaveHistory, divisions }: any) {
           (req: any) => req.user.divisi?.id === selectedDivisionId,
         );
 
-  // Logika Pagination
   const totalPages = Math.ceil(filteredHistory.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedHistory = filteredHistory.slice(startIndex, endIndex);
 
-  // Handler Ganti Filter Divisi
   const handleDivisionChange = (v: string) => {
     setSelectedDivisionId(v);
-    setCurrentPage(1); // Reset halaman ke 1 setiap kali filter berubah
+    setCurrentPage(1);
   };
 
   const handleOpenDetail = (req: any) => {
@@ -177,25 +175,29 @@ export function LeaveHistoryTable({ leaveHistory, divisions }: any) {
                 Riwayat aktivitas pengajuan izin pegawai.
               </CardDescription>
             </div>
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <Filter className="h-4 w-4 text-gray-400 hidden sm:block" />
-              <Select
-                value={selectedDivisionId}
-                onValueChange={(v) => handleDivisionChange(v ?? "ALL")}
-              >
-                <SelectTrigger className="w-full sm:w-[200px] bg-gray-800 border-gray-700 text-gray-200">
-                  <SelectValue placeholder="Semua Divisi" />
-                </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-700 text-gray-200">
-                  <SelectItem value="ALL">Semua Divisi</SelectItem>
-                  {divisions.map((div: any) => (
-                    <SelectItem key={div.id} value={div.id}>
-                      {div.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+
+            {/* Filter Divisi (Hanya Tampil Jika isSuperAdmin == true) */}
+            {isSuperAdmin && (
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <Filter className="h-4 w-4 text-gray-400 hidden sm:block" />
+                <Select
+                  value={selectedDivisionId}
+                  onValueChange={(v) => handleDivisionChange(v ?? "ALL")}
+                >
+                  <SelectTrigger className="w-full sm:w-[200px] bg-gray-800 border-gray-700 text-gray-200">
+                    <SelectValue placeholder="Semua Divisi" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gray-800 border-gray-700 text-gray-200">
+                    <SelectItem value="ALL">Semua Divisi</SelectItem>
+                    {divisions.map((div: any) => (
+                      <SelectItem key={div.id} value={div.id}>
+                        {div.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
         </CardHeader>
         <CardContent className="p-0 flex flex-col min-h-[400px] justify-between">
@@ -259,7 +261,6 @@ export function LeaveHistoryTable({ leaveHistory, divisions }: any) {
                             Detail
                           </Button>
 
-                          {/* Logika untuk menyembunyikan tombol denda jika Cuti & Tidak Dipotong */}
                           {!(
                             req.type === "CUTI" &&
                             req.deductionOptions !== "DIPOTONG"
@@ -275,7 +276,6 @@ export function LeaveHistoryTable({ leaveHistory, divisions }: any) {
                             </Button>
                           )}
 
-                          {/* Tombol Batal hanya muncul jika pengajuan belum Dibatalkan/Ditolak */}
                           {req.status !== "REJECTED" &&
                             req.status !== "CANCELLED" && (
                               <Button
@@ -306,7 +306,6 @@ export function LeaveHistoryTable({ leaveHistory, divisions }: any) {
             </Table>
           </div>
 
-          {/* Area Pagination Control */}
           {totalPages > 1 && (
             <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 border-t border-gray-800 gap-4">
               <div className="text-sm text-gray-400">
@@ -356,7 +355,7 @@ export function LeaveHistoryTable({ leaveHistory, divisions }: any) {
         </CardContent>
       </Card>
 
-      {/* 1. Modal Detail Pengajuan */}
+      {/* MODAL DETAIL */}
       <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
         <DialogContent className="bg-gray-900 border-gray-800 text-gray-200 sm:max-w-md">
           <DialogHeader>
@@ -466,7 +465,7 @@ export function LeaveHistoryTable({ leaveHistory, divisions }: any) {
         </DialogContent>
       </Dialog>
 
-      {/* 2. Modal Form Denda & Potongan */}
+      {/* MODAL DENDA */}
       <Dialog
         open={isDeductionModalOpen}
         onOpenChange={setIsDeductionModalOpen}
@@ -651,7 +650,7 @@ export function LeaveHistoryTable({ leaveHistory, divisions }: any) {
         </DialogContent>
       </Dialog>
 
-      {/* 3. Modal Konfirmasi Pembatalan */}
+      {/* MODAL DISCARD */}
       <Dialog open={isDiscardModalOpen} onOpenChange={setIsDiscardModalOpen}>
         <DialogContent className="bg-gray-900 border-gray-800 text-gray-200 sm:max-w-md">
           <DialogHeader>

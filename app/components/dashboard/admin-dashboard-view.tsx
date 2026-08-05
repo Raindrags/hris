@@ -16,8 +16,12 @@ export default function AdminDashboardView({
 
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
+    localStorage.removeItem("adminUser");
     router.push("/login");
   };
+
+  // Deteksi Super Admin (True jika role-nya mutlak "ADMIN")
+  const isSuperAdmin = user?.role === "ADMIN";
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100">
@@ -41,23 +45,40 @@ export default function AdminDashboardView({
           </p>
         </div>
 
-        {/* Panggil StatCard berulang kali dengan Props berbeda */}
         <div className="grid gap-4 md:grid-cols-2">
+          {/* Card Total Pegawai dinamis (Hanya jumlah pegawai div tersebut jika admin div) */}
           <StatCard
             title="Total Pegawai"
             value={totalEmployees}
-            description="Jumlah seluruh pegawai"
+            description={
+              isSuperAdmin
+                ? "Jumlah seluruh pegawai"
+                : `Total pegawai ${user?.customDivName || ""}`
+            }
             icon={Users}
           />
           <StatCard
-            title="Total Divisi"
-            value={totalDivisions}
-            description="Jumlah seluruh divisi"
+            title={
+              isSuperAdmin
+                ? "Total Divisi"
+                : `Kepala Sekolah ${user?.customDivName || ""}`
+            }
+            value={
+              isSuperAdmin ? totalDivisions : user?.customHeadmaster || "-"
+            }
+            description={
+              isSuperAdmin ? "Jumlah seluruh divisi" : "Pimpinan Divisi"
+            }
             icon={Building2}
           />
         </div>
 
-        <LeaveHistoryTable leaveHistory={leaveHistory} divisions={divisions} />
+        {/* Mengoper prop isSuperAdmin ke LeaveHistoryTable */}
+        <LeaveHistoryTable
+          leaveHistory={leaveHistory}
+          divisions={divisions}
+          isSuperAdmin={isSuperAdmin}
+        />
       </main>
     </div>
   );

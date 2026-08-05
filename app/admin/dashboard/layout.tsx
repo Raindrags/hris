@@ -17,7 +17,6 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { UserMenu } from "./components/UserMenu";
 import { SidebarNav } from "./components/SidebarNav";
 
-// 1. Definisikan array role apa saja yang diizinkan untuk melihat menu tertentu
 const allNavItems = [
   {
     title: "Dashboard",
@@ -29,19 +28,19 @@ const allNavItems = [
     title: "Pegawai",
     href: "/admin/dashboard/pegawai",
     icon: Users,
-    allowedRoles: ["ADMIN"], // Hanya Super Admin
+    allowedRoles: ["ADMIN"],
   },
   {
     title: "Absensi",
     href: "/admin/dashboard/absensi",
     icon: CalendarDays,
-    allowedRoles: ["ADMIN"], // Hanya Super Admin
+    allowedRoles: ["ADMIN"],
   },
   {
     title: "Periode",
     href: "/admin/dashboard/period",
     icon: CalendarRange,
-    allowedRoles: ["ADMIN"], // Hanya Super Admin
+    allowedRoles: ["ADMIN"],
   },
   {
     title: "Form Cuti",
@@ -55,18 +54,17 @@ const allNavItems = [
     icon: FileText,
     allowedRoles: ["ADMIN", "ADMIN_SD", "ADMIN_SMP", "ADMIN_SMA"],
   },
-  // INI MENU BARU UNTUK NO FP
   {
     title: "Form No FP",
-    href: "/admin/dashboard/fp", // Sesuaikan dengan nama folder page Bos
-    icon: FileText, // Bos juga bisa import dan pakai icon 'Fingerprint' dari lucide-react jika mau berbeda
+    href: "/admin/dashboard/fp",
+    icon: FileText,
     allowedRoles: ["ADMIN", "ADMIN_SD", "ADMIN_SMP", "ADMIN_SMA"],
   },
   {
     title: "Jadwal",
     href: "/admin/dashboard/jadwal",
     icon: CalendarDays,
-    allowedRoles: ["ADMIN"], // Hanya Super Admin
+    allowedRoles: ["ADMIN"],
   },
   {
     title: "Laporan",
@@ -82,6 +80,8 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  // State isLoading ditambahkan agar sidebar tidak "berkedip" menampilkan semua menu sebelum localStorage terbaca
+  const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<{
     name?: string;
     email?: string;
@@ -90,22 +90,20 @@ export default function DashboardLayout({
   } | null>(null);
 
   useEffect(() => {
-    // TODO: Idealnya ini memanggil endpoint backend (misal /api/auth/me)
-    // atau mengambil data dari localStorage/decode cookie yang berisi `role` asli
-    setUser({
-      name: "Admin Sekolah",
-      email: "admin@maitreyawira.sch.id",
-      role: "ADMIN", // Contoh: ubah ini jadi "ADMIN_SD" untuk mencoba test hide menu
-    });
+    const storedUser = localStorage.getItem("adminUser");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+    setIsLoading(false);
   }, []);
 
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
+    localStorage.removeItem("adminUser");
     router.push("/login");
     router.refresh();
   };
 
-  // 2. Filter menu berdasarkan role yang dimiliki oleh user
   const filteredNavItems = allNavItems.filter((item) => {
     if (!user || !user.role) return false;
     return item.allowedRoles.includes(user.role);
@@ -113,7 +111,6 @@ export default function DashboardLayout({
 
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[240px_1fr] lg:grid-cols-[280px_1fr] bg-gray-950 text-gray-100">
-      {/* SIDEBAR DESKTOP */}
       <aside className="hidden md:flex flex-col border-r border-gray-800 bg-gray-900/80 backdrop-blur-sm print:hidden">
         <div className="flex h-16 items-center gap-3 border-b border-gray-800 px-6">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-crimson-900/40 text-crimson-400">
@@ -126,13 +123,11 @@ export default function DashboardLayout({
           </div>
         </div>
 
-        {/* 3. Gunakan filteredNavItems */}
-        <SidebarNav items={filteredNavItems} />
+        {!isLoading && <SidebarNav items={filteredNavItems} />}
       </aside>
 
       <div className="flex flex-col min-h-screen">
         <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-gray-800 bg-gray-900/90 px-4 md:px-6 print:hidden">
-          {/* SIDEBAR MOBILE */}
           <Sheet>
             <SheetTrigger className="md:hidden inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-gray-700 bg-gray-800">
               <Menu className="h-5 w-5" />
@@ -141,12 +136,10 @@ export default function DashboardLayout({
               side="left"
               className="bg-gray-900 border-gray-800 p-0 w-72"
             >
-              {/* 4. Gunakan filteredNavItems untuk versi Mobile */}
-              <SidebarNav items={filteredNavItems} isMobile />
+              {!isLoading && <SidebarNav items={filteredNavItems} isMobile />}
             </SheetContent>
           </Sheet>
 
-          {/* SEARCH BAR */}
           <div className="w-full flex-1">
             <div className="relative max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
@@ -158,7 +151,6 @@ export default function DashboardLayout({
             </div>
           </div>
 
-          {/* USER MENU */}
           <UserMenu user={user} onLogout={handleLogout} />
         </header>
 
