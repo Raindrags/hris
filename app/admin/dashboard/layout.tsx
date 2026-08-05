@@ -22,7 +22,7 @@ const allNavItems = [
     title: "Dashboard",
     href: "/admin/dashboard",
     icon: Home,
-    allowedRoles: ["ADMIN", "ADMIN_SD", "ADMIN_SMP", "ADMIN_SMA"],
+    allowedRoles: ["ADMIN", "ADMIN_SD", "ADMIN_SMP", "ADMIN_SMA", "ADMIN_PAUD"],
   },
   {
     title: "Pegawai",
@@ -46,19 +46,19 @@ const allNavItems = [
     title: "Form Cuti",
     href: "/admin/dashboard/form-cuti",
     icon: FileText,
-    allowedRoles: ["ADMIN", "ADMIN_SD", "ADMIN_SMP", "ADMIN_SMA"],
+    allowedRoles: ["ADMIN", "ADMIN_SD", "ADMIN_SMP", "ADMIN_SMA", "ADMIN_PAUD"],
   },
   {
     title: "Form Izin",
     href: "/admin/dashboard/form-izin",
     icon: FileText,
-    allowedRoles: ["ADMIN", "ADMIN_SD", "ADMIN_SMP", "ADMIN_SMA"],
+    allowedRoles: ["ADMIN", "ADMIN_SD", "ADMIN_SMP", "ADMIN_SMA", "ADMIN_PAUD"],
   },
   {
     title: "Form No FP",
     href: "/admin/dashboard/fp",
     icon: FileText,
-    allowedRoles: ["ADMIN", "ADMIN_SD", "ADMIN_SMP", "ADMIN_SMA"],
+    allowedRoles: ["ADMIN", "ADMIN_SD", "ADMIN_SMP", "ADMIN_SMA", "ADMIN_PAUD"],
   },
   {
     title: "Jadwal",
@@ -70,7 +70,7 @@ const allNavItems = [
     title: "Laporan",
     href: "/admin/dashboard/laporan",
     icon: LineChart,
-    allowedRoles: ["ADMIN", "ADMIN_SD", "ADMIN_SMP", "ADMIN_SMA"],
+    allowedRoles: ["ADMIN", "ADMIN_SD", "ADMIN_SMP", "ADMIN_SMA", "ADMIN_PAUD"],
   },
 ];
 
