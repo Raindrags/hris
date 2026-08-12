@@ -1,21 +1,21 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { getAdminReportData } from "@/app/actions/laporan-action";
+import { getDivisions, getPeriods } from "@/app/actions/laporan-action";
 import AdminLaporanView from "@/app/components/dashboard/admin-laporan-view";
 
 export default async function LaporanPage() {
   const cookieStore = await cookies();
-
-  // Sesuaikan dengan nama cookie di sistem login Anda
   const token = cookieStore.get("access_token")?.value;
 
   if (!token) {
     return redirect("/login");
   }
 
-  // Fetch data di server menggunakan token yang ditemukan
-  const reportResponse = await getAdminReportData();
-  const initialData = reportResponse.success ? reportResponse.data : null;
+  // Tarik data untuk Dropdown Filter
+  const [divisiRes, periodRes] = await Promise.all([
+    getDivisions(),
+    getPeriods(),
+  ]);
 
   return (
     <div className="p-4 md:p-6">
@@ -28,7 +28,10 @@ export default async function LaporanPage() {
         </p>
       </div>
 
-      <AdminLaporanView initialData={initialData} />
+      <AdminLaporanView
+        divisions={divisiRes.data || []}
+        periods={periodRes.data || []}
+      />
     </div>
   );
 }
