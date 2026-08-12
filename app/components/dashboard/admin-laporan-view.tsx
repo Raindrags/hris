@@ -136,7 +136,10 @@ export default function AdminLaporanView({
               <label className="text-sm font-semibold text-slate-700">
                 Periode Absensi
               </label>
-              <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+              <Select
+                value={selectedPeriod}
+                onValueChange={(val) => setSelectedPeriod(val || "ALL")}
+              >
                 <SelectTrigger className="w-full h-11 bg-white border-slate-300 shadow-sm focus:ring-2 focus:ring-blue-500 rounded-lg transition-all text-left">
                   <div className="flex items-center gap-2 text-slate-700 w-full overflow-hidden">
                     <CalendarDays className="h-4 w-4 text-slate-400 shrink-0" />
@@ -169,7 +172,10 @@ export default function AdminLaporanView({
               <label className="text-sm font-semibold text-slate-700">
                 Divisi
               </label>
-              <Select value={selectedDivisi} onValueChange={setSelectedDivisi}>
+              <Select
+                value={selectedDivisi}
+                onValueChange={(val) => setSelectedDivisi(val || "ALL")}
+              >
                 <SelectTrigger className="w-full h-11 bg-white border-slate-300 shadow-sm focus:ring-2 focus:ring-blue-500 rounded-lg transition-all text-left">
                   <div className="flex items-center gap-2 text-slate-700 w-full overflow-hidden">
                     <Building2 className="h-4 w-4 text-slate-400 shrink-0" />
