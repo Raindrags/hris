@@ -11,6 +11,7 @@ import {
   CalendarDays,
   FileText,
   CalendarRange,
+  UserCog,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -28,6 +29,12 @@ const allNavItems = [
     title: "Pegawai",
     href: "/admin/dashboard/pegawai",
     icon: Users,
+    allowedRoles: ["ADMIN"],
+  },
+  {
+    title: "Peralihan Atasan",
+    href: "/admin/dashboard/peralihan",
+    icon: UserCog,
     allowedRoles: ["ADMIN"],
   },
   {

@@ -1,5 +1,3 @@
-// File: pegawai/hooks/useEmployees.ts
-
 import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import { Employee, Supervisor, Division, EmployeeFormData } from "../types";
@@ -169,16 +167,12 @@ export const useEmployees = () => {
   };
 
   const filteredEmployees = useMemo(() => {
+    const searchLower = searchTerm.trim().toLowerCase();
+    if (!searchLower) return employees;
+
     return employees.filter((emp) => {
-      const searchLower = searchTerm.toLowerCase();
-      const empName = (emp.name || emp.fullName || "").toLowerCase();
-      const empEmail = (emp.email || "").toLowerCase();
-      const empRole = (emp.jabatan || "").toLowerCase();
-      return (
-        empName.includes(searchLower) ||
-        empEmail.includes(searchLower) ||
-        empRole.includes(searchLower)
-      );
+      const empNiy = (emp.niy || "").toLowerCase();
+      return empNiy.includes(searchLower);
     });
   }, [employees, searchTerm]);
 
