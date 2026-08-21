@@ -21,7 +21,6 @@ const getLocalYYYYMMDD = (date: Date) => {
 
 export const usePermissionForm = ({
   user,
-  potentialSubstitutes,
   onSuccess,
   userId,
 }: UsePermissionFormProps) => {

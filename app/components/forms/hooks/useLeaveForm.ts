@@ -14,6 +14,7 @@ export const useLeaveForm = (
   sisaCuti: number | string,
   userId?: string,
   onSuccess?: () => void,
+  user?: any,
 ) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [startDate, setStartDate] = useState<Date>();
@@ -57,7 +58,6 @@ export const useLeaveForm = (
   useEffect(() => {
     const fetchSpecialWorkDays = async () => {
       try {
-        // Fetch ke endpoint bawaan tanpa parameter tambahan
         const res = await fetch("/api/special-workdays");
         if (!res.ok) throw new Error("Gagal fetch special workdays");
         const responseData = await res.json();
