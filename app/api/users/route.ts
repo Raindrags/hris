@@ -22,10 +22,6 @@ export async function GET(req: NextRequest) {
     });
     const data = await res.json();
 
-    // --- TAMBAHKAN LOGGING INI UNTUK DEBUGGING ---
-    console.log("🔍 CEK DATA DARI BACKEND:", JSON.stringify(data, null, 2));
-    // ---------------------------------------------
-
     return NextResponse.json(data, { status: res.status });
   } catch (error) {
     console.error("❌ ERROR API USERS:", error);

@@ -8,7 +8,7 @@ export async function GET() {
   }
 
   try {
-    const res = await fetch(`${backendUrl}/calendar/special-dates`);
+    const res = await fetch(`${backendUrl}/special-work-dates`);
     // Jika backend belum punya endpoint ini, kembalikan array kosong
     if (!res.ok) {
       console.warn(
@@ -17,7 +17,9 @@ export async function GET() {
       return NextResponse.json([], { status: 200 });
     }
     const data = await res.json();
-    // Pastikan data berupa array string tanggal (YYYY-MM-DD)
+    console.log("====== DATA DARI BACKEND ======");
+    console.log(JSON.stringify(data, null, 2));
+    console.log("===============================");
     return NextResponse.json(Array.isArray(data) ? data : (data?.data ?? []));
   } catch (error) {
     console.error("Gagal mengambil data libur dari backend:", error);

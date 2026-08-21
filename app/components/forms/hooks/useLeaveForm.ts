@@ -54,30 +54,88 @@ export const useLeaveForm = (
     fetchHolidays();
   }, []);
 
-  // 2. Fetch Data Hari Kerja Khusus
   useEffect(() => {
     const fetchSpecialWorkDays = async () => {
       try {
+        // Fetch ke endpoint bawaan tanpa parameter tambahan
         const res = await fetch("/api/special-workdays");
         if (!res.ok) throw new Error("Gagal fetch special workdays");
-        const data = await res.json();
+        const responseData = await res.json();
 
-        let daysArray: string[] = [];
-        const sourceData = Array.isArray(data) ? data : data?.data || [];
+        let daysSet = new Set<string>();
+        const sourceData = Array.isArray(responseData)
+          ? responseData
+          : responseData?.data || [];
 
-        daysArray = sourceData
-          .map((item: CalendarEventResponse | string) =>
-            typeof item === "string" ? item : (item.date ?? item.tanggal ?? ""),
-          )
-          .filter(Boolean);
+        sourceData.forEach((item: any) => {
+          // 1. DAPATKAN ID DIVISI USER SAAT INI
+          // Mengambil dari user.divisiId atau user.divisi.id
+          const myDivisiId =
+            typeof user?.divisi === "object" && user?.divisi !== null
+              ? (user.divisi as any).id
+              : user?.divisiId || user?.divisi;
 
-        setSpecialWorkDays(daysArray);
+          // 2. CEK APAKAH JADWAL INI UNTUK USER INI ATAU DIVISINYA?
+          // Cek apakah userId ada di dalam array item.users
+          const isUserAssigned =
+            Array.isArray(item.users) &&
+            item.users.some((u: any) => u.id === (userId || user?.id));
+
+          // Cek apakah jadwal ini memiliki divisiId yang sama dengan myDivisiId
+          const isDivisiAssigned = Boolean(
+            myDivisiId &&
+            item.divisiId &&
+            String(item.divisiId) === String(myDivisiId),
+          );
+
+          // Cek alternatif: Jika backend mengembalikan object divisi, bukan divisiId
+          const isDivisiObjAssigned = Boolean(
+            myDivisiId &&
+            item.divisi?.id &&
+            String(item.divisi.id) === String(myDivisiId),
+          );
+
+          // Jika tidak masuk ke salah satu kriteria, lewati data ini.
+          if (!isUserAssigned && !isDivisiAssigned && !isDivisiObjAssigned) {
+            return;
+          }
+
+          // 3. PARSING TANGGAL KE FORMAT YYYY-MM-DD
+          if (item.startDate && item.endDate) {
+            const startStr = item.startDate.split("T")[0];
+            const endStr = item.endDate.split("T")[0];
+
+            const [sYear, sMonth, sDate] = startStr.split("-").map(Number);
+            const [eYear, eMonth, eDate] = endStr.split("-").map(Number);
+
+            let current = new Date(sYear, sMonth - 1, sDate);
+            const end = new Date(eYear, eMonth - 1, eDate);
+
+            while (current <= end) {
+              const yyyy = current.getFullYear();
+              const mm = String(current.getMonth() + 1).padStart(2, "0");
+              const dd = String(current.getDate()).padStart(2, "0");
+
+              daysSet.add(`${yyyy}-${mm}-${dd}`);
+              current.setDate(current.getDate() + 1);
+            }
+          }
+        });
+
+        // Debugging: Cek isi Set di inspect element (Console) browser Anda
+        console.log("Special Work Days User Ini:", Array.from(daysSet));
+
+        setSpecialWorkDays(Array.from(daysSet));
       } catch (error) {
+        console.error("Gagal menarik data jadwal kerja khusus:", error);
         setSpecialWorkDays([]);
       }
     };
-    fetchSpecialWorkDays();
-  }, []);
+
+    if (userId) {
+      fetchSpecialWorkDays();
+    }
+  }, [userId]);
 
   // 3. Kalkulasi Hari
   const isHolidayOrSunday = (date: Date): boolean => {

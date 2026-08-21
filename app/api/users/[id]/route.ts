@@ -45,10 +45,6 @@ export async function GET(
       return NextResponse.json(backendData, { status: res.status });
     }
 
-    // ✅ PERBAIKAN: Menggunakan backendData.data sesuai format return NestJS Anda
-    // Menggunakan ?. (Optional Chaining) agar aman jika data kosong
-    console.log("sisaCuti from backend:", backendData.data?.sisaCuti);
-
     // Kirim data utuh ke frontend Next.js
     return NextResponse.json(backendData, { status: res.status });
   } catch (error: any) {
@@ -88,12 +84,6 @@ export async function PUT(
 
     const body = await req.json();
 
-    // 🔍 Log payload yang dikirim ke backend
-    console.log(
-      `[API /users/${id}] 📤 Payload dikirim ke backend:`,
-      JSON.stringify(body, null, 2),
-    );
-
     const res = await fetch(`${backendUrl}/users/${id}`, {
       method: "PUT",
       headers: {
@@ -111,18 +101,16 @@ export async function PUT(
         `[API /users/${id}] ❌ Backend error ${res.status}:`,
         JSON.stringify(backendData, null, 2),
       );
-    } else {
-      console.log(
-        `[API /users/${id}] ✅ Backend sukses mengupdate:`,
-        JSON.stringify(backendData, null, 2),
-      );
     }
 
     return NextResponse.json(backendData, { status: res.status });
   } catch (error) {
     console.error(`[API /users/${id}] 💥 Server error saat update:`, error);
     return NextResponse.json(
-      { success: false, error: "Terjadi kesalahan server saat memperbarui data" },
+      {
+        success: false,
+        error: "Terjadi kesalahan server saat memperbarui data",
+      },
       { status: 500 },
     );
   }
@@ -154,11 +142,6 @@ export async function DELETE(
       );
     }
 
-    // 🔍 Log info bahwa proses hapus dimulai
-    console.log(
-      `[API /users/${id}] 🗑️ Meminta backend untuk menghapus data...`,
-    );
-
     const res = await fetch(`${backendUrl}/users/${id}`, {
       method: "DELETE",
       headers: {
@@ -172,11 +155,6 @@ export async function DELETE(
     if (!res.ok) {
       console.error(
         `[API /users/${id}] ❌ Backend error saat delete ${res.status}:`,
-        JSON.stringify(backendData, null, 2),
-      );
-    } else {
-      console.log(
-        `[API /users/${id}] ✅ Backend sukses menghapus data:`,
         JSON.stringify(backendData, null, 2),
       );
     }
