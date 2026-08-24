@@ -35,10 +35,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Input } from "@/components/ui/input"; // Komponen Input ditambahkan
 import {
   Clock,
   Filter,
@@ -48,7 +45,9 @@ import {
   Ban,
   ChevronLeft,
   ChevronRight,
+  Search, // Icon Search ditambahkan
 } from "lucide-react";
+import { DeductionModal } from "@/app/components/dashboard/deductions-modal";
 
 export function LeaveHistoryTable({
   leaveHistory,
@@ -58,33 +57,48 @@ export function LeaveHistoryTable({
   const router = useRouter();
 
   const [selectedDivisionId, setSelectedDivisionId] = useState<string>("ALL");
+  const [searchQuery, setSearchQuery] = useState<string>(""); // State untuk pencarian
   const [selectedRequest, setSelectedRequest] = useState<any | null>(null);
 
   const [currentPage, setCurrentPage] = useState<number>(1);
   const itemsPerPage = 10;
 
+  // State untuk Modals
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isDeductionModalOpen, setIsDeductionModalOpen] = useState(false);
   const [isDiscardModalOpen, setIsDiscardModalOpen] = useState(false);
 
-  const [noDeduction, setNoDeduction] = useState<boolean>(false);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  // State Loading untuk aksi di komponen ini (pembatalan)
   const [isDiscarding, setIsDiscarding] = useState<boolean>(false);
 
-  const filteredHistory =
-    selectedDivisionId === "ALL"
-      ? leaveHistory
-      : leaveHistory.filter(
-          (req: any) => req.user.divisi?.id === selectedDivisionId,
-        );
+  // Logika Filter (Divisi + Pencarian Nama) & Pagination
+  const filteredHistory = leaveHistory.filter((req: any) => {
+    // Cek filter divisi
+    const matchDivision =
+      selectedDivisionId === "ALL" ||
+      req.user.divisi?.id === selectedDivisionId;
+
+    // Cek filter nama
+    const matchName = req.user.name
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
+
+    return matchDivision && matchName;
+  });
 
   const totalPages = Math.ceil(filteredHistory.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedHistory = filteredHistory.slice(startIndex, endIndex);
 
+  // Handlers
   const handleDivisionChange = (v: string) => {
     setSelectedDivisionId(v);
+    setCurrentPage(1);
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
     setCurrentPage(1);
   };
 
@@ -95,7 +109,6 @@ export function LeaveHistoryTable({
 
   const handleOpenDeduction = (req: any) => {
     setSelectedRequest(req);
-    setNoDeduction(req.deductionOptions === "TIDAK_DIPOTONG");
     setIsDeductionModalOpen(true);
   };
 
@@ -104,41 +117,7 @@ export function LeaveHistoryTable({
     setIsDiscardModalOpen(true);
   };
 
-  const handleSubmitDeduction = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-
-    const formData = new FormData(e.currentTarget);
-    const payload = Object.fromEntries(formData);
-
-    try {
-      const res = await fetch(
-        `/api/requests/${selectedRequest.id}/deductions`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ noDeduction, ...payload }),
-        },
-      );
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || "Gagal menyimpan data denda");
-      }
-
-      toast.success("Denda dan potongan berhasil diperbarui");
-      setIsDeductionModalOpen(false);
-      router.refresh();
-    } catch (error: any) {
-      console.error(error);
-      toast.error(error.message || "Terjadi kesalahan pada server");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
+  // Logika Pembatalan Pengajuan
   const handleDiscard = async () => {
     setIsDiscarding(true);
     try {
@@ -164,9 +143,10 @@ export function LeaveHistoryTable({
 
   return (
     <>
+      {/* TABEL UTAMA */}
       <Card className="border-gray-800 bg-gray-900 shadow-md col-span-full">
         <CardHeader className="border-b border-gray-800 pb-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <CardTitle className="flex items-center gap-2 text-white">
                 <Clock className="h-5 w-5 text-crimson-500" /> Histori Pengajuan
@@ -176,30 +156,45 @@ export function LeaveHistoryTable({
               </CardDescription>
             </div>
 
-            {/* Filter Divisi (Hanya Tampil Jika isSuperAdmin == true) */}
-            {isSuperAdmin && (
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                <Filter className="h-4 w-4 text-gray-400 hidden sm:block" />
-                <Select
-                  value={selectedDivisionId}
-                  onValueChange={(v) => handleDivisionChange(v ?? "ALL")}
-                >
-                  <SelectTrigger className="w-full sm:w-[200px] bg-gray-800 border-gray-700 text-gray-200">
-                    <SelectValue placeholder="Semua Divisi" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-700 text-gray-200">
-                    <SelectItem value="ALL">Semua Divisi</SelectItem>
-                    {divisions.map((div: any) => (
-                      <SelectItem key={div.id} value={div.id}>
-                        {div.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+              {/* Kolom Pencarian Nama */}
+              <div className="relative w-full sm:w-[250px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                <Input
+                  type="text"
+                  placeholder="Cari nama pegawai..."
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  className="w-full pl-9 bg-gray-800 border-gray-700 text-gray-200 focus-visible:ring-gray-700"
+                />
               </div>
-            )}
+
+              {/* Filter Divisi (Hanya Tampil Jika isSuperAdmin == true) */}
+              {isSuperAdmin && (
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <Filter className="h-4 w-4 text-gray-400 hidden sm:block" />
+                  <Select
+                    value={selectedDivisionId}
+                    onValueChange={(v) => handleDivisionChange(v ?? "ALL")}
+                  >
+                    <SelectTrigger className="w-full sm:w-[200px] bg-gray-800 border-gray-700 text-gray-200">
+                      <SelectValue placeholder="Semua Divisi" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-gray-800 border-gray-700 text-gray-200">
+                      <SelectItem value="ALL">Semua Divisi</SelectItem>
+                      {divisions.map((div: any) => (
+                        <SelectItem key={div.id} value={div.id}>
+                          {div.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
           </div>
         </CardHeader>
+
         <CardContent className="p-0 flex flex-col min-h-[400px] justify-between">
           <div className="overflow-x-auto">
             <Table>
@@ -261,6 +256,7 @@ export function LeaveHistoryTable({
                             Detail
                           </Button>
 
+                          {/* Tombol Atur Denda (Kecuali Cuti yang tidak dipotong) */}
                           {!(
                             req.type === "CUTI" &&
                             req.deductionOptions !== "DIPOTONG"
@@ -276,6 +272,7 @@ export function LeaveHistoryTable({
                             </Button>
                           )}
 
+                          {/* Tombol Batalkan (Kecuali yang sudah ditolak/dibatalkan) */}
                           {req.status !== "REJECTED" &&
                             req.status !== "CANCELLED" && (
                               <Button
@@ -298,7 +295,9 @@ export function LeaveHistoryTable({
                       colSpan={5}
                       className="text-center py-6 text-gray-500"
                     >
-                      Tidak ada data pengajuan yang ditemukan.
+                      {searchQuery
+                        ? "Pencarian tidak menemukan hasil."
+                        : "Tidak ada data pengajuan yang ditemukan."}
                     </TableCell>
                   </TableRow>
                 )}
@@ -306,6 +305,7 @@ export function LeaveHistoryTable({
             </Table>
           </div>
 
+          {/* PAGINATION */}
           {totalPages > 1 && (
             <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 border-t border-gray-800 gap-4">
               <div className="text-sm text-gray-400">
@@ -465,192 +465,14 @@ export function LeaveHistoryTable({
         </DialogContent>
       </Dialog>
 
-      {/* MODAL DENDA */}
-      <Dialog
-        open={isDeductionModalOpen}
-        onOpenChange={setIsDeductionModalOpen}
-      >
-        <DialogContent className="bg-gray-900 border-gray-800 text-gray-200 sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-white">
-              Atur Denda & Potongan
-            </DialogTitle>
-            <CardDescription className="text-gray-400">
-              {selectedRequest?.user?.name} -{" "}
-              {selectedRequest?.category || selectedRequest?.type}
-            </CardDescription>
-          </DialogHeader>
+      <DeductionModal
+        isOpen={isDeductionModalOpen}
+        onClose={() => setIsDeductionModalOpen(false)}
+        request={selectedRequest}
+        onSuccess={() => router.refresh()}
+      />
 
-          <form
-            onSubmit={handleSubmitDeduction}
-            className="space-y-4 max-h-[65vh] overflow-y-auto px-1 mt-2"
-          >
-            <div className="flex items-center space-x-2 mb-2">
-              <Checkbox
-                id="no_deduction"
-                checked={noDeduction}
-                onCheckedChange={(c) => setNoDeduction(c as boolean)}
-              />
-              <Label
-                htmlFor="no_deduction"
-                className="font-semibold text-emerald-400 cursor-pointer"
-              >
-                Tidak Dikenakan Pemotongan
-              </Label>
-            </div>
-
-            {!noDeduction && (
-              <div className="pl-4 space-y-4 border-l-2 border-gray-800">
-                <div className="space-y-2">
-                  <Label className="text-xs font-semibold uppercase text-gray-400">
-                    Jenis Potongan
-                  </Label>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="p_gaji"
-                      name="potongGaji"
-                      defaultChecked={selectedRequest?.potongGaji}
-                    />
-                    <label
-                      htmlFor="p_gaji"
-                      className="text-sm text-gray-300 cursor-pointer"
-                    >
-                      Potong Gaji
-                    </label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="p_konsum"
-                      name="potongKonsumsi"
-                      defaultChecked={selectedRequest?.potongKonsumsi}
-                    />
-                    <label
-                      htmlFor="p_konsum"
-                      className="text-sm text-gray-300 cursor-pointer"
-                    >
-                      Tunjangan Konsumsi
-                    </label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="p_trans"
-                      name="potongTransport"
-                      defaultChecked={selectedRequest?.potongTransport}
-                    />
-                    <label
-                      htmlFor="p_trans"
-                      className="text-sm text-gray-300 cursor-pointer"
-                    >
-                      Tunjangan Transportasi
-                    </label>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-xs font-semibold uppercase text-gray-400">
-                    Denda Telat
-                  </Label>
-                  <RadioGroup
-                    defaultValue={selectedRequest?.lateFine?.toString() || "0"}
-                    name="lateFine"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="0" id="t_0" />
-                      <Label
-                        htmlFor="t_0"
-                        className="text-gray-300 cursor-pointer"
-                      >
-                        Tidak ada
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="5000" id="t_5000" />
-                      <Label
-                        htmlFor="t_5000"
-                        className="text-gray-300 cursor-pointer"
-                      >
-                        Rp 5.000
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="10000" id="t_10000" />
-                      <Label
-                        htmlFor="t_10000"
-                        className="text-gray-300 cursor-pointer"
-                      >
-                        Rp 10.000
-                      </Label>
-                    </div>
-                  </RadioGroup>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <Label className="text-xs text-gray-400">
-                      Jumlah Inval
-                    </Label>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="number"
-                        name="invalCount"
-                        className="w-16 bg-gray-950 border-gray-700 text-gray-200 focus-visible:ring-gray-700"
-                        defaultValue={selectedRequest?.invalCount || 0}
-                        min={0}
-                      />
-                      <span className="text-xs text-gray-500">x Rp 5.000</span>
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs text-gray-400">
-                      Jumlah Shift
-                    </Label>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="number"
-                        name="shiftCount"
-                        className="w-16 bg-gray-950 border-gray-700 text-gray-200 focus-visible:ring-gray-700"
-                        defaultValue={selectedRequest?.shiftCount || 0}
-                        min={0}
-                      />
-                      <span className="text-xs text-gray-500">
-                        x Rp {selectedRequest?.shiftRate || 30000}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="flex justify-end gap-2 pt-4 border-t border-gray-800">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setIsDeductionModalOpen(false)}
-                className="text-gray-400 hover:text-white"
-                disabled={isSubmitting}
-              >
-                Batal
-              </Button>
-              <Button
-                type="submit"
-                className="bg-orange-700 hover:bg-orange-800 text-white min-w-[120px]"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Menyimpan...
-                  </>
-                ) : (
-                  "Simpan Denda"
-                )}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* MODAL DISCARD */}
+      {/* MODAL DISCARD (Pembatalan) */}
       <Dialog open={isDiscardModalOpen} onOpenChange={setIsDiscardModalOpen}>
         <DialogContent className="bg-gray-900 border-gray-800 text-gray-200 sm:max-w-md">
           <DialogHeader>
