@@ -9,7 +9,6 @@ export async function POST(req: NextRequest) {
     const authHeader = req.headers.get("authorization");
     let token = authHeader ? authHeader.split(" ")[1] : undefined;
 
-    // 3. Jika tidak ada di Header, coba cari di Cookies[cite: 11]
     if (!token) {
       token = req.cookies.get("access_token")?.value ?? null;
     }

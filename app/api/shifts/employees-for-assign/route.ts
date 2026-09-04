@@ -8,9 +8,8 @@ export async function GET(req: NextRequest) {
       ? authHeader.split(" ")[1]
       : null;
 
-    // 2. Jika tidak ada di Header, coba cari di Cookies
     if (!token) {
-      token = req.cookies.get("access_token")?.value ?? null;
+      token = req.cookies.get("access_token")?.value;
     }
 
     if (!token) {
