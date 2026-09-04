@@ -37,6 +37,7 @@ export interface EmployeeFormData {
   name: string;
   email: string;
   supervisorId: string;
+  role: string;
   divisiId: string;
   niy: string;
   phone: string;
