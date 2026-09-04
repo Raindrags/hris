@@ -10,8 +10,7 @@ export async function POST(req: NextRequest) {
     let token = authHeader ? authHeader.split(" ")[1] : undefined;
 
     if (!token) {
-      token = req.cookies.get("access_token")?.value ?? null;
-    }
+      token = req.cookies.get("access_token")?.value;
 
     if (!token) {
       return NextResponse.json(
