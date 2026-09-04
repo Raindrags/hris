@@ -11,6 +11,7 @@ export async function POST(req: NextRequest) {
 
     if (!token) {
       token = req.cookies.get("access_token")?.value;
+    }
 
     if (!token) {
       return NextResponse.json(
