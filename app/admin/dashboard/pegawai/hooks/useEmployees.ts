@@ -113,7 +113,6 @@ export const useEmployees = () => {
         ? new Date(employee.joinDate).toISOString().split("T")[0]
         : "",
       isGuru: employee.isGuru || false,
-      jatahCuti: String(employee.jatahCuti || ""),
       jatahIzinKeluar: String(employee.jatahIzinKeluar || "6"),
     });
     setIsModalOpen(true);
