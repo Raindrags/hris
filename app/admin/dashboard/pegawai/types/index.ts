@@ -17,20 +17,20 @@ export interface Employee {
   name?: string;
   fullName?: string;
   email?: string;
+  role?: string;
   supervisorId?: string | null;
+  supervisor?: { id: string; name?: string };
   divisiId?: string | null;
+  divisi?: { id: string; name?: string };
   niy?: string;
   phone?: string;
   emergencyContact?: string;
   jabatan?: string;
   jatahCuti?: string | number;
-  sortOrder?: string | number;
+  sortOrder?: string | number | null;
+  joinDate?: string | Date | null;
   isGuru?: boolean;
-  supervisor?: Supervisor;
-  divisi?: Division;
   jatahIzinKeluar?: string | number;
-  sisaIzinKeluar?: string | number;
-  joinDate?: string | Date;
 }
 
 export interface EmployeeFormData {
