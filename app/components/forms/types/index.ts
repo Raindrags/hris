@@ -44,6 +44,8 @@ export interface ApprovalRequestData {
   sisaJatahIzinKeluar?: number; // Ditambahkan untuk batas sisa izin keluar
   attachmentUrl?: string | null;
   suratDokter?: boolean | string; // Ditambahkan untuk status checklist surat dokter
+  fpDatang?: boolean | null;
+  fpPulang?: boolean | null;
   user: {
     id: string;
     name: string;
