@@ -108,6 +108,7 @@ export default function PermissionForm({
     handleSubmit,
     processSubmit,
     setShowWarning,
+    setPendingPayload,
     setFpDatang,
     setFpPulang,
     setLupaFp,
