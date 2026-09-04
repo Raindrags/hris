@@ -13,7 +13,7 @@ export async function GET(
 
     // 2. Jika tidak ada di Header, coba cari di Cookies
     if (!token) {
-      token = req.cookies.get("access_token")?.value;
+      token = req.cookies.get("access_token")?.value ?? null;
     }
 
     if (!token) {
