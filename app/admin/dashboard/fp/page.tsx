@@ -1,7 +1,7 @@
 // app/admin/no-fp/page.tsx
 "use client";
 
-import { toast } from "sonner"; // Pastikan import library toast yang Bos gunakan (sonner/react-hot-toast)
+import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import NoFpAdminForm from "./components/nofpadminform";
 
@@ -9,7 +9,6 @@ export default function AdminNoFpPage() {
   const router = useRouter();
 
   const handleSuccess = () => {
-    // Menampilkan toast tambahan dari halaman ini
     toast.success("Halaman merespon: Data berhasil disimpan ke database!");
 
     setTimeout(() => {
@@ -31,7 +30,6 @@ export default function AdminNoFpPage() {
           </p>
         </div>
 
-        {/* Memanggil Komponen Form dan mengoper fungsi handleSuccess */}
         <NoFpAdminForm onSuccess={handleSuccess} />
       </div>
     </main>

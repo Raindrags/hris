@@ -2,7 +2,13 @@
 
 import { useEffect } from "react";
 import { Plus, X } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HolidayManager } from "@/app/components/dashboard/holiday-manager";
@@ -14,34 +20,53 @@ import { ShiftForm } from "./components/ShiftForm";
 import { ShiftTable } from "./components/ShiftTable";
 import { BatchAssignModal } from "./components/BatchAssignModal";
 
-// Hooks & Components BARU (Hari Kerja Khusus)
 import { useSpecialWorkDate } from "./hooks/useSpecialWorkDate";
+import { useSpecialWorkDateAssign } from "./hooks/useSpecialWorkDateAssign";
 import { SpecialWorkDateForm } from "./components/SpecialWorkDateForm";
 import { SpecialWorkDateTable } from "./components/SpecialWorkDateTable";
 import { SpecialWorkDateAssignModal } from "./components/SpecialWorkDateAssignModal";
+import { ShiftAssignmentTab } from "./components/ShiftAssignmentTab";
 
 export default function PengaturanJadwalView() {
   const shiftLogic = useShiftManagement();
   const assignLogic = useBatchAssign();
-  const specialDateLogic = useSpecialWorkDate(); // Memanggil logika baru
+
+  const specialDateLogic = useSpecialWorkDate();
+  const specialDateAssignLogic = useSpecialWorkDateAssign(
+    specialDateLogic.fetchData,
+  );
 
   useEffect(() => {
     shiftLogic.fetchData();
-    specialDateLogic.fetchData(); // Pre-fetch data hari kerja khusus saat mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    specialDateLogic.fetchData();
   }, []);
 
   return (
     <div className="space-y-6 text-gray-100">
       <Tabs defaultValue="shift">
         <TabsList className="flex-wrap bg-gray-900 border border-gray-800 p-1 rounded-lg">
-          <TabsTrigger value="shift" className="data-[state=active]:bg-crimson-700 data-[state=active]:text-white text-gray-400">
+          <TabsTrigger
+            value="shift"
+            className="data-[state=active]:bg-crimson-700 data-[state=active]:text-white text-gray-400"
+          >
             Template Shift
           </TabsTrigger>
-          <TabsTrigger value="holiday" className="data-[state=active]:bg-crimson-700 data-[state=active]:text-white text-gray-400">
+          <TabsTrigger
+            value="assign"
+            className="data-[state=active]:bg-crimson-700 data-[state=active]:text-white text-gray-400"
+          >
+            Penugasan Jadwal
+          </TabsTrigger>
+          <TabsTrigger
+            value="holiday"
+            className="data-[state=active]:bg-crimson-700 data-[state=active]:text-white text-gray-400"
+          >
             Hari Libur
           </TabsTrigger>
-          <TabsTrigger value="special" className="data-[state=active]:bg-crimson-700 data-[state=active]:text-white text-gray-400">
+          <TabsTrigger
+            value="special"
+            className="data-[state=active]:bg-crimson-700 data-[state=active]:text-white text-gray-400"
+          >
             Hari Kerja Khusus
           </TabsTrigger>
         </TabsList>
@@ -50,28 +75,68 @@ export default function PengaturanJadwalView() {
           <Card className="bg-gray-900 border-gray-800 shadow-md">
             <CardHeader className="flex flex-row items-center justify-between border-b border-gray-800 pb-4">
               <div>
-                <CardTitle className="text-white">Template Shift Kerja (Dinamis)</CardTitle>
-                <CardDescription className="text-gray-400">Atur jam masuk & pulang per hari dalam satu template jadwal.</CardDescription>
+                <CardTitle className="text-white">
+                  Template Shift Kerja (Dinamis)
+                </CardTitle>
+                <CardDescription className="text-gray-400">
+                  Atur jam masuk & pulang per hari dalam satu template jadwal.
+                </CardDescription>
               </div>
-              <Button size="sm" onClick={shiftLogic.toggleForm} className="bg-crimson-700 hover:bg-crimson-800 text-white">
-                {shiftLogic.showShiftForm ? <><X className="w-4 h-4 mr-2" /> Batal</> : <><Plus className="w-4 h-4 mr-2" /> Tambah Template</>}
+              <Button
+                size="sm"
+                onClick={shiftLogic.toggleForm}
+                className="bg-crimson-700 hover:bg-crimson-800 text-white"
+              >
+                {shiftLogic.showShiftForm ? (
+                  <>
+                    <X className="w-4 h-4 mr-2" /> Batal
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4 mr-2" /> Tambah Template
+                  </>
+                )}
               </Button>
             </CardHeader>
             <CardContent className="pt-6">
               {shiftLogic.showShiftForm && (
-                <ShiftForm 
-                  form={shiftLogic.shiftForm} setForm={shiftLogic.setShiftForm}
-                  onDetailChange={shiftLogic.handleDetailChange} onSave={shiftLogic.handleSaveShift}
-                  isLoading={shiftLogic.isLoading} isEditing={shiftLogic.isEditing}
+                <ShiftForm
+                  form={shiftLogic.shiftForm}
+                  setForm={shiftLogic.setShiftForm}
+                  onDetailChange={shiftLogic.handleDetailChange}
+                  onSave={shiftLogic.handleSaveShift}
+                  isLoading={shiftLogic.isLoading}
+                  isEditing={shiftLogic.isEditing}
                 />
               )}
-              <ShiftTable 
-                shifts={shiftLogic.paginatedShifts} totalShifts={shiftLogic.shifts.length}
-                isLoading={shiftLogic.isLoading} currentPage={shiftLogic.currentPage}
-                totalPages={shiftLogic.totalPages} onPageChange={shiftLogic.setCurrentPage}
-                onEdit={shiftLogic.handleEditShift} onDelete={shiftLogic.handleDeleteShift}
+              <ShiftTable
+                shifts={shiftLogic.paginatedShifts}
+                totalShifts={shiftLogic.shifts.length}
+                isLoading={shiftLogic.isLoading}
+                currentPage={shiftLogic.currentPage}
+                totalPages={shiftLogic.totalPages}
+                onPageChange={shiftLogic.setCurrentPage}
+                onEdit={shiftLogic.handleEditShift}
+                onDelete={shiftLogic.handleDeleteShift}
                 onAssign={assignLogic.openModal}
               />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="assign">
+          <Card className="bg-gray-900 border-gray-800 shadow-md">
+            <CardHeader className="border-b border-gray-800 pb-4">
+              <CardTitle className="text-white">
+                Penugasan & Perubahan Jadwal Pegawai
+              </CardTitle>
+              <CardDescription className="text-gray-400">
+                Pilih pegawai, tentukan jadwal (shift) baru, dan tetapkan mulai
+                tanggal berapa jadwal tersebut berlaku.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <ShiftAssignmentTab shifts={shiftLogic.shifts} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -79,32 +144,49 @@ export default function PengaturanJadwalView() {
         <TabsContent value="holiday">
           <Card className="bg-gray-900 border-gray-800 shadow-md">
             <CardHeader>
-              <CardTitle className="text-white">Hari Libur Nasional & Perusahaan</CardTitle>
-              <CardDescription className="text-gray-400">Kelola tanggal libur yang berlaku. Kosongkan pegawai untuk berlaku ke semua.</CardDescription>
+              <CardTitle className="text-white">
+                Hari Libur Nasional & Perusahaan
+              </CardTitle>
+              <CardDescription className="text-gray-400">
+                Kelola tanggal libur yang berlaku. Kosongkan pegawai untuk
+                berlaku ke semua.
+              </CardDescription>
             </CardHeader>
-            <CardContent><HolidayManager /></CardContent>
+            <CardContent>
+              <HolidayManager />
+            </CardContent>
           </Card>
         </TabsContent>
 
-        {/* TAB TARGET: HARI KERJA KHUSUS SUDAH REFACTOR & DIPERBARUI */}
         <TabsContent value="special">
           <Card className="bg-gray-900 border-gray-800 shadow-md">
             <CardHeader className="flex flex-row items-center justify-between border-b border-gray-800 pb-4">
               <div>
                 <CardTitle className="text-white">Hari Kerja Khusus</CardTitle>
-                <CardDescription className="text-gray-400">Hari libur yang dijadikan hari kerja (misal: Sabtu/Minggu masuk karena event).</CardDescription>
+                <CardDescription className="text-gray-400">
+                  Hari libur yang dijadikan hari kerja (misal: Sabtu/Minggu
+                  masuk karena event).
+                </CardDescription>
               </div>
-              <Button 
-                size="sm" 
+              <Button
+                size="sm"
                 onClick={() => specialDateLogic.toggleForm()}
                 className="bg-crimson-700 hover:bg-crimson-800 text-white"
               >
-                {specialDateLogic.showForm ? <><X className="w-4 h-4 mr-2" /> Batal</> : <><Plus className="w-4 h-4 mr-2" /> Tambah Agenda</>}
+                {specialDateLogic.showForm ? (
+                  <>
+                    <X className="w-4 h-4 mr-2" /> Batal
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4 mr-2" /> Tambah Agenda
+                  </>
+                )}
               </Button>
             </CardHeader>
             <CardContent className="pt-6">
               {specialDateLogic.showForm && (
-                <SpecialWorkDateForm 
+                <SpecialWorkDateForm
                   form={specialDateLogic.formState}
                   setForm={specialDateLogic.setFormState}
                   onSave={specialDateLogic.handleSave}
@@ -113,21 +195,21 @@ export default function PengaturanJadwalView() {
                 />
               )}
 
-              <SpecialWorkDateTable 
+              <SpecialWorkDateTable
                 data={specialDateLogic.specialDates}
                 isLoading={specialDateLogic.isLoading}
                 onEdit={specialDateLogic.handleEdit}
                 onDelete={specialDateLogic.handleDelete}
-                onAssign={specialDateLogic.openAssignModal}
+                onAssign={specialDateAssignLogic.openModal}
               />
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
 
-      {/* MODAL WINDOWS */}
       <BatchAssignModal assignLogic={assignLogic} />
-      <SpecialWorkDateAssignModal logic={specialDateLogic} />
+
+      <SpecialWorkDateAssignModal assignLogic={specialDateAssignLogic} />
     </div>
   );
 }

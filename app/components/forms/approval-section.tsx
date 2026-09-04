@@ -82,7 +82,6 @@ export function ApprovalSection({
                     <span>{formatDateRange(req.startDate, req.endDate)}</span>
                   </div>
 
-                  {/* ✨ PERBAIKAN: Tampilkan req.time jika tersedia */}
                   {(req.time || req.startTime || req.endTime) && (
                     <div className="flex items-center gap-1 text-xs text-orange-300 bg-orange-900/20 px-2 py-1 rounded border border-orange-800/50">
                       <Clock className="w-3.5 h-3.5 text-orange-400" />

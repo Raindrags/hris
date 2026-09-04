@@ -2,17 +2,9 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  FileText,
-  Clock,
-  CalendarX,
-  Search,
-  Filter,
-  Building2,
-  CalendarDays,
-} from "lucide-react";
+import { FileText, Search, Filter, Users, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getFilteredReportData } from "@/app/actions/laporan-action";
+import { getFilteredTeamReportData } from "@/app/actions/team-report-action";
 import {
   Select,
   SelectContent,
@@ -22,17 +14,19 @@ import {
 } from "@/components/ui/select";
 import Image from "next/image";
 
-interface AdminLaporanViewProps {
-  divisions: any[];
+interface LaporanTimViewProps {
   periods: any[];
+  subordinates: any[];
+  userName?: string; // 💡 Menambahkan properti untuk menerima nama dari database
 }
 
-export default function AdminLaporanView({
-  divisions,
+export default function LaporanTimView({
   periods,
-}: AdminLaporanViewProps) {
+  subordinates,
+  userName = "", // 💡 Set default string kosong
+}: LaporanTimViewProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<string>("");
-  const [selectedDivisi, setSelectedDivisi] = useState<string>("ALL");
+  const [selectedBawahan, setSelectedBawahan] = useState<string>("ALL");
   const [reportData, setReportData] = useState<any[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -54,7 +48,11 @@ export default function AdminLaporanView({
     const startDate = new Date(periodObj.startDate).toISOString().split("T")[0];
     const endDate = new Date(periodObj.endDate).toISOString().split("T")[0];
 
-    const res = await getFilteredReportData(startDate, endDate, selectedDivisi);
+    const res = await getFilteredTeamReportData(
+      startDate,
+      endDate,
+      selectedBawahan,
+    );
 
     if (res.success) {
       const rawPayload = res.data;
@@ -136,45 +134,10 @@ export default function AdminLaporanView({
     });
   }, [reportData]);
 
-  const summaryStats = useMemo(() => {
-    let totalTerlambat = 0;
-    let totalCutiIzin = 0;
-    let totalCatatan = 0;
-
-    validReportData.forEach((person) => {
-      const catatan = person.catatan || [];
-
-      catatan.forEach((rekam: any) => {
-        totalCatatan++;
-        const teksPengecekan =
-          `${rekam.alasan || ""} ${rekam.status || ""} ${rekam.keterangan || ""}`.toUpperCase();
-
-        if (
-          teksPengecekan.includes("TERLAMBAT") ||
-          teksPengecekan.includes("PULANG AWAL")
-        ) {
-          totalTerlambat++;
-        }
-        if (
-          teksPengecekan.includes("CUTI") ||
-          teksPengecekan.includes("IZIN") ||
-          teksPengecekan.includes("SAKIT") ||
-          teksPengecekan.includes("DINAS")
-        ) {
-          totalCutiIzin++;
-        }
-      });
-    });
-
-    return { totalTerlambat, totalCutiIzin, totalCatatan };
-  }, [validReportData]);
-
   const periodObj = periods.find((p) => p.id === selectedPeriod);
   const selectedPeriodLabel = periodObj
     ? `${new Date(periodObj.startDate).toLocaleDateString("id-ID", { day: "2-digit", month: "long" })} - ${new Date(periodObj.endDate).toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" })}`
     : "";
-
-  const selectedDivisiObj = divisions.find((d) => d.id === selectedDivisi);
 
   const formatTglBulan = (tglStr: string) => {
     if (!tglStr || tglStr === "-") return "-";
@@ -197,7 +160,6 @@ export default function AdminLaporanView({
     }
   };
 
-  // 💡 FUNGSI PENENTU DENDA/PEMOTONGAN OTOMATIS (DIUPDATE)
   const getDetailPemotongan = (item: any) => {
     const stat = (item.rawStatus || "").toUpperCase();
     const ket = (item.keterangan || "").toUpperCase();
@@ -206,16 +168,9 @@ export default function AdminLaporanView({
 
     let listPotongan: string[] = [];
 
-    // 1. Ambil Semua Detail Denda / Pemotongan dari Backend
     if (item.potongGaji) listPotongan.push("Potong Gaji");
     if (item.potongTransport) listPotongan.push("Tunj. Transport");
-    if (item.potongKonsumsi) {
-      if (typeof item.potongKonsumsi === "number" && item.potongKonsumsi > 1) {
-        listPotongan.push(`Tunj. Konsumsi (${item.potongKonsumsi}x)`);
-      } else {
-        listPotongan.push("Tunj. Konsumsi");
-      }
-    }
+    if (item.potongKonsumsi) listPotongan.push("Tunj. Konsumsi");
     if (item.potongLainnya) listPotongan.push("Tunj. Lainnya");
 
     if (item.invalNominal > 0) {
@@ -234,7 +189,6 @@ export default function AdminLaporanView({
       );
     }
 
-    // 2. Fallback Otomatis Hanya Jika Data Request Tidak Ada
     const hasRequestData =
       item.potongGaji ||
       item.potongTransport ||
@@ -254,10 +208,9 @@ export default function AdminLaporanView({
       }
     }
 
-    // 3. Render Tampilan
     if (listPotongan.length > 0) {
       return (
-        <div className="text-red-600 font-medium text-[12px] text-left">
+        <div className="text-red-500 dark:text-red-400 font-medium text-[12px] text-left">
           <ul className="space-y-0.5 print:text-black">
             {listPotongan.map((potongan, idx) => (
               <li key={idx}>• {potongan}</li>
@@ -284,11 +237,11 @@ export default function AdminLaporanView({
     if (!hasPotongan) return null;
 
     return (
-      <div className="mt-3 bg-red-50/80 border border-red-200 p-2 rounded-md print:border-none print:bg-transparent print:p-0 print:mt-1">
-        <div className="text-xs font-bold text-red-800 border-b border-red-200 pb-1 mb-1 print:text-black print:border-black">
-          Akumulasi Potongan dan sanksi:
+      <div className="mt-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 p-2 rounded-md print:border-none print:bg-transparent print:p-0 print:mt-1">
+        <div className="text-xs font-bold text-red-800 dark:text-red-300 border-b border-red-200 dark:border-red-900/50 pb-1 mb-1 print:text-black print:border-black">
+          Akumulasi Potongan:
         </div>
-        <ul className="text-[11px] text-red-700 space-y-0.5 print:text-black">
+        <ul className="text-[11px] text-red-700 dark:text-red-400 space-y-0.5 print:text-black">
           {denda.tunjanganTransport > 0 && (
             <li>• Tunj. Transport: {denda.tunjanganTransport}x</li>
           )}
@@ -319,7 +272,6 @@ export default function AdminLaporanView({
             </li>
           )}
 
-          {/* LOGIKA BARU UNTUK MERENDER SURAT TEGURAN */}
           {denda.detailTeguran &&
             denda.detailTeguran.length > 0 &&
             denda.detailTeguran.map((teguran: string, idx: number) => (
@@ -327,7 +279,7 @@ export default function AdminLaporanView({
             ))}
         </ul>
         {denda.totalDendaRupiah > 0 && (
-          <div className="text-[11px] font-bold mt-1 pt-1 border-t border-red-200 text-red-800 print:text-black print:border-black">
+          <div className="text-[11px] font-bold mt-1 pt-1 border-t border-red-200 dark:border-red-900/50 text-red-800 dark:text-red-300 print:text-black print:border-black">
             Total Denda: Rp {denda.totalDendaRupiah.toLocaleString("id-ID")}
           </div>
         )}
@@ -335,41 +287,48 @@ export default function AdminLaporanView({
     );
   };
 
+  const tanggalHariIni = new Date().toLocaleDateString("id-ID", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+
   return (
     <div className="space-y-6">
-      <Card className="print:hidden shadow-sm border-white/10 bg-card">
-        <CardHeader className="pb-4 border-b border-white/10">
-          <CardTitle className="text-lg flex items-center gap-2 text-card-foreground">
+      <Card className="print:hidden shadow-sm border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+        <CardHeader className="pb-4 border-b border-slate-200 dark:border-slate-800">
+          <CardTitle className="text-lg flex items-center gap-2 text-slate-800 dark:text-slate-100 font-bold">
             <Filter className="h-5 w-5 text-blue-500" />
-            Filter Laporan Absensi
+            Laporan Tim Anda
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-6">
           <div className="flex flex-col lg:flex-row gap-5 items-end">
-            <div className="w-full lg:w-2/5 space-y-2">
-              <label className="text-sm font-semibold text-slate-700">
+            {/* 💡 Mengubah lebar menjadi 1/3 karena 1 kolom telah dihapus */}
+            <div className="w-full lg:w-1/3 space-y-2">
+              <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                 Periode Absensi
               </label>
               <Select
                 value={selectedPeriod}
                 onValueChange={(val) => setSelectedPeriod(val || "ALL")}
               >
-                <SelectTrigger className="w-full h-11 bg-white border-slate-300 shadow-sm focus:ring-2 focus:ring-blue-500 rounded-lg transition-all text-left">
-                  <div className="flex items-center gap-2 text-slate-700 w-full overflow-hidden">
+                <SelectTrigger className="w-full h-11 bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-800 text-slate-800 dark:text-slate-200 shadow-sm focus:ring-2 focus:ring-blue-500 rounded-lg transition-all text-left">
+                  <div className="flex items-center gap-2 w-full overflow-hidden">
                     <CalendarDays className="h-4 w-4 text-slate-400 shrink-0" />
-                    <SelectValue placeholder="Pilih Periode Absensi">
+                    <SelectValue placeholder="Pilih Periode">
                       {periodObj
                         ? `${periodObj.name} (${new Date(periodObj.startDate).toLocaleDateString("id-ID")} - ${new Date(periodObj.endDate).toLocaleDateString("id-ID")})`
                         : "Pilih Periode"}
                     </SelectValue>
                   </div>
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="dark:bg-slate-900 dark:border-slate-800">
                   {periods.map((p) => (
                     <SelectItem
                       key={p.id}
                       value={p.id}
-                      className="cursor-pointer"
+                      className="cursor-pointer dark:focus:bg-slate-800 dark:text-slate-200"
                     >
                       <span className="font-medium">{p.name}</span>{" "}
                       <span className="text-muted-foreground text-xs ml-1">
@@ -382,38 +341,40 @@ export default function AdminLaporanView({
               </Select>
             </div>
 
+            {/* 💡 Mengubah lebar menjadi 1/3 */}
             <div className="w-full lg:w-1/3 space-y-2">
-              <label className="text-sm font-semibold text-slate-700">
-                Divisi
+              <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                Pilih Bawahan
               </label>
               <Select
-                value={selectedDivisi}
-                onValueChange={(val) => setSelectedDivisi(val || "ALL")}
+                value={selectedBawahan}
+                onValueChange={(val) => setSelectedBawahan(val || "ALL")}
               >
-                <SelectTrigger className="w-full h-11 bg-white border-slate-300 shadow-sm focus:ring-2 focus:ring-blue-500 rounded-lg transition-all text-left">
-                  <div className="flex items-center gap-2 text-slate-700 w-full overflow-hidden">
-                    <Building2 className="h-4 w-4 text-slate-400 shrink-0" />
-                    <SelectValue placeholder="Pilih Divisi">
-                      {selectedDivisi === "ALL"
-                        ? "Semua Divisi"
-                        : selectedDivisiObj?.name}
+                <SelectTrigger className="w-full h-11 bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-800 text-slate-800 dark:text-slate-200 shadow-sm focus:ring-2 focus:ring-blue-500 rounded-lg transition-all text-left">
+                  <div className="flex items-center gap-2 w-full overflow-hidden">
+                    <Users className="h-4 w-4 text-slate-400 shrink-0" />
+                    <SelectValue placeholder="Pilih Bawahan">
+                      {selectedBawahan === "ALL"
+                        ? "Semua Tim Saya"
+                        : subordinates.find((s) => s.id === selectedBawahan)
+                            ?.name}
                     </SelectValue>
                   </div>
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="dark:bg-slate-900 dark:border-slate-800">
                   <SelectItem
                     value="ALL"
-                    className="font-medium cursor-pointer"
+                    className="font-medium cursor-pointer dark:focus:bg-slate-800 dark:text-slate-200"
                   >
-                    Semua Divisi
+                    Semua Tim Saya
                   </SelectItem>
-                  {divisions.map((d) => (
+                  {subordinates.map((sub) => (
                     <SelectItem
-                      key={d.id}
-                      value={d.id}
-                      className="cursor-pointer"
+                      key={sub.id}
+                      value={sub.id}
+                      className="cursor-pointer dark:focus:bg-slate-800 dark:text-slate-200"
                     >
-                      {d.name}
+                      {sub.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -433,7 +394,7 @@ export default function AdminLaporanView({
                 variant="outline"
                 onClick={handleExportPDF}
                 disabled={!reportData}
-                className="w-full lg:w-auto h-11 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 shadow-sm rounded-lg"
+                className="w-full lg:w-auto h-11 text-red-600 dark:text-red-400 border-red-200 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-950/50 hover:text-red-700 shadow-sm rounded-lg"
               >
                 <FileText className="h-4 w-4 mr-2" />
                 Export PDF
@@ -444,20 +405,20 @@ export default function AdminLaporanView({
       </Card>
 
       {!reportData ? (
-        <Card className="border-dashed shadow-none bg-slate-50 print:hidden">
-          <CardContent className="pt-12 pb-12 flex flex-col items-center justify-center text-slate-400">
+        <Card className="border-dashed border-slate-300 dark:border-slate-800 shadow-none bg-slate-50 dark:bg-slate-900/50 print:hidden">
+          <CardContent className="pt-12 pb-12 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500">
             <FileText className="h-12 w-12 mb-3 opacity-20" />
             <p>
               Silakan atur filter di atas dan klik <strong>Tampilkan</strong>{" "}
-              untuk memuat data.
+              untuk memuat data bawahan.
             </p>
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-6 bg-white p-1 print:p-0 rounded-lg">
+        <div className="space-y-6 bg-white dark:bg-slate-900 p-6 print:p-0 rounded-lg border border-slate-200 dark:border-slate-800 print:border-none print:bg-white text-slate-900 dark:text-slate-100 print:text-black">
           <div className="flex flex-col items-center mb-6 w-full">
             <div className="flex items-center justify-center gap-6 w-full mb-3">
-              <div className="shrink-0">
+              <div className="shrink-0 bg-white p-2 rounded-lg print:p-0">
                 <Image
                   src="/logo.png"
                   alt="Logo Sekolah"
@@ -467,43 +428,43 @@ export default function AdminLaporanView({
                 />
               </div>
               <div className="text-center">
-                <h1 className="text-xl font-extrabold uppercase tracking-widest text-black">
+                <h1 className="text-xl font-extrabold uppercase tracking-widest text-slate-900 dark:text-white print:text-black">
                   SEKOLAH MAITREYAWIRA DELI SERDANG
                 </h1>
-                <h2 className="text-lg font-bold uppercase text-black mt-1">
+                <h2 className="text-lg font-bold uppercase text-slate-800 dark:text-slate-200 print:text-black mt-1">
                   REKAP ABSENSI GURU DAN PEGAWAI
                 </h2>
-                <h3 className="text-md font-bold text-black mt-1">
+                <h3 className="text-md font-bold text-slate-700 dark:text-slate-300 print:text-black mt-1">
                   {selectedPeriodLabel}
                 </h3>
               </div>
             </div>
-            <div className="w-full border-b-[3px] border-black mt-2"></div>
+            <div className="w-full border-b-[3px] border-slate-900 dark:border-slate-100 print:border-black mt-2"></div>
           </div>
 
           <div className="w-full overflow-x-auto">
-            <table className="w-full text-sm text-left border-collapse border border-black print:text-[11px]">
-              <thead className="bg-slate-100 print:bg-gray-100">
+            <table className="w-full text-sm text-left border-collapse border border-slate-900 dark:border-slate-700 print:border-black print:text-[11px]">
+              <thead className="bg-slate-100 dark:bg-slate-800 print:bg-gray-100">
                 <tr>
-                  <th className="py-2 px-3 border border-black font-bold text-center w-12 text-black">
+                  <th className="py-2 px-3 border border-slate-900 dark:border-slate-700 print:border-black font-bold text-center w-12 text-slate-900 dark:text-slate-100 print:text-black">
                     No
                   </th>
-                  <th className="py-2 px-3 border border-black font-bold text-black w-64">
+                  <th className="py-2 px-3 border border-slate-900 dark:border-slate-700 print:border-black font-bold text-slate-900 dark:text-slate-100 print:text-black w-64">
                     Nama
                   </th>
-                  <th className="py-2 px-3 border border-black font-bold text-center text-black min-w-[140px]">
+                  <th className="py-2 px-3 border border-slate-900 dark:border-slate-700 print:border-black font-bold text-center text-slate-900 dark:text-slate-100 print:text-black min-w-[140px]">
                     Tanggal
                   </th>
-                  <th className="py-2 px-3 border border-black font-bold text-center text-black w-32">
+                  <th className="py-2 px-3 border border-slate-900 dark:border-slate-700 print:border-black font-bold text-center text-slate-900 dark:text-slate-100 print:text-black w-32">
                     Status
                   </th>
-                  <th className="py-2 px-3 border border-black font-bold text-black">
+                  <th className="py-2 px-3 border border-slate-900 dark:border-slate-700 print:border-black font-bold text-slate-900 dark:text-slate-100 print:text-black">
                     Keterangan
                   </th>
-                  <th className="py-2 px-3 border border-black font-bold text-black w-48">
+                  <th className="py-2 px-3 border border-slate-900 dark:border-slate-700 print:border-black font-bold text-slate-900 dark:text-slate-100 print:text-black w-48">
                     Alasan
                   </th>
-                  <th className="py-2 px-3 border border-black font-bold text-black w-56">
+                  <th className="py-2 px-3 border border-slate-900 dark:border-slate-700 print:border-black font-bold text-slate-900 dark:text-slate-100 print:text-black w-56">
                     Pemotongan (Harian)
                   </th>
                 </tr>
@@ -513,9 +474,9 @@ export default function AdminLaporanView({
                   <tr>
                     <td
                       colSpan={7}
-                      className="text-center py-8 text-muted-foreground border border-black"
+                      className="text-center py-8 text-muted-foreground border border-slate-900 dark:border-slate-700 print:border-black"
                     >
-                      Tidak ada data pegawai pada divisi ini.
+                      Tidak ada data absensi untuk pilihan ini.
                     </td>
                   </tr>
                 ) : (
@@ -526,30 +487,30 @@ export default function AdminLaporanView({
                       return (
                         <tr
                           key={`empty-${person.id || idx}`}
-                          className="hover:bg-slate-50 print:hover:bg-transparent"
+                          className="hover:bg-slate-50 dark:hover:bg-slate-800/50 print:hover:bg-transparent"
                         >
-                          <td className="py-2 px-3 border border-black text-center align-top text-black">
+                          <td className="py-2 px-3 border border-slate-900 dark:border-slate-700 print:border-black text-center align-top">
                             {idx + 1}
                           </td>
-                          <td className="py-2 px-3 border border-black align-top text-black">
+                          <td className="py-2 px-3 border border-slate-900 dark:border-slate-700 print:border-black align-top">
                             <div className="font-bold text-base">
                               {person.nama || person.name || "-"}
                             </div>
                             {renderAkumulasiDenda(person.akumulasiDenda)}
                           </td>
-                          <td className="py-2 px-3 border border-black text-center text-black">
+                          <td className="py-2 px-3 border border-slate-900 dark:border-slate-700 print:border-black text-center">
                             -
                           </td>
-                          <td className="py-2 px-3 border border-black text-center text-black">
+                          <td className="py-2 px-3 border border-slate-900 dark:border-slate-700 print:border-black text-center">
                             -
                           </td>
-                          <td className="py-2 px-3 border border-black text-black">
+                          <td className="py-2 px-3 border border-slate-900 dark:border-slate-700 print:border-black">
                             -
                           </td>
-                          <td className="py-2 px-3 border border-black text-black">
+                          <td className="py-2 px-3 border border-slate-900 dark:border-slate-700 print:border-black">
                             -
                           </td>
-                          <td className="py-2 px-3 border border-black text-black">
+                          <td className="py-2 px-3 border border-slate-900 dark:border-slate-700 print:border-black">
                             -
                           </td>
                         </tr>
@@ -607,29 +568,34 @@ export default function AdminLaporanView({
 
                     return groupedRecords.map((item: any, recIdx: number) => {
                       const statusUpper = item.rawStatus.toUpperCase();
-                      let statusColor = "text-slate-700";
+                      let statusColor = "text-slate-700 dark:text-slate-300";
                       let displayStatus = item.rawStatus;
 
                       if (statusUpper.includes("SAKIT")) {
-                        statusColor = "text-red-600 font-semibold";
+                        statusColor =
+                          "text-red-600 dark:text-red-400 font-semibold";
                         displayStatus = "SAKIT";
                       } else if (statusUpper.includes("IZIN")) {
-                        statusColor = "text-orange-500 font-semibold";
+                        statusColor =
+                          "text-orange-500 dark:text-orange-400 font-semibold";
                         displayStatus = statusUpper.includes("KELUAR")
                           ? "IZIN KELUAR"
                           : "IZIN";
                       } else if (statusUpper.includes("CUTI")) {
-                        statusColor = "text-purple-600 font-semibold";
+                        statusColor =
+                          "text-purple-600 dark:text-purple-400 font-semibold";
                         displayStatus = "CUTI";
                       } else if (statusUpper.includes("DINAS")) {
-                        statusColor = "text-blue-600 font-semibold";
+                        statusColor =
+                          "text-blue-600 dark:text-blue-400 font-semibold";
                         displayStatus = "DINAS";
                       } else if (
                         statusUpper.includes("TERLAMBAT") ||
                         statusUpper.includes("PULANG AWAL") ||
                         statusUpper.includes("ALFA")
                       ) {
-                        statusColor = "text-yellow-600 font-semibold";
+                        statusColor =
+                          "text-yellow-600 dark:text-yellow-400 font-semibold";
                       }
 
                       let displayTanggal = formatTglBulan(item.tanggal);
@@ -640,11 +606,11 @@ export default function AdminLaporanView({
                       return (
                         <tr
                           key={`${person.no || idx}-${recIdx}`}
-                          className="hover:bg-slate-50 print:hover:bg-transparent"
+                          className="hover:bg-slate-50 dark:hover:bg-slate-800/50 print:hover:bg-transparent"
                         >
                           {recIdx === 0 && (
                             <td
-                              className="py-2 px-3 border border-black text-center align-top text-black"
+                              className="py-2 px-3 border border-slate-900 dark:border-slate-700 print:border-black text-center align-top"
                               rowSpan={groupedRecords.length}
                             >
                               {idx + 1}
@@ -652,7 +618,7 @@ export default function AdminLaporanView({
                           )}
                           {recIdx === 0 && (
                             <td
-                              className="py-2 px-3 border border-black align-top text-black"
+                              className="py-2 px-3 border border-slate-900 dark:border-slate-700 print:border-black align-top"
                               rowSpan={groupedRecords.length}
                             >
                               <div className="font-bold text-base">
@@ -662,11 +628,11 @@ export default function AdminLaporanView({
                             </td>
                           )}
 
-                          <td className="py-2 px-3 border border-black text-center text-black">
+                          <td className="py-2 px-3 border border-slate-900 dark:border-slate-700 print:border-black text-center">
                             {displayTanggal}
                           </td>
 
-                          <td className="py-2 px-3 border border-black text-center print:text-black">
+                          <td className="py-2 px-3 border border-slate-900 dark:border-slate-700 print:border-black text-center print:text-black">
                             <span
                               className={`print:text-black print:font-semibold uppercase ${statusColor}`}
                             >
@@ -674,13 +640,13 @@ export default function AdminLaporanView({
                             </span>
                           </td>
 
-                          <td className="py-2 px-3 border border-black text-black">
+                          <td className="py-2 px-3 border border-slate-900 dark:border-slate-700 print:border-black">
                             {item.keterangan || "-"}
 
                             {displayStatus === "CUTI" &&
                               (person.sisaCuti !== undefined ||
                                 item.sisaCuti !== undefined) && (
-                                <div className="mt-1 text-xs font-semibold text-purple-700 print:text-black">
+                                <div className="mt-1 text-xs font-semibold text-purple-700 dark:text-purple-300 print:text-black">
                                   (Sisa Cuti: {person.sisaCuti ?? item.sisaCuti}{" "}
                                   Hari)
                                 </div>
@@ -689,7 +655,7 @@ export default function AdminLaporanView({
                             {displayStatus === "IZIN KELUAR" &&
                               (person.sisaJatahIzinKeluar !== undefined ||
                                 item.sisaJatahIzinKeluar !== undefined) && (
-                                <div className="mt-1 text-xs font-semibold text-orange-700 print:text-black">
+                                <div className="mt-1 text-xs font-semibold text-orange-700 dark:text-orange-300 print:text-black">
                                   (Sisa Jatah:{" "}
                                   {item.sisaJatahIzinKeluar ??
                                     person.sisaJatahIzinKeluar}{" "}
@@ -698,12 +664,11 @@ export default function AdminLaporanView({
                               )}
                           </td>
 
-                          <td className="py-2 px-3 border border-black text-black">
+                          <td className="py-2 px-3 border border-slate-900 dark:border-slate-700 print:border-black">
                             {item.alasanDetail || item.alasan || "-"}
                           </td>
 
-                          {/* 💡 KOLOM PEMOTONGAN HARIAN DINAMIS */}
-                          <td className="py-2 px-3 border border-black text-black text-sm align-top">
+                          <td className="py-2 px-3 border border-slate-900 dark:border-slate-700 print:border-black text-sm align-top">
                             {getDetailPemotongan(item)}
                           </td>
                         </tr>
@@ -713,6 +678,21 @@ export default function AdminLaporanView({
                 )}
               </tbody>
             </table>
+          </div>
+
+          <div className="mt-12 flex justify-end w-full pr-8 print:mt-16 print:pr-12">
+            <div className="text-center w-64">
+              <p className="text-sm text-slate-800 dark:text-slate-200 print:text-black mb-24 print:mb-28">
+                Medan, {tanggalHariIni}
+              </p>
+              {/* 💡 Menggunakan properti userName di sini */}
+              <p className="text-sm font-bold text-slate-900 dark:text-slate-100 print:text-black uppercase underline">
+                {userName || "___________________________"}
+              </p>
+              <p className="text-xs text-slate-700 dark:text-slate-300 print:text-black mt-1">
+                Atasan Langsung
+              </p>
+            </div>
           </div>
         </div>
       )}

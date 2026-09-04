@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
+// Pastikan EmployeeFormData di "../types" memiliki properti sortOrder?: string | number
 import { Employee, Supervisor, Division, EmployeeFormData } from "../types";
 import { INITIAL_FORM_STATE, ITEMS_PER_PAGE } from "../constants";
 
@@ -82,7 +83,10 @@ export const useEmployees = () => {
 
   const openCreateModal = () => {
     setEditingId(null);
-    setFormData(INITIAL_FORM_STATE);
+    setFormData({
+      ...INITIAL_FORM_STATE,
+      sortOrder: "999",
+    });
     setIsModalOpen(true);
   };
 
@@ -101,6 +105,16 @@ export const useEmployees = () => {
       emergencyContact: employee.emergencyContact || "",
       jabatan: employee.jabatan || "",
       jatahCuti: String(employee.jatahCuti || ""),
+      sortOrder:
+        employee.sortOrder !== null && employee.sortOrder !== undefined
+          ? String(employee.sortOrder)
+          : "999",
+      joinDate: employee.joinDate
+        ? new Date(employee.joinDate).toISOString().split("T")[0]
+        : "",
+      isGuru: employee.isGuru || false,
+      jatahCuti: String(employee.jatahCuti || ""),
+      jatahIzinKeluar: String(employee.jatahIzinKeluar || "6"),
     });
     setIsModalOpen(true);
   };
@@ -136,6 +150,11 @@ export const useEmployees = () => {
       supervisorId:
         formData.supervisorId === "none" ? null : formData.supervisorId,
       divisiId: formData.divisiId === "none" ? null : formData.divisiId,
+      // Pastikan string angka diparsing menjadi number
+      sortOrder: formData.sortOrder ? Number(formData.sortOrder) : 999,
+      jatahIzinKeluar: formData.jatahIzinKeluar
+        ? Number(formData.jatahIzinKeluar)
+        : 6,
     };
 
     try {
@@ -171,10 +190,24 @@ export const useEmployees = () => {
     if (!searchLower) return employees;
 
     return employees.filter((emp) => {
+      // 1. Ambil data NIY
       const empNiy = (emp.niy || "").toLowerCase();
-      return empNiy.includes(searchLower);
+
+      // 2. Ambil data Nama (mendukung properti name atau fullName)
+      const empName = (emp.name || emp.fullName || "").toLowerCase();
+
+      const divId = String(emp.divisiId || emp.divisi?.id);
+      const division = divisions.find((d) => String(d.id) === divId);
+      const divName = (division?.name || emp.divisi?.name || "").toLowerCase();
+
+      // Return true jika searchTerm cocok dengan salah satu dari ketiga field tersebut
+      return (
+        empNiy.includes(searchLower) ||
+        empName.includes(searchLower) ||
+        divName.includes(searchLower)
+      );
     });
-  }, [employees, searchTerm]);
+  }, [employees, searchTerm, divisions]);
 
   const totalPages = Math.ceil(filteredEmployees.length / ITEMS_PER_PAGE);
 
@@ -186,7 +219,7 @@ export const useEmployees = () => {
   const getSupervisorName = (employee: Employee) => {
     const supId = String(employee.supervisorId || employee.supervisor?.id);
     if (!supId || supId === "undefined") return "-";
-    const supervisor = supervisors.find((sup) => String(sup.id) === supId);
+    const supervisor = employees.find((emp) => String(emp.id) === supId);
     return supervisor ? supervisor.name || supervisor.fullName : "-";
   };
 

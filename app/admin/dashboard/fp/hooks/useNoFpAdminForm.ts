@@ -10,11 +10,8 @@ export const useNoFpAdminForm = (onSuccess?: () => void) => {
   // Form States
   const [userId, setUserId] = useState("");
   const [date, setDate] = useState("");
-  const [time, setTime] = useState(""); // ✨ TAMBAHAN: State untuk Jam No FP
   const [fpDatang, setFpDatang] = useState(false);
   const [fpPulang, setFpPulang] = useState(false);
-  const [reason, setReason] = useState("");
-  const [file, setFile] = useState<File | null>(null);
 
   useEffect(() => {
     const loadUsers = async () => {
@@ -34,10 +31,8 @@ export const useNoFpAdminForm = (onSuccess?: () => void) => {
     // Validasi Form
     if (!userId) return toast.error("Silakan pilih pegawai.");
     if (!date) return toast.error("Silakan pilih tanggal kejadian.");
-    if (!time) return toast.error("Silakan isi jam kejadian."); // ✨ TAMBAHAN: Validasi Jam
     if (!fpDatang && !fpPulang)
       return toast.error("Pilih minimal satu: FP Datang atau FP Pulang.");
-    if (!reason.trim()) return toast.error("Alasan wajib diisi.");
 
     setLoading(true);
 
@@ -45,26 +40,17 @@ export const useNoFpAdminForm = (onSuccess?: () => void) => {
       const formDataObj = new FormData();
       formDataObj.append("userId", userId);
       formDataObj.append("date", date);
-      formDataObj.append("time", time); // ✨ TAMBAHAN: Masukkan Jam ke dalam payload
       formDataObj.append("fpDatang", String(fpDatang));
       formDataObj.append("fpPulang", String(fpPulang));
-      formDataObj.append("reason", reason);
-
-      if (file) {
-        formDataObj.append("file", file);
-      }
 
       await NoFpService.submitAdminNoFp(formDataObj);
       toast.success("Data No FP berhasil di-inject (Bypass Approval).");
 
-      // Reset form
+      // Reset form[cite: 17]
       setUserId("");
       setDate("");
-      setTime(""); // ✨ TAMBAHAN: Reset Jam
       setFpDatang(false);
       setFpPulang(false);
-      setReason("");
-      setFile(null);
 
       if (onSuccess) onSuccess();
     } catch (error: any) {
@@ -80,20 +66,14 @@ export const useNoFpAdminForm = (onSuccess?: () => void) => {
       users,
       userId,
       date,
-      time,
       fpDatang,
       fpPulang,
-      reason,
-      file,
     },
     actions: {
       setUserId,
       setDate,
-      setTime,
       setFpDatang,
       setFpPulang,
-      setReason,
-      setFile,
       handleSubmit,
     },
   };

@@ -13,8 +13,22 @@ function FormIzinContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userData, setUserData] = useState<{
+    id: string;
     name: string;
-    divisi?: { name: string } | null;
+    email?: string;
+    niy?: string | null;
+    role?: string;
+    phone?: string | null;
+    jabatan?: string | null;
+    joinDate?: string | Date | null;
+    isGuru?: boolean;
+    divisi?: { id?: string; name: string } | null;
+    supervisorId?: string | null;
+    sisaCuti?: number;
+    jatahCuti?: number;
+    sisaIzinKeluar?: number;
+    jatahIzinKeluar?: number;
+    workShift?: any;
   } | null>(null);
 
   useEffect(() => {
@@ -39,8 +53,12 @@ function FormIzinContent() {
           }
 
           setUserData({
+            id: data.user.id,
             name: data.user.name,
             divisi: data.user.divisi || null,
+            workShift: data.user.workShift || null,
+            isGuru: data.user.isGuru,
+            sisaIzinKeluar: data.user.sisaIzinKeluar,
           });
         } catch (err: any) {
           setError(err.message);
@@ -62,13 +80,28 @@ function FormIzinContent() {
           setLoading(false);
           return;
         }
-        const meData = await meRes.json();
-        setUserData({
-          name: meData.user?.name,
-          divisi: meData.user?.divisi || null,
-        });
+
+        // BACA SEBAGAI TEKS DULU UNTUK MELIHAT ISI ASLINYA
+        const textData = await meRes.text();
+
+        try {
+          const meData = JSON.parse(textData);
+          setUserData({
+            id: meData.user?.id || meData.user?._id || "",
+            name: meData.user?.name,
+            divisi: meData.user?.divisi || null,
+            workShift: meData.user?.workShift || null,
+            isGuru: meData.user?.isGuru,
+            sisaIzinKeluar: meData.user?.sisaIzinKeluar,
+          });
+        } catch (e) {
+          setError(
+            "Server merespons tapi bukan JSON. Isinya: " +
+              textData.substring(0, 100),
+          );
+        }
       } catch (err: any) {
-        setError("Gagal memeriksa sesi.");
+        setError("Error sistem: " + err.message);
       } finally {
         setLoading(false);
       }
@@ -119,7 +152,11 @@ function FormIzinContent() {
         </p>
 
         {userData && (
-          <PermissionForm user={userData as any} onSuccess={handleSuccess} />
+          <PermissionForm
+            user={userData as any}
+            onSuccess={handleSuccess}
+            userId={userData.id}
+          />
         )}
       </div>
     </main>

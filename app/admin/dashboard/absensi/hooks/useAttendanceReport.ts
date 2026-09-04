@@ -62,14 +62,72 @@ export function useAttendanceReport() {
       const res = await response.json();
 
       if (res.success && res.data) {
-        const processedData = res.data.map((emp: EmployeeReport) => {
-          const filteredLogs = emp.logs.filter((log: AttendanceLog) => {
-            const isSundayOff =
-              log.dayName === "Sunday" && !log.in && !log.isSpecialWorkDay;
-            return !isSundayOff;
-          });
-          return { ...emp, logs: filteredLogs };
+        const processedData = res.data.map((emp: any) => {
+          const isFlexible = emp.isFlexible === true;
+
+          const isMonFriShift =
+            !isFlexible &&
+            (emp.workShift?.name?.toLowerCase().includes("jumat") ||
+              emp.shiftType === "Senin-Jumat" ||
+              (emp.workShift?.details &&
+                !emp.workShift.details.some((d: any) => d.dayOfWeek === 6)));
+
+          const processedLogs = emp.logs
+            .map((log: AttendanceLog) => {
+              const updatedLog = { ...log };
+
+              if (isFlexible) {
+                if (updatedLog.isHoliday) {
+                  updatedLog.isHoliday = false;
+                  if (!updatedLog.in) {
+                    updatedLog.status = "Alpha";
+                  } else {
+                    updatedLog.status = "";
+                  }
+                }
+              }
+
+              const isSaturdayOff =
+                updatedLog.dayName === "Saturday" && isMonFriShift;
+              const isPublicHoliday = updatedLog.isHoliday;
+
+              // Hapus isSunday dari paksaan pengosongan status agar tidak menimpa data
+              if (
+                !isFlexible &&
+                (isSaturdayOff || isPublicHoliday) &&
+                !updatedLog.isSpecialWorkDay
+              ) {
+                updatedLog.in = "";
+                updatedLog.out = "";
+                updatedLog.status = isPublicHoliday ? "Libur" : "Sabtu";
+              } else if (
+                !isFlexible &&
+                updatedLog.dayName === "Saturday" &&
+                !updatedLog.isSpecialWorkDay &&
+                updatedLog.status?.toLowerCase() === "alpha"
+              ) {
+                updatedLog.status = "Sabtu";
+              }
+
+              return updatedLog;
+            })
+            .filter((log: AttendanceLog) => {
+              if (isFlexible) return true;
+
+              // Hapus logika isSundayOff sepenuhnya.
+              // Percayakan penyaringan hari Minggu sepenuhnya pada data mentah backend.
+              const isSaturdayOffForMonFri =
+                log.dayName === "Saturday" &&
+                !log.in &&
+                !log.isSpecialWorkDay &&
+                isMonFriShift;
+
+              return !isSaturdayOffForMonFri;
+            });
+
+          return { ...emp, logs: processedLogs };
         });
+
         setReportData(processedData);
       } else {
         alert(res.error || "Gagal mengambil data laporan.");

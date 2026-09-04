@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { FileText } from "lucide-react";
 import { useDashboard } from "./hooks/useDashboard";
 import { DashboardHeader } from "./components/DashboardHeader";
 import { DashboardStats } from "./components/DashboardStats";
@@ -22,7 +24,6 @@ export default function PegawaiDashboardPage() {
   } = states;
 
   if (loading) {
-    console.log("ISI USER DATA:", userData);
     return (
       <main className="min-h-screen bg-gray-950 flex items-center justify-center">
         <div className="text-gray-300">Memuat dashboard...</div>
@@ -53,10 +54,26 @@ export default function PegawaiDashboardPage() {
     );
   }
 
+  // ✅ PERBAIKAN LOGIKA: Sekarang mengecek langsung dari properti hasSubordinates
+  const isSupervisor = userData.hasSubordinates;
+
   return (
     <main className="min-h-screen bg-gray-950 p-6 md:p-10 text-gray-100">
       <div className="max-w-6xl mx-auto space-y-8">
-        <DashboardHeader userName={userData.name} isGuru={userData.isGuru} />
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <DashboardHeader userName={userData.name} isGuru={userData.isGuru} />
+
+          {/* Tombol ini sekarang HANYA muncul jika isSupervisor bernilai true */}
+          {isSupervisor && (
+            <Link
+              href="/pegawai/dashboard/laporan-tim"
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg transition-colors font-medium text-sm shadow-sm"
+            >
+              <FileText className="w-4 h-4" />
+              Laporan Rekap Tim
+            </Link>
+          )}
+        </div>
 
         <DashboardStats
           userData={userData}

@@ -17,7 +17,6 @@ export interface Employee {
   name?: string;
   fullName?: string;
   email?: string;
-  role?: string;
   supervisorId?: string | null;
   divisiId?: string | null;
   niy?: string;
@@ -25,14 +24,18 @@ export interface Employee {
   emergencyContact?: string;
   jabatan?: string;
   jatahCuti?: string | number;
+  sortOrder?: string | number;
+  isGuru?: boolean;
   supervisor?: Supervisor;
   divisi?: Division;
+  jatahIzinKeluar?: string | number;
+  sisaIzinKeluar?: string | number;
+  joinDate?: string | Date;
 }
 
 export interface EmployeeFormData {
   name: string;
   email: string;
-  role: string;
   supervisorId: string;
   divisiId: string;
   niy: string;
@@ -40,4 +43,8 @@ export interface EmployeeFormData {
   emergencyContact: string;
   jabatan: string;
   jatahCuti: string;
+  sortOrder?: string;
+  isGuru: boolean;
+  jatahIzinKeluar: string;
+  joinDate: string;
 }

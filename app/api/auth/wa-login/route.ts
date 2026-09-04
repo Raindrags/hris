@@ -111,8 +111,7 @@ export async function POST(request: Request) {
   try {
     // Tembak endpoint NestJS Anda
     const nestJsApiUrl =
-      process.env.NEXT_PUBLIC_API_URL ||
-      "https://hris.maitreyawirads.dpdns.org";
+      process.env.BACKEND_API_URL || "https://hris.maitreyawirads.dpdns.org";
 
     const verifyResponse = await fetch(`${nestJsApiUrl}/auth/verify-token`, {
       method: "POST",
@@ -152,11 +151,15 @@ export async function POST(request: Request) {
       response.cookies.set(
         "user_data",
         JSON.stringify({
+          id: data.user.id || data.user._id,
           name: data.user.name || "Pengguna",
           niy: data.user.niy || "-",
           role: data.user.role || "PEGAWAI",
           divisi: data.user.divisi || "-",
           sisaCuti: data.user.sisaCuti ?? 0,
+          workShift: data.user.workShift || null,
+          isGuru: data.user.isGuru ?? false,
+          sisaIzinKeluar: data.user.sisaIzinKeluar ?? 0,
         }),
         {
           httpOnly: false, // WAJIB FALSE agar bisa dibaca dari frontend
@@ -171,7 +174,7 @@ export async function POST(request: Request) {
     // Tanamkan Role (Untuk keperluan Middleware)
     if (data.user?.role) {
       response.cookies.set("role", data.user.role, {
-        httpOnly: true,
+        httpOnly: false,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
         path: "/",

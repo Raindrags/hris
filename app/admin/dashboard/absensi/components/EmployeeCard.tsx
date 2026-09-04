@@ -1,5 +1,13 @@
-import { User, Briefcase, Hash, Clock, AlertCircle } from "lucide-react";
+import {
+  User,
+  Briefcase,
+  Hash,
+  Clock,
+  AlertCircle,
+  FileWarning,
+} from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -14,9 +22,10 @@ import { StatusBadge } from "./StatusBadge";
 
 interface EmployeeCardProps {
   emp: EmployeeReport;
+  onOpenWarning?: () => void;
 }
 
-export function EmployeeCard({ emp }: EmployeeCardProps) {
+export function EmployeeCard({ emp, onOpenWarning }: EmployeeCardProps) {
   return (
     <Card className="overflow-hidden shadow-md border-gray-800 bg-gray-900">
       <CardHeader className="bg-gray-800/50 border-b border-gray-800 pb-4">
@@ -44,27 +53,40 @@ export function EmployeeCard({ emp }: EmployeeCardProps) {
             </div>
           </div>
 
-          <div className="flex gap-2 text-xs md:text-sm">
-            <SummaryBadge
-              color="emerald"
-              value={emp.summary.onTime}
-              label="Tepat"
-            />
-            <SummaryBadge
-              color="amber"
-              value={emp.summary.late}
-              label="Telat"
-            />
-            <SummaryBadge
-              color="red"
-              value={emp.summary.alpa ?? emp.summary.noFp ?? 0}
-              label="Alpa"
-            />
-            <SummaryBadge
-              color="gray"
-              value={emp.summary.off ?? 0}
-              label="Off"
-            />
+          <div className="flex flex-col items-end gap-3">
+            <div className="flex gap-2 text-xs md:text-sm">
+              <SummaryBadge
+                color="emerald"
+                value={emp.summary.onTime}
+                label="Tepat"
+              />
+              <SummaryBadge
+                color="amber"
+                value={emp.summary.late}
+                label="Telat"
+              />
+              <SummaryBadge
+                color="red"
+                value={emp.summary.alpa ?? emp.summary.noFp ?? 0}
+                label="Alpa"
+              />
+              <SummaryBadge
+                color="gray"
+                value={emp.summary.off ?? 0}
+                label="Off"
+              />
+            </div>
+
+            {onOpenWarning && (
+              <Button
+                size="sm"
+                onClick={onOpenWarning}
+                className="bg-amber-900/30 text-amber-400 border border-amber-700/50 hover:bg-amber-900/50 hover:text-amber-300 h-8"
+              >
+                <FileWarning className="w-4 h-4 mr-2" />
+                Buat Surat Peringatan
+              </Button>
+            )}
           </div>
         </div>
       </CardHeader>

@@ -70,3 +70,12 @@ export interface DashboardStatsProps {
   attendanceSummary: AttendanceSummary | null;
   deductionSummary?: DeductionSummary | null;
 }
+export interface DeductionSummary {
+  transportCount: number;
+  konsumsiCount: number;
+  gajiCount: number;
+  shiftCount: number;
+  shiftRate: number;
+  shiftTotal: number;
+  lateFineTotal: number;
+}

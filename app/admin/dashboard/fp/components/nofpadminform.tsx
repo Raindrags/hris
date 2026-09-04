@@ -5,7 +5,6 @@ import { useNoFpAdminForm } from "../hooks/useNoFpAdminForm";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Command,
   CommandEmpty,
@@ -19,13 +18,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  ShieldCheck,
-  UploadCloud,
-  Loader2,
-  Check,
-  ChevronsUpDown,
-} from "lucide-react";
+import { ShieldCheck, Loader2, Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface NoFpAdminFormProps {
@@ -35,12 +28,12 @@ interface NoFpAdminFormProps {
 export default function NoFpAdminForm({ onSuccess }: NoFpAdminFormProps) {
   const { states, actions } = useNoFpAdminForm(onSuccess);
 
-  // State tambahan untuk mengontrol buka/tutup dropdown Combobox
+  // State tambahan untuk mengontrol buka/tutup dropdown Combobox[cite: 18]
   const [openCombobox, setOpenCombobox] = useState(false);
 
   return (
     <div className="w-full max-w-2xl bg-slate-900 border border-slate-700 rounded-xl shadow-xl overflow-hidden mx-auto">
-      {/* HEADER */}
+      {/* HEADER[cite: 18] */}
       <div className="p-6 border-b border-slate-700 bg-slate-900/50">
         <div className="flex items-center gap-3 mb-2">
           <h2 className="text-xl font-bold text-white">Input Lupa/Error FP</h2>
@@ -56,7 +49,7 @@ export default function NoFpAdminForm({ onSuccess }: NoFpAdminFormProps) {
       </div>
 
       <form onSubmit={actions.handleSubmit} className="p-6 space-y-6">
-        {/* PEGAWAI - MENGGUNAKAN COMBOBOX (SEARCHABLE) */}
+        {/* PEGAWAI - MENGGUNAKAN COMBOBOX (SEARCHABLE)[cite: 18] */}
         <div className="space-y-2 flex flex-col">
           <Label className="text-slate-300">
             Pilih Pegawai <span className="text-red-400">*</span>
@@ -118,11 +111,11 @@ export default function NoFpAdminForm({ onSuccess }: NoFpAdminFormProps) {
               </Command>
             </PopoverContent>
           </Popover>
-          {/* Input hidden untuk memastikan validasi HTML 'required' tetap berjalan */}
+          {/* Input hidden untuk memastikan validasi HTML 'required' tetap berjalan[cite: 18] */}
           <input type="hidden" name="userId" value={states.userId} required />
         </div>
 
-        {/* TANGGAL */}
+        {/* TANGGAL[cite: 18] */}
         <div className="space-y-2">
           <Label className="text-slate-300">
             Tanggal Kejadian <span className="text-red-400">*</span>
@@ -136,7 +129,7 @@ export default function NoFpAdminForm({ onSuccess }: NoFpAdminFormProps) {
           />
         </div>
 
-        {/* CHECKBOX NO FP */}
+        {/* CHECKBOX NO FP[cite: 18] */}
         <div className="p-4 bg-slate-800/50 rounded-lg border border-slate-700 space-y-3">
           <Label className="text-slate-300">
             Sesi Lupa/Error Fingerprint <span className="text-red-400">*</span>
@@ -166,58 +159,8 @@ export default function NoFpAdminForm({ onSuccess }: NoFpAdminFormProps) {
             </label>
           </div>
         </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Jam Kejadian</label>
-          <input
-            type="time"
-            value={states.time}
-            onChange={(e) => actions.setTime(e.target.value)}
-            className="w-full rounded-md border p-2 bg-transparent"
-          />
-        </div>
 
-        {/* KETERANGAN */}
-        <div className="space-y-2">
-          <Label className="text-slate-300">
-            Alasan / Keterangan <span className="text-red-400">*</span>
-          </Label>
-          <Textarea
-            value={states.reason}
-            onChange={(e) => actions.setReason(e.target.value)}
-            placeholder="Contoh: Mesin absen di lobi error / mati lampu..."
-            className="bg-slate-950 border-slate-700 text-slate-100"
-            required
-            rows={3}
-          />
-        </div>
-
-        {/* UPLOAD FILE */}
-        <div className="space-y-2">
-          <Label className="text-slate-300">Upload Bukti Foto (Opsional)</Label>
-          <div className="relative flex items-center justify-center border-2 border-dashed border-slate-700 rounded-lg p-6 bg-slate-950 hover:bg-slate-900 transition-colors cursor-pointer group">
-            <Input
-              type="file"
-              accept=".jpg,.jpeg,.png"
-              onChange={(e) => actions.setFile(e.target.files?.[0] || null)}
-              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-            />
-            <div className="text-center space-y-2 text-slate-400 group-hover:text-slate-300">
-              <UploadCloud className="mx-auto h-8 w-8 text-slate-500 group-hover:text-blue-400 transition-colors" />
-              <p className="text-sm font-medium">
-                {states.file ? (
-                  <span className="text-blue-400">{states.file.name}</span>
-                ) : (
-                  "Klik atau seret foto ke sini"
-                )}
-              </p>
-              {!states.file && (
-                <p className="text-xs text-slate-500">JPG, PNG (Maks 2MB)</p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* ACTION BUTTONS */}
+        {/* ACTION BUTTONS[cite: 18] */}
         <div className="flex items-center gap-3 pt-4 border-t border-slate-700">
           <Button
             type="button"

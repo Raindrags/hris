@@ -17,9 +17,6 @@ export async function GET() {
       return NextResponse.json([], { status: 200 });
     }
     const data = await res.json();
-    console.log("====== DATA DARI BACKEND ======");
-    console.log(JSON.stringify(data, null, 2));
-    console.log("===============================");
     return NextResponse.json(Array.isArray(data) ? data : (data?.data ?? []));
   } catch (error) {
     console.error("Gagal mengambil data libur dari backend:", error);

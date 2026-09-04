@@ -427,9 +427,89 @@ export function LeaveHistoryTable({
                   </span>
                   <div>
                     {selectedRequest.deductionOptions === "DIPOTONG" ? (
-                      <Badge className="bg-red-950 text-red-400">
-                        Dikenakan Potongan
-                      </Badge>
+                      <div className="space-y-2">
+                        <Badge className="bg-red-950 text-red-400">
+                          Dikenakan Potongan
+                        </Badge>
+                        <div className="bg-red-950/20 p-2.5 rounded-md border border-red-900/30 text-xs space-y-1.5 mt-2">
+                          {/* Potongan Boolean */}
+                          {selectedRequest.potongGaji && (
+                            <p className="text-gray-300 flex justify-between">
+                              <span className="text-gray-500">
+                                Potong Gaji:
+                              </span>
+                              <span className="text-red-400 font-medium">
+                                Ya
+                              </span>
+                            </p>
+                          )}
+                          {selectedRequest.potongKonsumsi && (
+                            <p className="text-gray-300 flex justify-between">
+                              <span className="text-gray-500">
+                                Potong Tunjangan Konsumsi:
+                              </span>
+                              <span className="text-red-400 font-medium">
+                                Ya
+                              </span>
+                            </p>
+                          )}
+                          {selectedRequest.potongTransport && (
+                            <p className="text-gray-300 flex justify-between">
+                              <span className="text-gray-500">
+                                Potong Tunj. Transportasi:
+                              </span>
+                              <span className="text-red-400 font-medium">
+                                Ya
+                              </span>
+                            </p>
+                          )}
+                          {selectedRequest.potongLainnya && (
+                            <p className="text-gray-300 flex justify-between">
+                              <span className="text-gray-500">
+                                Tunjangan Lainnya:
+                              </span>
+                              <span className="text-red-400 font-medium">
+                                Ya
+                              </span>
+                            </p>
+                          )}
+
+                          {/* Potongan Angka/Nominal */}
+                          {selectedRequest.lateFine > 0 && (
+                            <p className="text-gray-300 flex justify-between">
+                              <span className="text-gray-500">
+                                Total Denda Telat:
+                              </span>
+                              <span className="text-red-400 font-medium">
+                                Rp{" "}
+                                {selectedRequest.lateFine.toLocaleString(
+                                  "id-ID",
+                                )}
+                              </span>
+                            </p>
+                          )}
+                          {selectedRequest.invalCount > 0 && (
+                            <p className="text-gray-300 flex justify-between">
+                              <span className="text-gray-500">
+                                Total Jumlah Telat/Inval:
+                              </span>
+                              <span className="text-red-400 font-medium">
+                                {selectedRequest.invalCount}
+                              </span>
+                            </p>
+                          )}
+                          {selectedRequest.shiftCount > 0 && (
+                            <p className="text-gray-300 flex justify-between">
+                              <span className="text-gray-500">
+                                Total Jumlah Shift:
+                              </span>
+                              <span className="text-red-400 font-medium">
+                                {selectedRequest.shiftCount}
+                              </span>
+                            </p>
+                          )}
+                        </div>
+                      </div>
                     ) : selectedRequest.deductionOptions ===
                       "TIDAK_DIPOTONG" ? (
                       <Badge className="bg-emerald-950 text-emerald-400">
@@ -470,6 +550,7 @@ export function LeaveHistoryTable({
         onClose={() => setIsDeductionModalOpen(false)}
         request={selectedRequest}
         onSuccess={() => router.refresh()}
+        source="history"
       />
 
       {/* MODAL DISCARD (Pembatalan) */}

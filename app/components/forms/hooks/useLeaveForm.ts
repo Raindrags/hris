@@ -1,5 +1,4 @@
-// app/hooks/useLeaveForm.ts
-
+// useLeaveForm.ts
 import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import { LeaveSubmitPayload, CalendarEventResponse } from "../types";
@@ -28,7 +27,7 @@ export const useLeaveForm = (
   const [pendingPayload, setPendingPayload] =
     useState<LeaveSubmitPayload | null>(null);
 
-  const sisaCutiNum = Number(sisaCuti) || 0;
+  const [sisaCutiNum, setSisaCutiNum] = useState<number>(Number(sisaCuti) || 0);
 
   // 1. Fetch Data Hari Libur
   useEffect(() => {
@@ -55,6 +54,7 @@ export const useLeaveForm = (
     fetchHolidays();
   }, []);
 
+  // 2. Fetch Data Jadwal Kerja Khusus
   useEffect(() => {
     const fetchSpecialWorkDays = async () => {
       try {
@@ -68,39 +68,31 @@ export const useLeaveForm = (
           : responseData?.data || [];
 
         sourceData.forEach((item: any) => {
-          // 1. DAPATKAN ID DIVISI USER SAAT INI
-          // Mengambil dari user.divisiId atau user.divisi.id
           const myDivisiId =
             typeof user?.divisi === "object" && user?.divisi !== null
               ? (user.divisi as any).id
               : user?.divisiId || user?.divisi;
 
-          // 2. CEK APAKAH JADWAL INI UNTUK USER INI ATAU DIVISINYA?
-          // Cek apakah userId ada di dalam array item.users
           const isUserAssigned =
             Array.isArray(item.users) &&
             item.users.some((u: any) => u.id === (userId || user?.id));
 
-          // Cek apakah jadwal ini memiliki divisiId yang sama dengan myDivisiId
           const isDivisiAssigned = Boolean(
             myDivisiId &&
             item.divisiId &&
             String(item.divisiId) === String(myDivisiId),
           );
 
-          // Cek alternatif: Jika backend mengembalikan object divisi, bukan divisiId
           const isDivisiObjAssigned = Boolean(
             myDivisiId &&
             item.divisi?.id &&
             String(item.divisi.id) === String(myDivisiId),
           );
 
-          // Jika tidak masuk ke salah satu kriteria, lewati data ini.
           if (!isUserAssigned && !isDivisiAssigned && !isDivisiObjAssigned) {
             return;
           }
 
-          // 3. PARSING TANGGAL KE FORMAT YYYY-MM-DD
           if (item.startDate && item.endDate) {
             const startStr = item.startDate.split("T")[0];
             const endStr = item.endDate.split("T")[0];
@@ -122,9 +114,6 @@ export const useLeaveForm = (
           }
         });
 
-        // Debugging: Cek isi Set di inspect element (Console) browser Anda
-        console.log("Special Work Days User Ini:", Array.from(daysSet));
-
         setSpecialWorkDays(Array.from(daysSet));
       } catch (error) {
         console.error("Gagal menarik data jadwal kerja khusus:", error);
@@ -135,6 +124,41 @@ export const useLeaveForm = (
     if (userId) {
       fetchSpecialWorkDays();
     }
+  }, [userId, user]);
+
+  // Sinkronisasi Sisa Cuti
+  useEffect(() => {
+    const fetchLatestSisaCuti = async () => {
+      if (!userId) return;
+
+      try {
+        const res = await fetch(`/api/users/${userId}`, {
+          cache: "no-store",
+          headers: {
+            "Cache-Control": "no-cache",
+            Pragma: "no-cache",
+          },
+        });
+
+        const responseText = await res.text();
+
+        if (res.ok) {
+          const responseData = JSON.parse(responseText);
+          const freshSisaCuti =
+            responseData?.data?.data?.sisaCuti ??
+            responseData?.data?.sisaCuti ??
+            responseData?.sisaCuti;
+
+          if (freshSisaCuti !== undefined) {
+            setSisaCutiNum(Number(freshSisaCuti));
+          }
+        }
+      } catch (error) {
+        console.error("💥 Gagal sinkronisasi sisa cuti:", error);
+      }
+    };
+
+    fetchLatestSisaCuti();
   }, [userId]);
 
   // 3. Kalkulasi Hari
@@ -189,9 +213,8 @@ export const useLeaveForm = (
 
       if (res.ok) {
         toast.success("Pengajuan cuti berhasil dikirim.");
-        onSuccess?.(); // Ini yang akan menutup modal
+        onSuccess?.();
       } else {
-        // Ambil pesan error dari backend jika ada
         const data = await res.json().catch(() => ({}));
         toast.error(data.message || "Gagal mengajukan cuti.");
       }
@@ -219,6 +242,7 @@ export const useLeaveForm = (
       endDate: getLocalYYYYMMDD(endDate),
       reason,
       userId,
+      durationDays: calculatedDays, // <-- MENGIRIM DURASI KE BACKEND SEBAGAI REFERENSI
     };
 
     if (excessDays > 0) {
@@ -230,7 +254,6 @@ export const useLeaveForm = (
   };
 
   return {
-    // States
     loading,
     startDate,
     setStartDate,
@@ -242,14 +265,10 @@ export const useLeaveForm = (
     setShowWarning,
     pendingPayload,
     setPendingPayload,
-
-    // Calculated values
     sisaCutiNum,
     calculatedDays,
     excessDays,
     isHolidayOrSunday,
-
-    // Handlers
     handleSubmit,
     processSubmit,
   };

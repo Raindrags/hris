@@ -1,5 +1,3 @@
-// app/hooks/useApprovalSection.ts
-
 import { useState, useCallback } from "react";
 import { ApprovalRequestData } from "../types";
 
@@ -7,7 +5,6 @@ export const useApprovalSection = (onRefresh: () => void) => {
   const [selectedRequest, setSelectedRequest] =
     useState<ApprovalRequestData | null>(null);
 
-  // Handler untuk mengontrol dialog/modal
   const handleOpenChange = useCallback(
     (open: boolean) => {
       if (!open) {
@@ -27,7 +24,6 @@ export const useApprovalSection = (onRefresh: () => void) => {
     onRefresh();
   }, [onRefresh]);
 
-  // Utility untuk merapikan format rentang tanggal
   const formatDateRange = (start: Date | string, end: Date | string) => {
     const startDate = new Intl.DateTimeFormat("id-ID", {
       day: "numeric",

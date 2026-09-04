@@ -17,7 +17,6 @@ import { usePegawaiAuth } from "@/app/form-cuti/hooks/usePegawaiAuth";
 function FormCutiContent() {
   const { loading, error, userData, handleSuccess, handleBack } =
     usePegawaiAuth();
-  console.log("===== CEK DATA USER =====", userData);
 
   if (loading) {
     return (
@@ -63,10 +62,10 @@ function FormCutiContent() {
             Anda.
           </CardDescription>
         </CardHeader>
-
         <CardContent className="pt-8 px-6 sm:px-8 pb-8">
           <LeaveForm
             user={{ sisaCuti: userData?.sisaCuti ?? 0 }}
+            userId={userData?.id}
             onSuccess={handleSuccess}
           />
         </CardContent>

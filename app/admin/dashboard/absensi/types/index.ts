@@ -18,6 +18,18 @@ export interface AttendanceLog {
   isEarlyApproved?: boolean;
 }
 
+// 1. TAMBAHAN: Interface untuk Detail Shift Pegawai
+export interface WorkShiftDetail {
+  dayOfWeek: number; // 0 = Minggu, 1 = Senin, ..., 6 = Sabtu
+  [key: string]: any; // Boleh diisi startTime/endTime jika backend mengirimkannya
+}
+
+// 2. TAMBAHAN: Interface untuk Induk Shift Pegawai
+export interface WorkShift {
+  name?: string;
+  details?: WorkShiftDetail[];
+}
+
 export interface EmployeeReport {
   id: string;
   name: string;
@@ -39,6 +51,10 @@ export interface EmployeeReport {
     izin?: number;
   };
   logs: AttendanceLog[];
+
+  // 3. TAMBAHAN: Tipe Data untuk Filter Hari Libur
+  workShift?: WorkShift;
+  shiftType?: string;
 }
 
 export interface Division {

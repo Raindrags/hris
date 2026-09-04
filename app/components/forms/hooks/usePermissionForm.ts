@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, FormEvent } from "react";
+import { useState, useEffect, useMemo, useCallback, FormEvent } from "react";
 import { toast } from "sonner";
 import {
   PermissionUserData,
@@ -7,10 +7,11 @@ import {
 } from "../types/permission";
 
 interface UsePermissionFormProps {
-  user: PermissionUserData;
+  user: PermissionUserData & { workShift?: any };
   potentialSubstitutes: SubstituteUser[];
   onSuccess: () => void;
   userId?: string;
+  allowBackdate?: boolean;
 }
 
 const getLocalYYYYMMDD = (date: Date) => {
@@ -23,6 +24,7 @@ export const usePermissionForm = ({
   user,
   onSuccess,
   userId,
+  allowBackdate = false,
 }: UsePermissionFormProps) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [startDate, setStartDate] = useState<Date>();
@@ -33,19 +35,34 @@ export const usePermissionForm = ({
   const [subCategory, setSubCategory] = useState<string>("");
   const [timeValue, setTimeValue] = useState<string>("");
   const [reason, setReason] = useState<string>("");
-  const [file, setFile] = useState<File | null>(null);
 
   // State untuk No FP
   const [fpDatang, setFpDatang] = useState<boolean>(false);
   const [fpPulang, setFpPulang] = useState<boolean>(false);
-
-  const [returnTime, setReturnTime] = useState<string>("");
+  const [lupaFp, setLupaFp] = useState<boolean>(false);
+  const [errorFp, setErrorFp] = useState<boolean>(false);
+  const [jamDatang, setJamDatang] = useState<string>("");
+  const [jamPulang, setJamPulang] = useState<string>("");
+  const [file, setFile] = useState<File | null>(null);
   const [attachmentLink, setAttachmentLink] = useState<string>("");
 
+  // State untuk Izin Sakit
+  const [isSakitHariPertama, setIsSakitHariPertama] = useState<boolean>(false);
+  const [isSakitHariBerikutnya, setIsSakitHariBerikutnya] =
+    useState<boolean>(false);
+  const [suratTerlampir, setSuratTerlampir] = useState<boolean>(false);
+  const [suratTidakTerlampir, setSuratTidakTerlampir] =
+    useState<boolean>(false);
+
+  // State khusus riwayat sakit backend
+  const [hasSickHistory, setHasSickHistory] = useState<boolean | null>(null);
+  const [isLoadingSickHistory, setIsLoadingSickHistory] =
+    useState<boolean>(false);
+
+  const [returnTime, setReturnTime] = useState<string>("");
   const [delegatedTo, setDelegatedTo] = useState<string>("");
   const [taskDetail, setTaskDetail] = useState<string>("");
   const [substitutesList, setSubstitutesList] = useState<SubstituteUser[]>([]);
-
   const [showWarning, setShowWarning] = useState<boolean>(false);
   const [pendingPayload, setPendingPayload] =
     useState<PermissionSubmitPayload | null>(null);
@@ -53,9 +70,8 @@ export const usePermissionForm = ({
   const safeSubstitutesList = Array.isArray(substitutesList)
     ? substitutesList
     : [];
-
   const filteredSubstitutes = safeSubstitutesList.filter((sub) => {
-    if (sub.id === user?.id) return false;
+    if (sub.id === (userId || user?.id)) return false;
     const myDivisi = user?.divisi;
     const subDivisi = sub?.divisi;
     const myDivisiName =
@@ -72,6 +88,7 @@ export const usePermissionForm = ({
     );
   });
 
+  // Ambil Hari Libur
   useEffect(() => {
     const fetchHolidays = async () => {
       try {
@@ -96,10 +113,10 @@ export const usePermissionForm = ({
     fetchHolidays();
   }, []);
 
+  // Ambil Special Workdays
   useEffect(() => {
     const fetchSpecialWorkDays = async () => {
       try {
-        // Fetch ke endpoint bawaan tanpa parameter tambahan
         const res = await fetch("/api/special-workdays");
         if (!res.ok) throw new Error("Gagal fetch special workdays");
         const responseData = await res.json();
@@ -108,41 +125,33 @@ export const usePermissionForm = ({
         const sourceData = Array.isArray(responseData)
           ? responseData
           : responseData?.data || [];
-        console.log("1. Data API Mentah:", sourceData);
+
         sourceData.forEach((item: any) => {
-          // 1. DAPATKAN ID DIVISI USER SAAT INI
-          // Mengambil dari user.divisiId atau user.divisi.id
           const myDivisiId =
             typeof user?.divisi === "object" && user?.divisi !== null
               ? (user.divisi as any).id
               : user?.divisiId || user?.divisi;
 
-          // 2. CEK APAKAH JADWAL INI UNTUK USER INI ATAU DIVISINYA?
-          // Cek apakah userId ada di dalam array item.users
           const isUserAssigned =
             Array.isArray(item.users) &&
             item.users.some((u: any) => u.id === (userId || user?.id));
 
-          // Cek apakah jadwal ini memiliki divisiId yang sama dengan myDivisiId
           const isDivisiAssigned = Boolean(
             myDivisiId &&
             item.divisiId &&
             String(item.divisiId) === String(myDivisiId),
           );
 
-          // Cek alternatif: Jika backend mengembalikan object divisi, bukan divisiId
           const isDivisiObjAssigned = Boolean(
             myDivisiId &&
             item.divisi?.id &&
             String(item.divisi.id) === String(myDivisiId),
           );
 
-          // Jika tidak masuk ke salah satu kriteria, lewati data ini.
           if (!isUserAssigned && !isDivisiAssigned && !isDivisiObjAssigned) {
             return;
           }
 
-          // 3. PARSING TANGGAL KE FORMAT YYYY-MM-DD
           if (item.startDate && item.endDate) {
             const startStr = item.startDate.split("T")[0];
             const endStr = item.endDate.split("T")[0];
@@ -163,117 +172,163 @@ export const usePermissionForm = ({
             }
           }
         });
-
-        // Debugging: Cek isi Set di inspect element (Console) browser Anda
-        console.log("Special Work Days User Ini:", Array.from(daysSet));
-
         setSpecialWorkDays(Array.from(daysSet));
       } catch (error) {
-        console.error("Gagal menarik data jadwal kerja khusus:", error);
         setSpecialWorkDays([]);
       }
     };
 
-    if (userId) {
-      fetchSpecialWorkDays();
+    if (userId || user?.id) fetchSpecialWorkDays();
+  }, [userId, user]);
+
+  useEffect(() => {
+    if (
+      ["NoFP", "Terlambat", "PulangAwal", "IzinKeluar"].includes(category) &&
+      startDate
+    ) {
+      setEndDate(startDate);
     }
-  }, [userId]);
+  }, [category, startDate]);
 
-  const isHolidayOrSunday = (date: Date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    const dateString = `${year}-${month}-${day}`;
-    if (specialWorkDays.includes(dateString)) return false;
-    if (date.getDay() === 0) return true;
-    return holidays.includes(dateString);
-  };
+  const workingDays = useMemo(() => {
+    if (user?.workShift?.details && Array.isArray(user.workShift.details)) {
+      return user.workShift.details.map((detail: any) => detail.dayOfWeek);
+    }
+    return [1, 2, 3, 4, 5];
+  }, [user]);
 
+  const isHolidayOrSunday = useCallback(
+    (date: Date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      const dateString = `${year}-${month}-${day}`;
+
+      const currentDayOfWeek = date.getDay();
+
+      if (specialWorkDays.includes(dateString)) return false;
+      if (!workingDays.includes(currentDayOfWeek)) return true;
+      return holidays.includes(dateString);
+    },
+    [specialWorkDays, workingDays, holidays],
+  );
+
+  // Cek Riwayat Sakit
+  useEffect(() => {
+    if (category === "Sakit" && isSakitHariBerikutnya) {
+      const fetchSickHistory = async () => {
+        setIsLoadingSickHistory(true);
+        try {
+          const res = await fetch(
+            `/api/requests/${userId || user?.id}/get-last-sick/`,
+          );
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.startDate) {
+              setHasSickHistory(true);
+              const backendDate = new Date(data.startDate);
+              setStartDate(backendDate);
+              const yesterday = new Date();
+              yesterday.setDate(yesterday.getDate() - 1);
+              yesterday.setHours(0, 0, 0, 0);
+              setEndDate(yesterday);
+            } else {
+              setHasSickHistory(false);
+            }
+          } else {
+            setHasSickHistory(false);
+          }
+        } catch (error) {
+          setHasSickHistory(false);
+        } finally {
+          setIsLoadingSickHistory(false);
+        }
+      };
+      fetchSickHistory();
+    } else {
+      setHasSickHistory(null);
+    }
+  }, [category, isSakitHariBerikutnya, userId, user?.id]);
+
+  // Sinkronisasi otomatis Tanggal Selesai untuk No FP
+  useEffect(() => {
+    if (category === "NoFP" && startDate) {
+      setEndDate(startDate);
+    }
+  }, [category, startDate]);
+
+  // Perhitungan Izin Khusus
   useEffect(() => {
     if (category === "IzinKhusus" && subCategory && startDate) {
-      const daysMap: Record<string, number> = {
-        "Pegawai menikah (5 Hari)": 5,
-        "Pegawai menikahkan anaknya (2 Hari)": 2,
-        "Pegawai mengkhitankan/membaptiskan anaknya/Wisuda/meja hijau (1 Hari)": 1,
-        "Pegawai melahirkan (2 Bulan)": 50, // Anggap ~50 hari kerja aktif
-        "Istri pegawai melahirkan/keguguran kandungan (2 Hari)": 2,
-        "Suami/istri/anak/orang tua/mertua/menantu/saudara kandung meninggal dunia (5 Hari)": 5,
-        "Force Majeur/musibah bencana alam (1 Hari)": 1,
-      };
+      if (subCategory === "Pegawai melahirkan (2 Bulan kalender)") {
+        const newEndDate = new Date(startDate);
+        newEndDate.setDate(newEndDate.getDate() + 59);
+        setEndDate(newEndDate);
+      } else {
+        const daysMap: Record<string, number> = {
+          "Pegawai menikah (5 Hari)": 5,
+          "Pegawai menikahkan anaknya (2 Hari)": 2,
+          "Pegawai mengkhitankan/membaptiskan anaknya/Wisuda/meja hijau (1 Hari)": 1,
+          "Istri pegawai melahirkan/keguguran kandungan (2 Hari)": 2,
+          "Suami/istri/anak/orang tua/mertua/menantu/saudara kandung meninggal dunia (5 Hari)": 5,
+          "Force Majeur/musibah bencana alam (1 Hari)": 1,
+        };
 
-      const duration = daysMap[subCategory] || 1;
-      const divisiName =
-        typeof user?.divisi === "object" && user?.divisi !== null
-          ? user.divisi.name
-          : user?.divisi;
-      const isTeacher = String(divisiName || "")
-        .toLowerCase()
-        .includes("guru");
+        const duration = daysMap[subCategory] || 1;
+        let currentDate = new Date(startDate);
+        let daysCount = 1;
 
-      let currentDate = new Date(startDate);
-      let daysCount = 1;
-
-      while (daysCount < duration) {
-        currentDate.setDate(currentDate.getDate() + 1);
-        const isSaturday = currentDate.getDay() === 6;
-        const isSunday = currentDate.getDay() === 0;
-        const isHoliday = isHolidayOrSunday(currentDate);
-        const isOff = isHoliday || isSunday || (isTeacher && isSaturday);
-        if (!isOff) {
-          daysCount++;
+        while (daysCount < duration) {
+          currentDate.setDate(currentDate.getDate() + 1);
+          if (!isHolidayOrSunday(currentDate)) {
+            daysCount++;
+          }
         }
+        setEndDate(new Date(currentDate));
       }
-      setEndDate(new Date(currentDate));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    category,
-    subCategory,
-    startDate,
-    user.divisi,
-    holidays,
-    specialWorkDays,
-  ]);
+  }, [category, subCategory, startDate, isHolidayOrSunday]);
 
-  useEffect(() => {
-    const fetchSubstitutes = async () => {
-      try {
-        const res = await fetch("/api/users");
-        if (!res.ok) throw new Error("Gagal fetch users");
-        const responseData = await res.json();
-        let usersData: SubstituteUser[] = [];
-        if (Array.isArray(responseData)) usersData = responseData;
-        else if (responseData?.data && Array.isArray(responseData.data))
-          usersData = responseData.data;
-        else if (
-          responseData?.data?.data &&
-          Array.isArray(responseData.data.data)
-        )
-          usersData = responseData.data.data;
-        else if (responseData?.users && Array.isArray(responseData.users))
-          usersData = responseData.users;
-        setSubstitutesList(usersData);
-      } catch (error) {
-        setSubstitutesList([]);
-      }
-    };
-    fetchSubstitutes();
-  }, []);
-
+  // Perhitungan Durasi
   const calculatedDays = useMemo(() => {
-    if (!startDate || !endDate) return 0;
+    if (!startDate) return 0;
+    let effEndDate = endDate;
+    if ((category === "Sakit" && isSakitHariPertama) || category === "NoFP") {
+      effEndDate = startDate;
+    }
+    if (!effEndDate) return 0;
+
     const currentDate = new Date(startDate);
     currentDate.setHours(0, 0, 0, 0);
-    const lastDate = new Date(endDate);
+    const lastDate = new Date(effEndDate);
     lastDate.setHours(0, 0, 0, 0);
+
     if (lastDate < currentDate) return -1;
+
     let count = 0;
+    const isMaternityLeave =
+      category === "IzinKhusus" &&
+      subCategory === "Pegawai melahirkan (2 Bulan)";
+
     while (currentDate <= lastDate) {
-      if (!isHolidayOrSunday(currentDate)) count++;
+      if (isMaternityLeave) {
+        count++;
+      } else {
+        if (!isHolidayOrSunday(currentDate)) {
+          count++;
+        }
+      }
       currentDate.setDate(currentDate.getDate() + 1);
     }
     return count;
-  }, [startDate, endDate, holidays, specialWorkDays]);
+  }, [
+    startDate,
+    endDate,
+    category,
+    subCategory,
+    isSakitHariPertama,
+    isHolidayOrSunday,
+  ]);
 
   const processSubmit = async (payload: PermissionSubmitPayload) => {
     setLoading(true);
@@ -291,7 +346,6 @@ export const usePermissionForm = ({
       if (payload.subCategory)
         formDataObj.append("subCategory", payload.subCategory);
       if (payload.time) formDataObj.append("time", payload.time);
-      if (payload.file) formDataObj.append("file", payload.file);
       if (userId) formDataObj.append("userId", userId);
       if (payload.delegatedToId)
         formDataObj.append("delegatedToId", payload.delegatedToId);
@@ -299,13 +353,26 @@ export const usePermissionForm = ({
         formDataObj.append("taskDetail", payload.taskDetail);
       if (payload.returnTime)
         formDataObj.append("returnTime", payload.returnTime);
+
+      // Kirim attachment jika ada
+      if (payload.file) formDataObj.append("file", payload.file);
       if (payload.attachmentLink)
         formDataObj.append("attachmentLink", payload.attachmentLink);
 
-      // Data untuk No FP
+      formDataObj.append("durationDays", String(calculatedDays));
+      if (payload.category === "Sakit") {
+        formDataObj.append(
+          "sakitType",
+          isSakitHariBerikutnya ? "hari berikutnya" : "hari pertama",
+        );
+        formDataObj.append("isSuratDokter", suratTerlampir ? "true" : "false");
+      }
+
       if (payload.category === "NoFP") {
         formDataObj.append("fpDatang", String(fpDatang));
         formDataObj.append("fpPulang", String(fpPulang));
+        if (jamDatang) formDataObj.append("time", jamDatang);
+        if (jamPulang) formDataObj.append("returnTime", jamPulang);
       }
 
       const res = await fetch("/api/izin", {
@@ -332,67 +399,94 @@ export const usePermissionForm = ({
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!startDate || !endDate)
-      return toast.error("Mohon pilih tanggal mulai dan selesai.");
-    if (calculatedDays < 0)
-      return toast.error("Tanggal selesai tidak boleh sebelum tanggal mulai.");
+
     if (!category) return toast.error("Mohon pilih jenis izin.");
 
-    if (category === "IzinKhusus" && !subCategory) {
-      return toast.error("Kategori Izin Khusus wajib dipilih.");
+    if (category === "Sakit") {
+      if (!isSakitHariPertama && !isSakitHariBerikutnya)
+        return toast.error("Mohon centang salah satu pilihan hari sakit.");
+      if (isSakitHariBerikutnya && hasSickHistory === false)
+        return toast.error(
+          "Tidak dapat mengajukan, riwayat sakit sebelumnya tidak ditemukan.",
+        );
+      if (isSakitHariBerikutnya && calculatedDays > 1) {
+        if (!suratTerlampir && !suratTidakTerlampir)
+          return toast.error(
+            "Mohon pilih status lampiran surat dokter karena durasi lebih dari 1 hari.",
+          );
+      }
     }
 
-    if (category === "NoFP" && !fpDatang && !fpPulang) {
-      return toast.error("Mohon pilih minimal satu: FP Datang atau FP Pulang.");
+    if (category === "NoFP") {
+      if (!lupaFp && !errorFp)
+        return toast.error("Mohon pilih alasan No FP (Lupa FP atau Error FP).");
+      if (!fpDatang && !fpPulang)
+        return toast.error(
+          "Mohon pilih minimal satu waktu: FP Datang atau FP Pulang.",
+        );
+      if (fpDatang && !jamDatang)
+        return toast.error("Mohon masukkan Jam Datang Seharusnya.");
+      if (fpPulang && !jamPulang)
+        return toast.error("Mohon masukkan Jam Pulang Seharusnya.");
+      if (!reason.trim())
+        return toast.error("Mohon isi keterangan/alasan No FP.");
+      if (!file && !attachmentLink)
+        return toast.error("Mohon unggah foto bukti atau sertakan link foto.");
     }
+
+    if (
+      !startDate ||
+      (!endDate &&
+        !(category === "Sakit" && isSakitHariPertama) &&
+        category !== "NoFP")
+    )
+      return toast.error("Mohon pilih tanggal mulai dan selesai.");
+
+    if (calculatedDays < 0)
+      return toast.error("Tanggal selesai tidak boleh sebelum tanggal mulai.");
+    if (category === "IzinKhusus" && !subCategory)
+      return toast.error("Kategori Izin Khusus wajib dipilih.");
 
     if (
       ["Terlambat", "PulangAwal", "IzinKeluar"].includes(category) &&
       !timeValue
-    ) {
+    )
       return toast.error("Mohon masukkan jam keluar/masuk.");
-    }
-
-    if (category === "IzinKeluar" && !returnTime) {
+    if (category === "IzinKeluar" && !returnTime)
       return toast.error("Mohon masukkan jam kembali untuk Izin Keluar.");
-    }
-
-    if (
-      category === "Sakit" &&
-      calculatedDays > 1 &&
-      !file &&
-      !attachmentLink
-    ) {
-      return toast.error(
-        "Bukti Surat Dokter (file atau link) wajib dilampirkan untuk izin sakit > 1 hari.",
-      );
-    }
-
-    if (category === "Dinas" && !file && !attachmentLink) {
-      return toast.error(
-        "Surat tugas (file atau link) wajib dilampirkan untuk Dinas Luar.",
-      );
-    }
-
-    if (!reason.trim()) return toast.error("Mohon isi keterangan lengkap.");
+    if (!(category === "Sakit" && isSakitHariBerikutnya) && !reason.trim())
+      return toast.error("Mohon isi keterangan lengkap.");
 
     const finalData: PermissionSubmitPayload = {
-      startDate: getLocalYYYYMMDD(startDate),
-      endDate: getLocalYYYYMMDD(endDate),
-      reason,
+      startDate: getLocalYYYYMMDD(startDate as Date),
+      endDate:
+        (category === "Sakit" && isSakitHariPertama) || category === "NoFP"
+          ? getLocalYYYYMMDD(startDate as Date)
+          : getLocalYYYYMMDD(endDate as Date),
+      reason:
+        category === "Sakit" && isSakitHariBerikutnya
+          ? "Sakit hari berikutnya (Lanjutan)"
+          : reason,
       category,
-      subCategory: category === "IzinKhusus" ? subCategory : null,
+      subCategory:
+        category === "IzinKhusus"
+          ? subCategory
+          : category === "NoFP"
+            ? [lupaFp ? "Lupa FP" : "", errorFp ? "Error FP" : ""]
+                .filter(Boolean)
+                .join(" & ")
+            : null,
       time: ["Terlambat", "PulangAwal", "IzinKeluar"].includes(category)
         ? timeValue
         : null,
       returnTime: category === "IzinKeluar" ? returnTime : null,
+      file: file,
       attachmentLink: attachmentLink || null,
-      file: file || null,
       delegatedToId: delegatedTo || null,
       taskDetail: taskDetail || null,
     };
 
-    if (category === "Izin" || category === "IzinKeluar") {
+    if (category === "Izin") {
       setPendingPayload(finalData);
       setShowWarning(true);
     } else {
@@ -408,10 +502,19 @@ export const usePermissionForm = ({
       setTimeValue("");
     }
     setReturnTime("");
-    setAttachmentLink("");
-    setFile(null);
     setFpDatang(false);
     setFpPulang(false);
+    setLupaFp(false);
+    setErrorFp(false);
+    setJamDatang("");
+    setJamPulang("");
+    setFile(null);
+    setAttachmentLink("");
+    setIsSakitHariPertama(false);
+    setIsSakitHariBerikutnya(false);
+    setSuratTerlampir(false);
+    setSuratTidakTerlampir(false);
+    setHasSickHistory(null);
   };
 
   const isAutoEndDate = category === "IzinKhusus";
@@ -425,7 +528,6 @@ export const usePermissionForm = ({
       subCategory,
       timeValue,
       returnTime,
-      attachmentLink,
       reason,
       delegatedTo,
       taskDetail,
@@ -434,9 +536,21 @@ export const usePermissionForm = ({
       calculatedDays,
       filteredSubstitutes,
       isAutoEndDate,
-      file,
       fpDatang,
       fpPulang,
+      lupaFp,
+      errorFp,
+      jamDatang,
+      jamPulang,
+      file,
+      attachmentLink,
+      isSakitHariPertama,
+      isSakitHariBerikutnya,
+      suratTerlampir,
+      suratTidakTerlampir,
+      hasSickHistory,
+      isLoadingSickHistory,
+      allowBackdate,
     },
     actions: {
       setStartDate,
@@ -444,9 +558,7 @@ export const usePermissionForm = ({
       setSubCategory,
       setTimeValue,
       setReturnTime,
-      setAttachmentLink,
       setReason,
-      setFile,
       setDelegatedTo,
       setTaskDetail,
       setShowWarning,
@@ -457,6 +569,16 @@ export const usePermissionForm = ({
       processSubmit,
       setFpDatang,
       setFpPulang,
+      setLupaFp,
+      setErrorFp,
+      setJamDatang,
+      setJamPulang,
+      setFile,
+      setAttachmentLink,
+      setIsSakitHariPertama,
+      setIsSakitHariBerikutnya,
+      setSuratTerlampir,
+      setSuratTidakTerlampir,
     },
   };
 };

@@ -1,19 +1,12 @@
 // app/admin/pengaturan-jadwal/hooks/useSpecialWorkDate.ts
 
-import { useState, useCallback, useMemo } from "react";
-import {
-  Employee,
-  Division,
-  SpecialWorkDate,
-  SpecialWorkDateFormState,
-} from "../types";
+import { useState, useCallback } from "react";
+import { SpecialWorkDate, SpecialWorkDateFormState } from "../types";
 import {
   getSpecialWorkDates,
   createSpecialWorkDate,
   updateSpecialWorkDate,
   deleteSpecialWorkDate,
-  getEmployeesForAssign,
-  assignEmployeesToSpecialDate,
 } from "@/app/actions/jadwal-action";
 
 // Pembersih format tanggal otomatis untuk UI
@@ -42,19 +35,6 @@ export function useSpecialWorkDate() {
     startTime: "",
     endTime: "",
   });
-
-  const [isAssignOpen, setIsAssignOpen] = useState(false);
-  const [selectedTarget, setSelectedTarget] = useState<SpecialWorkDate | null>(
-    null,
-  );
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [divisions, setDivisions] = useState<Division[]>([]);
-  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
-
-  const [searchTerm, setSearchTerm] = useState("");
-  const [divisiFilter, setDivisiFilter] = useState("all");
-  const [modalPage, setModalPage] = useState(1);
-  const itemsPerPage = 10;
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -185,90 +165,6 @@ export function useSpecialWorkDate() {
     }
   };
 
-  const openAssignModal = async (target: SpecialWorkDate) => {
-    setSearchTerm("");
-    setDivisiFilter("all");
-    setModalPage(1);
-    setSelectedTarget(target);
-
-    setIsLoading(true);
-    try {
-      const res = await getEmployeesForAssign();
-      if (res?.success) {
-        setEmployees(res.data || []);
-        setDivisions(res.divisions || []);
-        setSelectedUserIds(res.assignedUserIds?.[target.id] || []);
-        setIsAssignOpen(true);
-        console.log("MODAL ASSIGNMENT OPENED");
-      } else {
-        console.log("LOAD ASSIGNMENT GAGAL:", res?.error);
-      }
-    } catch (error) {
-      console.log("LOAD ASSIGNMENT CRASH:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSaveAssignment = async () => {
-    if (!selectedTarget) return;
-    setIsLoading(true);
-    try {
-      const res = await assignEmployeesToSpecialDate(
-        selectedTarget.id,
-        selectedUserIds,
-      );
-      if (res?.success) {
-        console.log("SAVE ASSIGNMENT BERHASIL");
-        setIsAssignOpen(false);
-        fetchData();
-      } else {
-        console.log("SAVE ASSIGNMENT GAGAL:", res?.error);
-      }
-    } catch (error) {
-      console.log("SAVE ASSIGNMENT CRASH:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const toggleEmployee = (id: string) => {
-    setSelectedUserIds((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
-    );
-  };
-
-  const toggleAllEmployees = (checked: boolean, filteredIds: string[]) => {
-    if (checked) {
-      setSelectedUserIds((prev) =>
-        Array.from(new Set([...prev, ...filteredIds])),
-      );
-    } else {
-      setSelectedUserIds((prev) =>
-        prev.filter((id) => !filteredIds.includes(id)),
-      );
-    }
-  };
-
-  const filteredEmployees = useMemo(() => {
-    const term = searchTerm.toLowerCase();
-    return employees.filter((emp) => {
-      const matchSearch =
-        emp.name.toLowerCase().includes(term) ||
-        (emp.niy || "").toLowerCase().includes(term) ||
-        (emp.jabatan || "").toLowerCase().includes(term);
-      const matchDivisi =
-        divisiFilter === "all" || emp.divisi?.id === divisiFilter;
-      return matchSearch && matchDivisi;
-    });
-  }, [employees, searchTerm, divisiFilter]);
-
-  const totalModalPages = Math.ceil(filteredEmployees.length / itemsPerPage);
-  const paginatedEmployees = useMemo(() => {
-    const start = (modalPage - 1) * itemsPerPage;
-    return filteredEmployees.slice(start, start + itemsPerPage);
-  }, [filteredEmployees, modalPage, itemsPerPage]);
-
   return {
     specialDates,
     isLoading,
@@ -278,27 +174,9 @@ export function useSpecialWorkDate() {
     formState,
     setFormState,
     isEditing: !!editingId,
-    isAssignOpen,
-    setIsAssignOpen,
-    selectedTarget,
-    divisions,
-    selectedUserIds,
-    searchTerm,
-    setSearchTerm,
-    divisiFilter,
-    setDivisiFilter,
-    modalPage,
-    setModalPage,
-    totalModalPages,
-    filteredEmployees,
-    paginatedEmployees,
     fetchData,
     handleSave,
     handleEdit,
     handleDelete,
-    openAssignModal,
-    handleSaveAssignment,
-    toggleEmployee,
-    toggleAllEmployees,
   };
 }

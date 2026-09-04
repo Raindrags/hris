@@ -6,13 +6,14 @@ import {
   AlertCircle,
   Calculator,
 } from "lucide-react";
-import { DashboardStatsProps } from "../types";
+import { DashboardStatsProps } from "../types"; // Sesuaikan path ini jika berbeda
 
 export const DashboardStats = ({
   userData,
   attendanceSummary,
   deductionSummary,
 }: DashboardStatsProps) => {
+  // ✅ Tambahkan property baru di sini sebagai fallback
   const safeDeduction = deductionSummary || {
     transportCount: 0,
     konsumsiCount: 0,
@@ -20,6 +21,19 @@ export const DashboardStats = ({
     shiftCount: 0,
     shiftRate: 0,
     shiftTotal: 0,
+    lateFineTotal: 0,
+    teguranFineTotal: 0,
+    invalCount: 0,
+    invalRate: 5000,
+    invalTotal: 0,
+  };
+
+  const formatRupiah = (angka: number) => {
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+    }).format(angka);
   };
 
   return (
@@ -119,7 +133,6 @@ export const DashboardStats = ({
                   <p className="text-xs text-gray-500">Izin</p>
                 </div>
 
-                {/* Rincian Cuti (Hanya Tampil Jika BUKAN Guru) */}
                 {!userData.isGuru && (
                   <div>
                     <p className="text-2xl font-bold text-purple-400">
@@ -153,6 +166,22 @@ export const DashboardStats = ({
         </CardHeader>
         <CardContent>
           <div className="flex flex-col space-y-2 text-sm text-gray-300 mt-1">
+            {/* Baris Denda Telat */}
+            <div className="flex justify-between items-center border-b border-gray-800 pb-1">
+              <span>Denda Telat</span>
+              <span className="font-bold text-red-400 text-sm">
+                {formatRupiah(safeDeduction.lateFineTotal)}
+              </span>
+            </div>
+
+            {/* ✅ Baris Denda Pelanggaran (ST) */}
+            <div className="flex justify-between items-center border-b border-gray-800 pb-1">
+              <span>Denda Pelanggaran</span>
+              <span className="font-bold text-red-400 text-sm">
+                {formatRupiah(safeDeduction.teguranFineTotal)}
+              </span>
+            </div>
+
             <div className="flex justify-between items-center border-b border-gray-800 pb-1">
               <span>Tunj. Transportasi</span>
               <span className="font-semibold text-white">
@@ -171,12 +200,26 @@ export const DashboardStats = ({
                 {safeDeduction.gajiCount} kali
               </span>
             </div>
+
+            {/* ✅ Baris Inval */}
+            <div className="flex justify-between items-center border-b border-gray-800 pb-1">
+              <span>Inval</span>
+              <span className="text-xs flex items-center">
+                {safeDeduction.invalCount} x{" "}
+                {formatRupiah(safeDeduction.invalRate)} =
+                <span className="font-bold text-red-400 text-sm ml-2">
+                  {formatRupiah(safeDeduction.invalTotal)}
+                </span>
+              </span>
+            </div>
+
             <div className="flex justify-between items-center pt-1">
               <span>Shift</span>
-              <span className="text-xs">
-                {safeDeduction.shiftCount} x {safeDeduction.shiftRate} ={" "}
-                <span className="font-bold text-red-400 text-sm ml-1">
-                  {safeDeduction.shiftTotal}
+              <span className="text-xs flex items-center">
+                {safeDeduction.shiftCount} x{" "}
+                {formatRupiah(safeDeduction.shiftRate)} =
+                <span className="font-bold text-red-400 text-sm ml-2">
+                  {formatRupiah(safeDeduction.shiftTotal)}
                 </span>
               </span>
             </div>

@@ -315,3 +315,28 @@ export async function assignEmployeesToSpecialDate(
     };
   }
 }
+
+// ============================================================================
+// 12. Ambil Detail Penugasan Pegawai di Hari Kerja Khusus
+// ============================================================================
+export async function getAssignedSpecialDateEmployees(specialDateId: string) {
+  try {
+    const headers = await getHeaders();
+
+    // Asumsi: Backend Anda memiliki endpoint GET /special-work-dates/{id}
+    // yang mengembalikan detail agenda beserta relasi pegawainya
+    const res = await fetch(`${API_URL}/special-work-dates/${specialDateId}`, {
+      cache: "no-store",
+      headers,
+    });
+
+    const data = await res.json();
+    return data;
+  } catch (error: any) {
+    return {
+      success: false,
+      error: "Gagal mengambil detail hari kerja khusus.",
+      errorDetail: error.message,
+    };
+  }
+}

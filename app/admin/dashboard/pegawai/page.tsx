@@ -66,10 +66,8 @@ import { ITEMS_PER_PAGE } from "./constants";
 export default function PegawaiView() {
   const { state, actions } = useEmployees();
 
-  // UI State murni kosmetik untuk dropdown
   const [supervisorPopoverOpen, setSupervisorPopoverOpen] = useState(false);
 
-  // Helper untuk override SelectValue pada Divisi (seperti yang kita bahas sebelumnya)
   const selectedDivisionName =
     state.formData.divisiId === "none"
       ? "Pilih Divisi"
@@ -305,6 +303,35 @@ export default function PegawaiView() {
               />
             </div>
 
+            {/* 💡 INPUT TAMBAHAN: Nomor Urut Absensi (Sort Order) */}
+            <div className="space-y-2">
+              <Label htmlFor="sortOrder" className="text-gray-300">
+                Nomor Urut Absensi (Opsional)
+              </Label>
+              <Input
+                id="sortOrder"
+                type="number"
+                placeholder="999"
+                className="bg-gray-800 border-gray-700 text-gray-100 placeholder:text-gray-500 focus:border-crimson-700"
+                // 💡 PERBAIKAN: Binding data secara ketat
+                value={
+                  state.formData.sortOrder !== undefined
+                    ? state.formData.sortOrder
+                    : ""
+                }
+                onChange={(e) =>
+                  actions.setFormData({
+                    ...state.formData,
+                    sortOrder: e.target.value,
+                  })
+                }
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Angka lebih kecil akan tampil lebih atas pada laporan. Biarkan
+                999 jika tidak ada urutan khusus.
+              </p>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="jabatan" className="text-gray-300">
                 Jabatan
@@ -323,7 +350,25 @@ export default function PegawaiView() {
               />
             </div>
 
-            {!state.hideJatahCuti && (
+            <div className="space-y-2">
+              <Label htmlFor="joinDate" className="text-gray-300">
+                Tanggal Masuk Kerja
+              </Label>
+              <Input
+                id="joinDate"
+                type="date"
+                className="bg-gray-800 border-gray-700 text-gray-100 placeholder:text-gray-500 focus:border-crimson-700"
+                value={state.formData.joinDate || ""}
+                onChange={(e) =>
+                  actions.setFormData({
+                    ...state.formData,
+                    joinDate: e.target.value,
+                  })
+                }
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="jatahCuti" className="text-gray-300">
                   Jatah Cuti (Hari)
@@ -342,7 +387,27 @@ export default function PegawaiView() {
                   }
                 />
               </div>
-            )}
+
+              <div className="space-y-2">
+                <Label htmlFor="jatahIzinKeluar" className="text-gray-300">
+                  Jatah Izin Keluar (Jam)
+                </Label>
+                <Input
+                  id="jatahIzinKeluar"
+                  type="number"
+                  step="0.5"
+                  placeholder="6"
+                  className="bg-gray-800 border-gray-700 text-gray-100 placeholder:text-gray-500 focus:border-crimson-700"
+                  value={state.formData.jatahIzinKeluar || ""}
+                  onChange={(e) =>
+                    actions.setFormData({
+                      ...state.formData,
+                      jatahIzinKeluar: e.target.value,
+                    })
+                  }
+                />
+              </div>
+            </div>
 
             <div className="space-y-2">
               <Label htmlFor="email" className="text-gray-300">
@@ -408,30 +473,29 @@ export default function PegawaiView() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="role" className="text-gray-300">
-                Peran (Role)
-              </Label>
-              <Select
-                value={state.formData.role}
-                onValueChange={(val) =>
-                  actions.setFormData({
-                    ...state.formData,
-                    role: val ?? "USER",
-                  })
-                }
-              >
-                <SelectTrigger
-                  id="role"
-                  className="bg-gray-800 border-gray-700 text-gray-200"
-                >
-                  <SelectValue placeholder="Pilih peran" />
-                </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-700 text-gray-200">
-                  <SelectItem value="ADMIN">Admin</SelectItem>
-                  <SelectItem value="USER">User</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex flex-row items-start space-x-3 space-y-0 rounded-md border border-gray-700 p-4">
+              <div className="flex items-center h-5">
+                <input
+                  type="checkbox"
+                  id="isGuru"
+                  checked={state.formData.isGuru}
+                  onChange={(e) =>
+                    actions.setFormData({
+                      ...state.formData,
+                      isGuru: e.target.checked,
+                    })
+                  }
+                  className="h-4 w-4 rounded border-gray-700 bg-gray-800 text-crimson-600 focus:ring-crimson-700"
+                />
+              </div>
+              <div className="space-y-1 leading-none">
+                <Label htmlFor="isGuru" className="text-gray-300">
+                  Tandai sebagai Guru
+                </Label>
+                <p className="text-xs text-gray-500">
+                  Ceklis jika pegawai ini adalah staf pengajar (Guru).
+                </p>
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -475,11 +539,11 @@ export default function PegawaiView() {
                 <PopoverTrigger className="inline-flex w-full items-center justify-between rounded-md border border-gray-700 px-3 py-2 text-sm text-gray-200 hover:bg-gray-700 hover:text-white">
                   {state.formData.supervisorId &&
                   state.formData.supervisorId !== "none"
-                    ? state.supervisors.find(
+                    ? state.employees.find(
                         (s) =>
                           String(s.id) === String(state.formData.supervisorId),
                       )?.name ||
-                      state.supervisors.find(
+                      state.employees.find(
                         (s) => s.name === state.formData.supervisorId,
                       )?.name ||
                       "Tidak ada atasan"
@@ -510,16 +574,16 @@ export default function PegawaiView() {
                         <Check className="mr-2 h-4 w-4 opacity-0" />
                         -- Tidak ada atasan --
                       </CommandItem>
-                      {state.supervisors
-                        .filter((sup) => String(sup.id) !== state.editingId)
-                        .map((sup) => (
+                      {state.employees
+                        .filter((emp) => String(emp.id) !== state.editingId) // Ganti 'sup' jadi 'emp' agar tidak bingung
+                        .map((emp) => (
                           <CommandItem
-                            key={sup.id}
-                            value={sup.name || sup.fullName || ""}
+                            key={emp.id}
+                            value={emp.name || emp.fullName || ""}
                             onSelect={() => {
                               actions.setFormData({
                                 ...state.formData,
-                                supervisorId: String(sup.id),
+                                supervisorId: String(emp.id),
                               });
                               setSupervisorPopoverOpen(false);
                             }}
@@ -528,12 +592,12 @@ export default function PegawaiView() {
                             <Check
                               className={`mr-2 h-4 w-4 ${
                                 String(state.formData.supervisorId) ===
-                                String(sup.id)
+                                String(emp.id)
                                   ? "opacity-100"
                                   : "opacity-0"
                               }`}
                             />
-                            {sup.name || sup.fullName} ({sup.role})
+                            {emp.name || emp.fullName} ({emp.role})
                           </CommandItem>
                         ))}
                     </CommandGroup>

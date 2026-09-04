@@ -59,9 +59,6 @@ export const usePegawaiAuth = () => {
           }
 
           const meData = await meRes.json();
-          console.log("=== DATA FRESH DARI BROWSER ===", meData); // Cek konsol browser
-
-          // Smart Extractor: Jaga-jaga NestJS membungkus data dalam properti 'data'
           const userObj = meData.user?.data || meData.user || {};
 
           setUserData({

@@ -48,6 +48,9 @@ export function LeaveForm({ user, onSuccess, userId }: LeaveFormProps) {
     processSubmit,
   } = useLeaveForm(user.sisaCuti, userId, onSuccess);
 
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
   return (
     <>
       <form onSubmit={handleSubmit} className="space-y-5">
@@ -99,6 +102,7 @@ export function LeaveForm({ user, onSuccess, userId }: LeaveFormProps) {
                   onSelect={setStartDate}
                   initialFocus
                   modifiers={{ holiday: isHolidayOrSunday }}
+                  disabled={(date) => date < today}
                   modifiersClassNames={{
                     holiday: "text-red-400 font-bold bg-red-950/30",
                   }}
@@ -133,6 +137,7 @@ export function LeaveForm({ user, onSuccess, userId }: LeaveFormProps) {
                   selected={endDate}
                   onSelect={setEndDate}
                   initialFocus
+                  disabled={(date) => date < today}
                   modifiers={{ holiday: isHolidayOrSunday }}
                   modifiersClassNames={{
                     holiday: "text-red-400 font-bold bg-red-950/30",

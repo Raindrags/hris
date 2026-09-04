@@ -10,6 +10,8 @@ export type PermissionUserData = {
   name: string;
   divisiId?: string | number | null;
   divisi?: { id?: string | number; name?: string } | string | null;
+  isGuru?: boolean | null;
+  sisaizinkeluar?: number;
 };
 
 export interface PermissionSubmitPayload {
@@ -19,8 +21,8 @@ export interface PermissionSubmitPayload {
   category: string;
   subCategory?: string | null;
   time?: string | null;
-  returnTime?: string | null;      
-  attachmentLink?: string | null;  
+  returnTime?: string | null;
+  attachmentLink?: string | null;
   file?: File | null;
   delegatedToId?: string | null;
   taskDetail?: string | null;
