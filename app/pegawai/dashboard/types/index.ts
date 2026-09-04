@@ -51,8 +51,13 @@ export interface DeductionSummary {
   konsumsiCount: number;
   gajiCount: number;
   shiftCount: number;
-  shiftRate: number; // misal: 5000 atau 30000
+  shiftRate: number;
   shiftTotal: number;
+  lateFineTotal: number;
+  teguranFineTotal: number;
+  invalCount: number;
+  invalRate: number;
+  invalTotal: number;
 }
 
 export interface DashboardDataResponse {
