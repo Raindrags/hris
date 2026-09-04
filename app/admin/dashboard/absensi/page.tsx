@@ -323,7 +323,10 @@ export default function RekapAbsensiView() {
                   <Select
                     value={warningForm.level}
                     onValueChange={(v) =>
-                      setWarningForm({ ...warningForm, level: v })
+                      setWarningForm({
+                        ...warningForm,
+                        level: v ?? "TEGURAN_1",
+                      })
                     }
                   >
                     <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
@@ -345,11 +348,14 @@ export default function RekapAbsensiView() {
                   <Select
                     value={warningForm.category}
                     onValueChange={(v) => {
+                      const safeCategory = v ?? "KEHADIRAN";
                       const newDesc =
-                        v === "KEHADIRAN" ? warningForm.description : "";
+                        safeCategory === "KEHADIRAN"
+                          ? warningForm.description
+                          : "";
                       setWarningForm({
                         ...warningForm,
-                        category: v,
+                        category: safeCategory,
                         description: newDesc,
                       });
                     }}

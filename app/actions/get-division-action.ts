@@ -1,6 +1,6 @@
 "use server";
 
-const API_BASE = process.env.BACKEND_API_URL || "http://localhost:3434";
+const API_BASE = process.env.BACKEND_API_URL || "process.env.BACKEND_API_URL ";
 
 export async function getDivisions() {
   try {
