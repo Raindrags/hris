@@ -11,6 +11,9 @@ export const INITIAL_FORM_STATE: EmployeeFormData = {
   emergencyContact: "",
   jabatan: "",
   jatahCuti: "",
+  isGuru: false,
+  jatahIzinKeluar: "",
+  joinDate: "",
 };
 
 export const ITEMS_PER_PAGE = 5;
