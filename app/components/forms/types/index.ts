@@ -49,6 +49,8 @@ export interface ApprovalRequestData {
     name: string;
     divisi?: { id: string; name: string } | null;
     category?: string;
-    sisaCuti?: number | null; // Ditambahkan agar bisa dibaca di form
+    sisaCuti?: number | null;
+    isGuru?: boolean | string;
+    sisaIzinKeluar?: number | null;
   };
 }
