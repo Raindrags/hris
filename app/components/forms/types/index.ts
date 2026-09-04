@@ -29,7 +29,7 @@ export interface SubstituteUser {
 
 export interface ApprovalRequestData {
   id: string;
-  type: "CUTI" | "IZIN";
+  type: "CUTI" | "IZIN" | "NO_FP";
   reason?: string;
   startDate: Date | string;
   endDate: Date | string;
