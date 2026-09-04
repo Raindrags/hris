@@ -8,6 +8,7 @@ export interface LeaveSubmitPayload {
   endDate: string;
   reason: string;
   userId?: string;
+  durationDays?: number;
 }
 
 export interface LeaveFormProps {
