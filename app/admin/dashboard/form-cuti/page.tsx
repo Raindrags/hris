@@ -252,6 +252,7 @@ export default function AdminFormCutiPage() {
                     userId={selectedUser.id}
                     user={{ sisaCuti: userDetail.sisaCuti ?? 0 }}
                     onSuccess={() => router.push("/admin/dashboard")}
+                    isAdmin={true}
                   />
                 </div>
               </div>

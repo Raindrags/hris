@@ -15,6 +15,7 @@ export interface LeaveFormProps {
   user: LeaveUserData;
   onSuccess: () => void;
   userId?: string;
+  isAdmin?: boolean;
 }
 
 export interface CalendarEventResponse {

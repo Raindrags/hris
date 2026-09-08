@@ -26,8 +26,12 @@ import { cn } from "@/lib/utils";
 import { useLeaveForm } from "./hooks/useLeaveForm";
 import { LeaveFormProps } from "./types";
 
-export function LeaveForm({ user, onSuccess, userId }: LeaveFormProps) {
-  // Destructure logika dari custom hook
+export function LeaveForm({
+  user,
+  onSuccess,
+  userId,
+  isAdmin = false,
+}: LeaveFormProps) {
   const {
     loading,
     startDate,
@@ -102,7 +106,7 @@ export function LeaveForm({ user, onSuccess, userId }: LeaveFormProps) {
                   onSelect={setStartDate}
                   initialFocus
                   modifiers={{ holiday: isHolidayOrSunday }}
-                  disabled={(date) => date < today}
+                  disabled={(date) => !isAdmin && date < today}
                   modifiersClassNames={{
                     holiday: "text-red-400 font-bold bg-red-950/30",
                   }}
@@ -137,7 +141,7 @@ export function LeaveForm({ user, onSuccess, userId }: LeaveFormProps) {
                   selected={endDate}
                   onSelect={setEndDate}
                   initialFocus
-                  disabled={(date) => date < today}
+                  disabled={(date) => !isAdmin && date < today}
                   modifiers={{ holiday: isHolidayOrSunday }}
                   modifiersClassNames={{
                     holiday: "text-red-400 font-bold bg-red-950/30",
