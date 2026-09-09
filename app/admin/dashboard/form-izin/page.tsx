@@ -361,6 +361,7 @@ export default function AdminFormIzinPage() {
                       divisi: userDetail?.divisi
                         ? { name: userDetail.divisi }
                         : null,
+                      workShift: userDetail?.workShift || null,
                     }}
                     onSuccess={() => router.push("/admin/dashboard")}
                     isAdmin={true}

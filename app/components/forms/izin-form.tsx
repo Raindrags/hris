@@ -763,7 +763,8 @@ export default function PermissionForm({
             (!isHourlyPermission &&
               category !== "Dinas" &&
               category !== "NoFP" &&
-              calculatedDays <= 0)
+              calculatedDays <= 0 &&
+              !isAdmin)
           }
         >
           {loading ? (
