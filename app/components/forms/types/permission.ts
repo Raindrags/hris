@@ -12,6 +12,7 @@ export type PermissionUserData = {
   divisi?: { id?: string | number; name?: string } | string | null;
   isGuru?: boolean | null;
   sisaIzinKeluar?: number;
+  workShift?: any;
 };
 
 export interface PermissionSubmitPayload {
