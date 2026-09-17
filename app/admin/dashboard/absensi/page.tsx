@@ -119,7 +119,7 @@ export default function RekapAbsensiView() {
       return alert("Tidak ada data untuk diekspor.");
     try {
       await exportAttendanceToExcel(
-        dataToExport,
+        dataToExport as any,
         state.startDate,
         state.endDate,
       );
