@@ -4,15 +4,17 @@ import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   FileText,
-  Clock,
-  CalendarX,
   Search,
   Filter,
   Building2,
   CalendarDays,
+  User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getFilteredReportData } from "@/app/actions/laporan-action";
+import {
+  getFilteredReportData,
+  getSupervisors,
+} from "@/app/actions/laporan-action";
 import {
   Select,
   SelectContent,
@@ -33,6 +35,8 @@ export default function AdminLaporanView({
 }: AdminLaporanViewProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<string>("");
   const [selectedDivisi, setSelectedDivisi] = useState<string>("ALL");
+  const [namaAtasan, setNamaAtasan] = useState<string>("");
+  const [supervisorList, setSupervisorList] = useState<any[]>([]);
   const [reportData, setReportData] = useState<any[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -44,6 +48,17 @@ export default function AdminLaporanView({
       setSelectedPeriod(periods[0].id);
     }
   }, [periods]);
+
+  useEffect(() => {
+    // Memuat list atasan dari backend
+    const fetchSupervisors = async () => {
+      const res = await getSupervisors();
+      if (res.success) {
+        setSupervisorList(res.data);
+      }
+    };
+    fetchSupervisors();
+  }, []);
 
   const handleFetchData = async () => {
     if (!selectedPeriod) return alert("Pilih periode terlebih dahulu!");
@@ -136,39 +151,6 @@ export default function AdminLaporanView({
     });
   }, [reportData]);
 
-  const summaryStats = useMemo(() => {
-    let totalTerlambat = 0;
-    let totalCutiIzin = 0;
-    let totalCatatan = 0;
-
-    validReportData.forEach((person) => {
-      const catatan = person.catatan || [];
-
-      catatan.forEach((rekam: any) => {
-        totalCatatan++;
-        const teksPengecekan =
-          `${rekam.alasan || ""} ${rekam.status || ""} ${rekam.keterangan || ""}`.toUpperCase();
-
-        if (
-          teksPengecekan.includes("TERLAMBAT") ||
-          teksPengecekan.includes("PULANG AWAL")
-        ) {
-          totalTerlambat++;
-        }
-        if (
-          teksPengecekan.includes("CUTI") ||
-          teksPengecekan.includes("IZIN") ||
-          teksPengecekan.includes("SAKIT") ||
-          teksPengecekan.includes("DINAS")
-        ) {
-          totalCutiIzin++;
-        }
-      });
-    });
-
-    return { totalTerlambat, totalCutiIzin, totalCatatan };
-  }, [validReportData]);
-
   const periodObj = periods.find((p) => p.id === selectedPeriod);
   const selectedPeriodLabel = periodObj
     ? `${new Date(periodObj.startDate).toLocaleDateString("id-ID", { day: "2-digit", month: "long" })} - ${new Date(periodObj.endDate).toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" })}`
@@ -197,7 +179,6 @@ export default function AdminLaporanView({
     }
   };
 
-  // 💡 FUNGSI PENENTU DENDA/PEMOTONGAN OTOMATIS (DIUPDATE)
   const getDetailPemotongan = (item: any) => {
     const stat = (item.rawStatus || "").toUpperCase();
     const ket = (item.keterangan || "").toUpperCase();
@@ -206,7 +187,6 @@ export default function AdminLaporanView({
 
     let listPotongan: string[] = [];
 
-    // 1. Ambil Semua Detail Denda / Pemotongan dari Backend
     if (item.potongGaji) listPotongan.push("Potong Gaji");
     if (item.potongTransport) listPotongan.push("Tunj. Transport");
     if (item.potongKonsumsi) {
@@ -234,7 +214,6 @@ export default function AdminLaporanView({
       );
     }
 
-    // 2. Fallback Otomatis Hanya Jika Data Request Tidak Ada
     const hasRequestData =
       item.potongGaji ||
       item.potongTransport ||
@@ -254,7 +233,6 @@ export default function AdminLaporanView({
       }
     }
 
-    // 3. Render Tampilan
     if (listPotongan.length > 0) {
       return (
         <div className="text-red-600 font-medium text-[12px] text-left">
@@ -319,7 +297,6 @@ export default function AdminLaporanView({
             </li>
           )}
 
-          {/* LOGIKA BARU UNTUK MERENDER SURAT TEGURAN */}
           {denda.detailTeguran &&
             denda.detailTeguran.length > 0 &&
             denda.detailTeguran.map((teguran: string, idx: number) => (
@@ -335,6 +312,12 @@ export default function AdminLaporanView({
     );
   };
 
+  const currentDateFormatted = new Date().toLocaleDateString("id-ID", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+
   return (
     <div className="space-y-6">
       <Card className="print:hidden shadow-sm border-white/10 bg-card">
@@ -346,7 +329,7 @@ export default function AdminLaporanView({
         </CardHeader>
         <CardContent className="pt-6">
           <div className="flex flex-col lg:flex-row gap-5 items-end">
-            <div className="w-full lg:w-2/5 space-y-2">
+            <div className="w-full lg:w-1/3 space-y-2">
               <label className="text-sm font-semibold text-slate-700">
                 Periode Absensi
               </label>
@@ -382,7 +365,7 @@ export default function AdminLaporanView({
               </Select>
             </div>
 
-            <div className="w-full lg:w-1/3 space-y-2">
+            <div className="w-full lg:w-1/4 space-y-2">
               <label className="text-sm font-semibold text-slate-700">
                 Divisi
               </label>
@@ -414,6 +397,37 @@ export default function AdminLaporanView({
                       className="cursor-pointer"
                     >
                       {d.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* KOLOM INPUT BARU: NAMA ATASAN (Sekarang SelectBox) */}
+            <div className="w-full lg:w-1/4 space-y-2">
+              <label className="text-sm font-semibold text-muted-foreground">
+                Nama Lengkap Atasan
+              </label>
+              <Select
+                value={namaAtasan}
+                onValueChange={(val) => setNamaAtasan(val)}
+              >
+                <SelectTrigger className="w-full h-11 bg-transparent border-input shadow-sm focus:ring-1 focus:ring-ring rounded-md transition-all text-left">
+                  <div className="flex items-center gap-2 text-foreground w-full overflow-hidden">
+                    <User className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <SelectValue placeholder="Pilih Atasan">
+                      {namaAtasan || "Pilih Atasan"}
+                    </SelectValue>
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  {supervisorList.map((spv) => (
+                    <SelectItem
+                      key={spv.id}
+                      value={spv.name}
+                      className="cursor-pointer"
+                    >
+                      {spv.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -702,7 +716,6 @@ export default function AdminLaporanView({
                             {item.alasanDetail || item.alasan || "-"}
                           </td>
 
-                          {/* 💡 KOLOM PEMOTONGAN HARIAN DINAMIS */}
                           <td className="py-2 px-3 border border-black text-black text-sm align-top">
                             {getDetailPemotongan(item)}
                           </td>
@@ -713,6 +726,20 @@ export default function AdminLaporanView({
                 )}
               </tbody>
             </table>
+
+            {validReportData.length > 0 && (
+              <div className="mt-12 flex justify-end w-full text-black print:text-black">
+                <div className="text-center w-64">
+                  <p className="text-sm mb-20 print:text-[12px]">
+                    Deli Serdang, {currentDateFormatted}
+                  </p>
+                  <p className="text-sm font-bold border-b border-black inline-block min-w-[200px] print:text-[12px] uppercase">
+                    {namaAtasan ||
+                      "(..........................................)"}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

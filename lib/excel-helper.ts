@@ -1,8 +1,13 @@
-// lib/excel-helper.ts
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 
-interface AttendanceLog {
+export interface WorkShiftDetail {
+  dayOfWeek: number;
+  checkIn: string;
+  checkOut: string;
+}
+
+export interface AttendanceLog {
   date: string;
   dayName: string;
   isSpecialWorkDay: boolean;
@@ -24,17 +29,22 @@ interface AttendanceLog {
   } | null;
 }
 
-interface EmployeeReport {
+export interface EmployeeReport {
   id: string;
   name: string;
   niy: string | null;
   jabatan: string | null;
   isGuruRole: boolean;
+  divisiId?: number | string; // Tambahkan divisiId di sini
   shiftName: string;
   checkIn: string;
   checkOut: string;
   summary: any;
   logs: AttendanceLog[];
+  workShiftDetails?: WorkShiftDetail[];
+  workShift?: {
+    details?: WorkShiftDetail[];
+  };
 }
 
 const getStatusStyle = (
@@ -92,7 +102,7 @@ export const exportAttendanceToExcel = async (
     { width: 7 },
     { width: 10 },
     { width: 10 },
-    { width: 2 },
+    { width: 2 }, // Spacer column
     { width: 4 },
     { width: 11 },
     { width: 7 },
@@ -128,11 +138,58 @@ export const exportAttendanceToExcel = async (
   const formatTime = (time: string | null) =>
     time ? time.substring(0, 5) : "";
 
+  // ==== PEMBUATAN TEKS HEADER SHIFT DENGAN KONDISI DIVISI ====
+  const generateShiftHeader = (emp: EmployeeReport) => {
+    const hariKerja = emp.isGuruRole ? 22 : 25;
+    const roleText = emp.isGuruRole ? "GURU" : "STAFF";
+
+    // Jam Fallback Default Utama
+    let mainShift = "07:30-16:00";
+    let secondaryShift = "";
+
+    if (emp.isGuruRole) {
+      if (String(emp.divisiId) === "1") {
+        secondaryShift = "SABTU 07:30-14:00";
+      } else {
+        secondaryShift = "PARENTING 08:00-11:30";
+      }
+    } else {
+      secondaryShift = "SABTU 07:30-16:00";
+    }
+
+    const details = emp.workShiftDetails || emp.workShift?.details || [];
+
+    if (details && details.length > 0) {
+      const weekday = details.find((d) => d.dayOfWeek === 1);
+      if (weekday) {
+        mainShift = `${formatTime(weekday.checkIn)}-${formatTime(weekday.checkOut)}`;
+      }
+
+      const saturday = details.find((d) => d.dayOfWeek === 6);
+      if (saturday) {
+        if (emp.isGuruRole) {
+          if (String(emp.divisiId) === "1") {
+            secondaryShift = `SABTU ${formatTime(saturday.checkIn)}-${formatTime(saturday.checkOut)}`;
+          } else {
+            secondaryShift = `PARENTING ${formatTime(saturday.checkIn)}-${formatTime(saturday.checkOut)}`;
+          }
+        } else {
+          secondaryShift = `SABTU ${formatTime(saturday.checkIn)}-${formatTime(saturday.checkOut)}`;
+        }
+      }
+    }
+
+    if (secondaryShift !== "") {
+      return `${roleText} ${hariKerja} HARI KERJA : ${mainShift} / ${secondaryShift}`;
+    }
+
+    return `${roleText} ${hariKerja} HARI KERJA : ${mainShift}`;
+  };
   for (let i = 0; i < dataToExport.length; i += 2) {
     const emp1 = dataToExport[i];
     const emp2 = dataToExport[i + 1];
 
-    const shiftText1 = `${emp1.isGuruRole ? "GURU" : "STAFF"} 22 HARI KERJA : ${formatTime(emp1.checkIn)}-${formatTime(emp1.checkOut)} / ${emp1.isGuruRole ? "PARENTING 08:00-11:30" : `SABTU ${formatTime(emp1.checkIn)}-${formatTime(emp1.checkOut)}`}`;
+    const shiftText1 = generateShiftHeader(emp1);
     worksheet.mergeCells(`A${currentRow}:F${currentRow}`);
     const shiftCell1 = worksheet.getCell(`A${currentRow}`);
     shiftCell1.value = shiftText1;
@@ -140,7 +197,7 @@ export const exportAttendanceToExcel = async (
     shiftCell1.alignment = { horizontal: "center", vertical: "middle" };
 
     if (emp2) {
-      const shiftText2 = `${emp2.isGuruRole ? "GURU" : "STAFF"} 22 HARI KERJA : ${formatTime(emp2.checkIn)}-${formatTime(emp2.checkOut)} / ${emp2.isGuruRole ? "PARENTING 08:00-11:30" : `SABTU ${formatTime(emp2.checkIn)}-${formatTime(emp2.checkOut)}`}`;
+      const shiftText2 = generateShiftHeader(emp2);
       worksheet.mergeCells(`H${currentRow}:M${currentRow}`);
       const shiftCell2 = worksheet.getCell(`H${currentRow}`);
       shiftCell2.value = shiftText2;
@@ -149,6 +206,7 @@ export const exportAttendanceToExcel = async (
     }
     currentRow++;
 
+    // ==== NAMA PEGAWAI ====
     worksheet.mergeCells(`A${currentRow}:F${currentRow}`);
     worksheet.getCell(`A${currentRow}`).value =
       `${emp1.name.toUpperCase()}/${emp1.niy || "-"}/${emp1.jabatan?.toUpperCase() || "-"}`;
@@ -170,6 +228,7 @@ export const exportAttendanceToExcel = async (
     }
     currentRow++;
 
+    // ==== HEADER KOLOM TABEL ====
     const headers = [
       "DAYS",
       "DATE",
@@ -197,20 +256,25 @@ export const exportAttendanceToExcel = async (
     }
     currentRow++;
 
+    // ==== PERULANGAN DATA LOGS ====
     const dates1 = emp1.logs.map((l) => l.date);
     const dates2 = emp2 ? emp2.logs.map((l) => l.date) : [];
     const uniqueDates = Array.from(new Set([...dates1, ...dates2])).sort();
 
-    for (let d = 0; d < uniqueDates.length; d++) {
-      const currentDate = uniqueDates[d] as string;
-      const log1 = emp1.logs.find((l) => l.date === currentDate);
-      const log2 = emp2 ? emp2.logs.find((l) => l.date === currentDate) : null;
+    // Loop berdasakan jumlah data terbanyak (merapatkan baris jika salah satu libur)
+    const maxLogs = Math.max(emp1.logs.length, emp2 ? emp2.logs.length : 0);
+
+    for (let d = 0; d < maxLogs; d++) {
+      const log1 = emp1.logs[d];
+      const log2 = emp2 ? emp2.logs[d] : null;
       const row = worksheet.getRow(currentRow);
       row.height = 12.5;
 
       // === RENDER ORANG 1 ===
       if (log1) {
-        row.getCell(1).value = d + 1; // Penomoran hari bekerja berurutan tanpa hari minggu
+        // Ambil penomoran index asli supaya hitungan hari tidak kacau ketika dilompati
+        const dayNum = uniqueDates.indexOf(log1.date) + 1;
+        row.getCell(1).value = dayNum;
         row.getCell(2).value = log1.date;
 
         let targetCell = row.getCell(3);
@@ -284,14 +348,12 @@ export const exportAttendanceToExcel = async (
         } else {
           row.getCell(3).value = log1.in ? log1.in.substring(0, 5) : "-";
           row.getCell(4).value = log1.out ? log1.out.substring(0, 5) : "-";
-
           row.getCell(5).value =
             log1.isLateApproved && log1.lateDuration !== "-"
               ? `izin - ${log1.lateDuration}`
               : log1.lateDuration !== "-"
                 ? log1.lateDuration
                 : "-";
-
           row.getCell(6).value =
             log1.isEarlyApproved && log1.earlyLeaveDuration !== "-"
               ? `izin - ${log1.earlyLeaveDuration}`
@@ -305,21 +367,23 @@ export const exportAttendanceToExcel = async (
           }
         }
       } else {
-        // Jika pegawai ini tidak punya data di hari itu (misal Guru di hari Sabtu), render strip
-        for (let col = 1; col <= 6; col++) row.getCell(col).value = "-";
+        // Jika data kosong di bagian bawah, render tanpa teks (blank space)
+        for (let col = 1; col <= 6; col++) row.getCell(col).value = "";
       }
 
       for (let c = 1; c <= 6; c++) {
         const cell = row.getCell(c);
         if (!cell.font) cell.font = { size: 8, name: "Arial" };
         cell.alignment = { horizontal: "center", vertical: "middle" };
-        applyBorder(cell);
+        // Terapkan border hanya jika ada log (mencegah border melayang di sel kosong)
+        if (log1) applyBorder(cell);
       }
 
       // === RENDER ORANG 2 ===
       if (emp2) {
         if (log2) {
-          row.getCell(8).value = d + 1;
+          const dayNum = uniqueDates.indexOf(log2.date) + 1;
+          row.getCell(8).value = dayNum;
           row.getCell(9).value = log2.date;
 
           let targetCell = row.getCell(10);
@@ -393,14 +457,12 @@ export const exportAttendanceToExcel = async (
           } else {
             row.getCell(10).value = log2.in ? log2.in.substring(0, 5) : "-";
             row.getCell(11).value = log2.out ? log2.out.substring(0, 5) : "-";
-
             row.getCell(12).value =
               log2.isLateApproved && log2.lateDuration !== "-"
                 ? `izin - ${log2.lateDuration}`
                 : log2.lateDuration !== "-"
                   ? log2.lateDuration
                   : "-";
-
             row.getCell(13).value =
               log2.isEarlyApproved && log2.earlyLeaveDuration !== "-"
                 ? `izin - ${log2.earlyLeaveDuration}`
@@ -414,19 +476,20 @@ export const exportAttendanceToExcel = async (
             }
           }
         } else {
-          // Jika pegawai ini tidak punya data di hari itu (misal Guru di hari Sabtu), render strip
-          for (let col = 8; col <= 13; col++) row.getCell(col).value = "-";
+          // Jika data kosong di bagian bawah, render tanpa teks (blank space)
+          for (let col = 8; col <= 13; col++) row.getCell(col).value = "";
         }
 
         for (let c = 8; c <= 13; c++) {
           const cell = row.getCell(c);
           if (!cell.font) cell.font = { size: 8, name: "Arial" };
           cell.alignment = { horizontal: "center", vertical: "middle" };
-          applyBorder(cell);
+          if (log2) applyBorder(cell);
         }
       }
       currentRow++;
     }
+
     currentRow += 2;
     if ((i / 2 + 1) % 2 === 0 && i + 2 < dataToExport.length) {
       worksheet.getRow(currentRow - 1).addPageBreak();

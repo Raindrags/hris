@@ -84,3 +84,19 @@ export async function getFilteredReportData(
     return { success: false, error: "Terjadi kesalahan koneksi ke server" };
   }
 }
+
+// 4. Mengambil Master Nama Atasan
+export async function getSupervisors() {
+  try {
+    const token = await getToken();
+    const res = await fetch(`${API_URL}/reports/list-atasan`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    if (!res.ok) return { success: false, data: [] };
+    const json = await res.json();
+    return { success: true, data: json.data || [] };
+  } catch (error) {
+    return { success: false, data: [] };
+  }
+}
