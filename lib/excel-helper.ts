@@ -5,6 +5,7 @@ export interface WorkShiftDetail {
   dayOfWeek: number;
   checkIn: string;
   checkOut: string;
+  [key: string]: any;
 }
 
 export interface AttendanceLog {
