@@ -470,7 +470,33 @@ export default function PermissionForm({
               </label>
             </div>
           )}
-
+        {/* INPUT SURAT TUGAS DINAS */}
+        {category === "Dinas" && (
+          <div className="p-3 bg-slate-900/50 rounded border border-slate-700 space-y-4">
+            <div className="space-y-3">
+              <Label className="text-slate-300">
+                Surat Tugas / Bukti Dinas{" "}
+                <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                type="file"
+                onChange={(e) => setFile(e.target.files?.[0] || null)}
+                className="bg-slate-900 border-slate-700 text-slate-100 cursor-pointer"
+                accept=".pdf,.jpg,.jpeg,.png"
+              />
+              <span className="text-xs text-slate-400 block text-center">
+                Atau unggah via link dokumen
+              </span>
+              <Input
+                type="url"
+                placeholder="Masukkan Link Dokumen (Google Drive, dll)"
+                value={attachmentLink}
+                onChange={(e) => setAttachmentLink(e.target.value)}
+                className="bg-slate-900 border-slate-700 text-slate-100"
+              />
+            </div>
+          </div>
+        )}
         {/* INPUT NO FP */}
         {category === "NoFP" && (
           <div className="p-3 bg-slate-900/50 rounded border border-slate-700 space-y-4">

@@ -433,6 +433,13 @@ export const usePermissionForm = ({
       if (!file && !attachmentLink)
         return toast.error("Mohon unggah foto bukti atau sertakan link foto.");
     }
+    if (category === "Dinas") {
+      if (!file && !attachmentLink) {
+        return toast.error(
+          "Surat tugas (file atau link) wajib dilampirkan untuk Izin Dinas.",
+        );
+      }
+    }
 
     if (
       !startDate ||
