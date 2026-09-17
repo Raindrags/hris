@@ -410,7 +410,7 @@ export default function AdminLaporanView({
               </label>
               <Select
                 value={namaAtasan}
-                onValueChange={(val) => setNamaAtasan(val)}
+                onValueChange={(val) => setNamaAtasan(val ?? "")}
               >
                 <SelectTrigger className="w-full h-11 bg-transparent border-input shadow-sm focus:ring-1 focus:ring-ring rounded-md transition-all text-left">
                   <div className="flex items-center gap-2 text-foreground w-full overflow-hidden">
