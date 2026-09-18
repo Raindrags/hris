@@ -7,6 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
+import {
+  batchAssignShift,
+  customShiftAssignment,
+  getEmployeesForAssign,
+} from "@/app/actions/jadwal-action";
 
 interface ShiftAssignmentTabProps {
   shifts: any[];
@@ -62,7 +67,7 @@ export function ShiftAssignmentTab({ shifts }: ShiftAssignmentTabProps) {
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [effectiveDate, setEffectiveDate] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState(""); // State baru untuk fitur pencarian
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Mode: "template" atau "custom"
   const [assignMode, setAssignMode] = useState<"template" | "custom">(
@@ -78,9 +83,16 @@ export function ShiftAssignmentTab({ shifts }: ShiftAssignmentTabProps) {
 
   useEffect(() => {
     async function fetchEmployees() {
-      const res = await fetch("/api/shifts/employees-for-assign");
-      const data = await res.json();
-      setEmployees(data.data || []);
+      try {
+        const res = await getEmployeesForAssign();
+        if (res?.success) {
+          setEmployees(res.data || []);
+        } else {
+          toast.error(res?.error || "Gagal memuat data pegawai");
+        }
+      } catch (error) {
+        toast.error("Terjadi kesalahan saat memuat pegawai");
+      }
     }
     fetchEmployees();
   }, []);
@@ -102,15 +114,16 @@ export function ShiftAssignmentTab({ shifts }: ShiftAssignmentTabProps) {
     try {
       if (assignMode === "template") {
         if (!selectedShiftId) return toast.error("Pilih shift jadwal baru!");
-        await fetch("/api/shifts/assign", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userIds: selectedUserIds,
-            shiftId: selectedShiftId,
-            effectiveDate,
-          }),
-        });
+
+        const res = await batchAssignShift(
+          selectedUserIds,
+          selectedShiftId,
+          effectiveDate,
+        );
+
+        if (!res?.success) {
+          throw new Error(res?.error || "Gagal menyimpan template");
+        }
       } else {
         const activeDetails = customDays
           .filter((d) => d.isActive)
@@ -123,23 +136,24 @@ export function ShiftAssignmentTab({ shifts }: ShiftAssignmentTabProps) {
         if (activeDetails.length === 0)
           return toast.error("Pilih minimal 1 hari kerja!");
 
-        await fetch("/api/shifts/assign-custom", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userIds: selectedUserIds,
-            details: activeDetails,
-            isFlexible,
-            effectiveDate,
-          }),
+        const res = await customShiftAssignment({
+          userIds: selectedUserIds,
+          details: activeDetails,
+          isFlexible: isFlexible,
+          effectiveDate,
         });
+
+        if (!res?.success) {
+          throw new Error(res?.error || "Gagal menyimpan jadwal personal");
+        }
       }
 
       toast.success("Perubahan jadwal berhasil disimpan!");
       setSelectedUserIds([]);
       setEffectiveDate("");
-    } catch (error) {
-      toast.error("Gagal menyimpan jadwal.");
+    } catch (error: any) {
+      toast.error(error.message || "Gagal menyimpan jadwal.");
+      console.error("Assign Error:", error);
     } finally {
       setIsLoading(false);
     }

@@ -1,14 +1,12 @@
-// app/actions/jadwal-action.ts
 "use server";
 
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 
 const API_URL =
-  process.env.BACKEND_API_URL || "https://hris.maitreyawirads.dpdns.org";
-/**
- * Helper untuk mengambil token dengan nama "access_token"
- */
+  // process.env.BACKEND_API_URL || "https://hris.maitreyawirads.dpdns.org";
+  process.env.BACKEND_API_URL || "http://localhost:3434";
+
 async function getAuthToken() {
   const cookieStore = await cookies();
   let token = cookieStore.get("access_token")?.value;
@@ -178,19 +176,47 @@ export async function getEmployeesForAssign() {
 export async function batchAssignShift(userIds: string[], shiftId: string) {
   try {
     const headers = await getHeaders();
+
     const res = await fetch(`${API_URL}/shifts/assign`, {
       method: "POST",
       headers,
       body: JSON.stringify({ userIds, shiftId }),
     });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error(`[Backend Error ${res.status}]:`, errorText);
+
+      let errorMessage = `Gagal menyimpan (Status ${res.status})`;
+      try {
+        const errJson = JSON.parse(errorText);
+        errorMessage = Array.isArray(errJson.message)
+          ? errJson.message.join(", ")
+          : errJson.message || errJson.error || errorMessage;
+      } catch (e) {
+        // Biarkan pesan default jika bukan JSON
+      }
+
+      return { success: false, error: errorMessage };
+    }
+
+    // 2. PARSE JSON JIKA STATUS OK (200/201)
     const data = await res.json();
 
-    if (data.success) revalidatePath("/admin/pengaturan-jadwal");
-    return data;
+    if (data.success) {
+      revalidatePath("/admin/pengaturan-jadwal");
+    }
+
+    return {
+      success: true,
+      message: data.message || "Berhasil menyimpan data",
+      updatedCount: data.updatedCount,
+    };
   } catch (error: any) {
+    console.error("Action Exception:", error);
     return {
       success: false,
-      error: "Gagal menyimpan penugasan jadwal.",
+      error: "Sistem gagal menghubungi server backend.",
       errorDetail: error.message,
     };
   }
@@ -336,6 +362,60 @@ export async function getAssignedSpecialDateEmployees(specialDateId: string) {
     return {
       success: false,
       error: "Gagal mengambil detail hari kerja khusus.",
+      errorDetail: error.message,
+    };
+  }
+}
+// ============================================================================
+// 13. Custom Assign Pegawai ke Jadwal Khusus
+// ============================================================================
+export async function customShiftAssignment(payload: {
+  userIds: string[];
+  details: any[]; // Diubah dari customDetails agar sesuai dengan DTO NestJS
+  isFlexible: boolean; // Menambahkan tipe isFlexible
+  effectiveDate: string;
+  endDate?: string;
+}) {
+  try {
+    const headers = await getHeaders();
+
+    const res = await fetch(`${API_URL}/shifts/assign-custom`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error(`[Backend Error ${res.status}]:`, errorText);
+
+      let errorMessage = `Gagal menyimpan jadwal khusus (Status ${res.status})`;
+      try {
+        const errJson = JSON.parse(errorText);
+        // Tangkap pesan error berwujud array (umumnya dari class-validator NestJS)
+        errorMessage = Array.isArray(errJson.message)
+          ? errJson.message.join(", ")
+          : errJson.message || errJson.error || errorMessage;
+      } catch (e) {
+        // Biarkan pesan default jika respon bukan JSON
+      }
+
+      return { success: false, error: errorMessage };
+    }
+
+    const data = await res.json();
+    revalidatePath("/admin/pengaturan-jadwal");
+
+    return {
+      success: true,
+      message: data.message || "Berhasil menyimpan penugasan jadwal khusus.",
+      data: data,
+    };
+  } catch (error: any) {
+    console.error("Custom Assign Exception:", error);
+    return {
+      success: false,
+      error: "Sistem gagal menghubungi server backend.",
       errorDetail: error.message,
     };
   }

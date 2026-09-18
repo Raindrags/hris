@@ -8,7 +8,9 @@ import { ShiftTemplate, Employee, Division } from "../types";
 
 export function useBatchAssign() {
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedShift, setSelectedShift] = useState<ShiftTemplate | null>(null);
+  const [selectedShift, setSelectedShift] = useState<ShiftTemplate | null>(
+    null,
+  );
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [divisions, setDivisions] = useState<Division[]>([]);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
@@ -43,7 +45,9 @@ export function useBatchAssign() {
     if (!selectedShift) return;
     const res = await batchAssignShift(selectedUserIds, selectedShift.id);
     if (res?.success) {
-      toast.success(`Berhasil menugaskan jadwal ke ${selectedUserIds.length} pegawai`);
+      toast.success(
+        `Berhasil menugaskan jadwal ke ${selectedUserIds.length} pegawai`,
+      );
       closeModal();
     } else {
       toast.error(res.error || "Gagal menyimpan penugasan jadwal");
@@ -52,15 +56,19 @@ export function useBatchAssign() {
 
   const toggleEmployee = (id: string) => {
     setSelectedUserIds((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
     );
   };
 
   const toggleAll = (checked: boolean, filteredIds: string[]) => {
     if (checked) {
-      setSelectedUserIds((prev) => Array.from(new Set([...prev, ...filteredIds])));
+      setSelectedUserIds((prev) =>
+        Array.from(new Set([...prev, ...filteredIds])),
+      );
     } else {
-      setSelectedUserIds((prev) => prev.filter((id) => !filteredIds.includes(id)));
+      setSelectedUserIds((prev) =>
+        prev.filter((id) => !filteredIds.includes(id)),
+      );
     }
   };
 
@@ -71,7 +79,8 @@ export function useBatchAssign() {
         emp.name.toLowerCase().includes(term) ||
         emp.niy?.toLowerCase().includes(term) ||
         emp.jabatan?.toLowerCase().includes(term);
-      const matchesDivisi = divisiFilter === "all" || emp.divisi?.id === divisiFilter;
+      const matchesDivisi =
+        divisiFilter === "all" || emp.divisi?.id === divisiFilter;
       return matchesSearch && matchesDivisi;
     });
   }, [employees, searchTerm, divisiFilter]);
