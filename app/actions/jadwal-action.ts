@@ -193,9 +193,7 @@ export async function batchAssignShift(userIds: string[], shiftId: string) {
         errorMessage = Array.isArray(errJson.message)
           ? errJson.message.join(", ")
           : errJson.message || errJson.error || errorMessage;
-      } catch (e) {
-        // Biarkan pesan default jika bukan JSON
-      }
+      } catch (e) {}
 
       return { success: false, error: errorMessage };
     }
