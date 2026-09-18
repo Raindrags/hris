@@ -4,8 +4,8 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 
 const API_URL =
-  // process.env.BACKEND_API_URL || "https://hris.maitreyawirads.dpdns.org";
-  process.env.BACKEND_API_URL || "http://localhost:3434";
+  process.env.BACKEND_API_URL || "https://hris.maitreyawirads.dpdns.org";
+// process.env.BACKEND_API_URL || "http://localhost:3434";
 
 async function getAuthToken() {
   const cookieStore = await cookies();
