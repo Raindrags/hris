@@ -1,13 +1,19 @@
 import { useState, useMemo, useEffect } from "react";
 import { toast } from "sonner";
-import { batchAssignShift } from "@/app/actions/jadwal-action";
+import {
+  batchAssignShift,
+  getEmployeesForAssign,
+} from "@/app/actions/jadwal-action";
 
-export function useBatchAssign(employees: any[]) {
+export function useBatchAssign() {
+  // HAPUS parameter dari useBatchAssign dan gunakan state internal
+  const [employees, setEmployees] = useState<any[]>([]);
+
   const [isOpen, setIsOpen] = useState(false);
   const [selectedShift, setSelectedShift] = useState<any | null>(null);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
 
-  // State baru untuk tanggal efektif
+  // State untuk tanggal efektif
   const [effectiveDate, setEffectiveDate] = useState<string>("");
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -15,7 +21,22 @@ export function useBatchAssign(employees: any[]) {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 20;
 
-  // Reset page when filter changes
+  // Fetch data pegawai saat hook diinisialisasi
+  useEffect(() => {
+    async function loadEmployees() {
+      try {
+        const res = await getEmployeesForAssign();
+        if (res?.success && res.data) {
+          setEmployees(res.data);
+        }
+      } catch (error) {
+        console.error("Gagal mengambil data pegawai:", error);
+      }
+    }
+    loadEmployees();
+  }, []);
+
+  // Reset halaman ketika pencarian atau filter divisi berubah
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, divisiFilter]);
@@ -66,14 +87,13 @@ export function useBatchAssign(employees: any[]) {
   const openModal = (shift: any) => {
     setSelectedShift(shift);
     setSelectedUserIds([]);
-    setEffectiveDate(""); // Reset tanggal saat modal dibuka
+    setEffectiveDate(""); // Reset input tanggal
     setIsOpen(true);
   };
 
   const handleSave = async () => {
     if (!selectedShift) return;
 
-    // Validasi tanggal efektif
     if (!effectiveDate) {
       toast.error(
         "Silakan tentukan tanggal berlaku (effective date) terlebih dahulu!",
@@ -81,7 +101,6 @@ export function useBatchAssign(employees: any[]) {
       return;
     }
 
-    // Tambahkan effectiveDate sebagai parameter ketiga
     const res = await batchAssignShift(
       selectedUserIds,
       selectedShift.id,
@@ -117,7 +136,7 @@ export function useBatchAssign(employees: any[]) {
     filteredEmployees,
     paginatedEmployees,
     effectiveDate,
-    setEffectiveDate, // Export state agar bisa diakses oleh BatchAssignModal
+    setEffectiveDate,
     handleSave,
   };
 }
