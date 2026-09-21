@@ -1,118 +1,123 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { toast } from "sonner";
-import {
-  getEmployeesForAssign,
-  batchAssignShift,
-} from "@/app/actions/jadwal-action";
-import { ShiftTemplate, Employee, Division } from "../types";
+import { batchAssignShift } from "@/app/actions/jadwal-action";
 
-export function useBatchAssign() {
+export function useBatchAssign(employees: any[]) {
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedShift, setSelectedShift] = useState<ShiftTemplate | null>(
-    null,
-  );
-  const [effectiveDate, setEffectiveDate] = useState<string>("");
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [divisions, setDivisions] = useState<Division[]>([]);
+  const [selectedShift, setSelectedShift] = useState<any | null>(null);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+
+  // State baru untuk tanggal efektif
+  const [effectiveDate, setEffectiveDate] = useState<string>("");
+
   const [searchTerm, setSearchTerm] = useState("");
   const [divisiFilter, setDivisiFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const ITEMS_PER_PAGE = 20;
 
-  const openModal = async (shift: ShiftTemplate) => {
-    setSearchTerm("");
-    setDivisiFilter("all");
+  // Reset page when filter changes
+  useEffect(() => {
     setCurrentPage(1);
-    setSelectedShift(shift);
+  }, [searchTerm, divisiFilter]);
 
-    const res = await getEmployeesForAssign();
-    if (res.success) {
-      setEmployees(res.data || []);
-      setDivisions(res.divisions || []);
-      const alreadyAssigned = (res.data || [])
-        .filter((e: Employee) => e.workShiftId === shift.id)
-        .map((e: Employee) => e.id);
-      setSelectedUserIds(alreadyAssigned);
-      setIsOpen(true);
+  const filteredEmployees = useMemo(() => {
+    return employees.filter((emp) => {
+      const matchSearch =
+        emp.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        emp.niy?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        emp.jabatan?.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchDivisi =
+        divisiFilter === "all" || emp.divisi?.id === divisiFilter;
+
+      return matchSearch && matchDivisi;
+    });
+  }, [employees, searchTerm, divisiFilter]);
+
+  const totalPages = Math.ceil(filteredEmployees.length / ITEMS_PER_PAGE);
+  const paginatedEmployees = filteredEmployees.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE,
+  );
+
+  const divisions = useMemo(() => {
+    const map = new Map();
+    employees.forEach((emp) => {
+      if (emp.divisi) map.set(emp.divisi.id, emp.divisi);
+    });
+    return Array.from(map.values());
+  }, [employees]);
+
+  const toggleEmployee = (id: string) => {
+    setSelectedUserIds((prev) =>
+      prev.includes(id) ? prev.filter((uid) => uid !== id) : [...prev, id],
+    );
+  };
+
+  const toggleAll = (checked: boolean, ids: string[]) => {
+    if (checked) {
+      const newIds = new Set([...selectedUserIds, ...ids]);
+      setSelectedUserIds(Array.from(newIds));
     } else {
-      toast.error(res.error || "Gagal memuat data pegawai");
+      setSelectedUserIds(selectedUserIds.filter((id) => !ids.includes(id)));
     }
   };
 
-  const closeModal = () => setIsOpen(false);
+  const openModal = (shift: any) => {
+    setSelectedShift(shift);
+    setSelectedUserIds([]);
+    setEffectiveDate(""); // Reset tanggal saat modal dibuka
+    setIsOpen(true);
+  };
 
   const handleSave = async () => {
     if (!selectedShift) return;
-    const res = await batchAssignShift(selectedUserIds, selectedShift.id);
+
+    // Validasi tanggal efektif
+    if (!effectiveDate) {
+      toast.error(
+        "Silakan tentukan tanggal berlaku (effective date) terlebih dahulu!",
+      );
+      return;
+    }
+
+    // Tambahkan effectiveDate sebagai parameter ketiga
+    const res = await batchAssignShift(
+      selectedUserIds,
+      selectedShift.id,
+      effectiveDate,
+    );
+
     if (res?.success) {
       toast.success(
         `Berhasil menugaskan jadwal ke ${selectedUserIds.length} pegawai`,
       );
-      closeModal();
+      setIsOpen(false);
     } else {
-      toast.error(res.error || "Gagal menyimpan penugasan jadwal");
+      toast.error(res?.error || "Gagal menyimpan penugasan.");
     }
   };
-
-  const toggleEmployee = (id: string) => {
-    setSelectedUserIds((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
-    );
-  };
-
-  const toggleAll = (checked: boolean, filteredIds: string[]) => {
-    if (checked) {
-      setSelectedUserIds((prev) =>
-        Array.from(new Set([...prev, ...filteredIds])),
-      );
-    } else {
-      setSelectedUserIds((prev) =>
-        prev.filter((id) => !filteredIds.includes(id)),
-      );
-    }
-  };
-
-  const filteredEmployees = useMemo(() => {
-    const term = searchTerm.toLowerCase();
-    return employees.filter((emp) => {
-      const matchesSearch =
-        emp.name.toLowerCase().includes(term) ||
-        emp.niy?.toLowerCase().includes(term) ||
-        emp.jabatan?.toLowerCase().includes(term);
-      const matchesDivisi =
-        divisiFilter === "all" || emp.divisi?.id === divisiFilter;
-      return matchesSearch && matchesDivisi;
-    });
-  }, [employees, searchTerm, divisiFilter]);
-
-  const totalPages = Math.ceil(filteredEmployees.length / itemsPerPage);
-  const paginatedEmployees = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return filteredEmployees.slice(start, start + itemsPerPage);
-  }, [filteredEmployees, currentPage, itemsPerPage]);
 
   return {
     isOpen,
     setIsOpen,
     selectedShift,
-    divisions,
+    openModal,
     selectedUserIds,
+    toggleEmployee,
+    toggleAll,
     searchTerm,
     setSearchTerm,
     divisiFilter,
     setDivisiFilter,
+    divisions,
     currentPage,
     setCurrentPage,
     totalPages,
     filteredEmployees,
     paginatedEmployees,
-    openModal,
-    closeModal,
-    handleSave,
-    toggleEmployee,
-    toggleAll,
     effectiveDate,
-    setEffectiveDate,
+    setEffectiveDate, // Export state agar bisa diakses oleh BatchAssignModal
+    handleSave,
   };
 }
