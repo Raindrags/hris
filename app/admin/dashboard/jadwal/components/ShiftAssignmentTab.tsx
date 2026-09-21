@@ -114,8 +114,11 @@ export function ShiftAssignmentTab({ shifts }: ShiftAssignmentTabProps) {
     try {
       if (assignMode === "template") {
         if (!selectedShiftId) return toast.error("Pilih shift jadwal baru!");
-
-        const res = await batchAssignShift(selectedUserIds, selectedShiftId);
+        const res = await batchAssignShift(
+          selectedUserIds,
+          selectedShiftId,
+          effectiveDate,
+        );
 
         if (!res?.success) {
           throw new Error(res?.error || "Gagal menyimpan template");

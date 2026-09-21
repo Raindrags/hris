@@ -11,6 +11,7 @@ export function useBatchAssign() {
   const [selectedShift, setSelectedShift] = useState<ShiftTemplate | null>(
     null,
   );
+  const [effectiveDate, setEffectiveDate] = useState<string>("");
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [divisions, setDivisions] = useState<Division[]>([]);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
@@ -111,5 +112,7 @@ export function useBatchAssign() {
     handleSave,
     toggleEmployee,
     toggleAll,
+    effectiveDate,
+    setEffectiveDate,
   };
 }

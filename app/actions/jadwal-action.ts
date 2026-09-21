@@ -173,14 +173,19 @@ export async function getEmployeesForAssign() {
 // ============================================================================
 // 6. Batch Assign Pegawai ke Shift
 // ============================================================================
-export async function batchAssignShift(userIds: string[], shiftId: string) {
+export async function batchAssignShift(
+  userIds: string[],
+  shiftId: string,
+  effectiveDate: string,
+) {
   try {
     const headers = await getHeaders();
 
     const res = await fetch(`${API_URL}/shifts/assign`, {
       method: "POST",
       headers,
-      body: JSON.stringify({ userIds, shiftId }),
+      // Sertakan effectiveDate ke payload
+      body: JSON.stringify({ userIds, shiftId, effectiveDate }),
     });
 
     if (!res.ok) {
@@ -198,7 +203,6 @@ export async function batchAssignShift(userIds: string[], shiftId: string) {
       return { success: false, error: errorMessage };
     }
 
-    // 2. PARSE JSON JIKA STATUS OK (200/201)
     const data = await res.json();
 
     if (data.success) {
