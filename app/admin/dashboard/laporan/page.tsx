@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getDivisions, getPeriods } from "@/app/actions/laporan-action";
 import AdminLaporanView from "@/app/components/dashboard/admin-laporan-view";
+export const dynamic = "force-dynamic";
 
 export default async function LaporanPage() {
   const cookieStore = await cookies();
