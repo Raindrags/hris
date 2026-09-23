@@ -390,15 +390,17 @@ export default function AdminLaporanView({
                   >
                     Semua Divisi
                   </SelectItem>
-                  {divisions.map((d) => (
-                    <SelectItem
-                      key={d.id}
-                      value={d.id}
-                      className="cursor-pointer"
-                    >
-                      {d.name}
-                    </SelectItem>
-                  ))}
+                  {[...divisions]
+                    .sort((a, b) => Number(a.id) - Number(b.id))
+                    .map((d) => (
+                      <SelectItem
+                        key={String(d.id)}
+                        value={String(d.id)}
+                        className="cursor-pointer"
+                      >
+                        {d.name}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
