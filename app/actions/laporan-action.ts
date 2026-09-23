@@ -15,9 +15,12 @@ async function getToken() {
 export async function getDivisions() {
   try {
     const token = await getToken();
-    const res = await fetch(`${API_URL}/divisions`, {
+    const url = `${API_URL}/divisions?t=${Date.now()}`;
+
+    const res = await fetch(url, {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
+      next: { revalidate: 0 },
     });
     if (!res.ok) return { success: false, data: [] };
     const json = await res.json();
