@@ -65,8 +65,8 @@ export function ApprovalForm({
     if (
       currentDuration === 0 &&
       isIzinKeluar &&
-      request.time &&
-      request.returnTime
+      typeof request.time === "string" &&
+      typeof request.returnTime === "string"
     ) {
       const [startH, startM] = request.time.split(":").map(Number);
       const [endH, endM] = request.returnTime.split(":").map(Number);

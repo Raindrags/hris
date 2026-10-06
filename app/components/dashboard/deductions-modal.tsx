@@ -37,9 +37,12 @@ export function DeductionModal({
   >(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  // State baru untuk Rekomendasi Atasan & Sinkronisasi Ceklis Potong Gaji
+  // State Rekomendasi Atasan & Sinkronisasi Ceklis Potong Gaji
   const [rekomendasi, setRekomendasi] = useState<string | null>(null);
   const [isPotongGaji, setIsPotongGaji] = useState<boolean>(false);
+
+  // STATE BARU: Potong Cuti
+  const [potongCuti, setPotongCuti] = useState<boolean>(false);
 
   const combinedType =
     `${request?.type || ""} ${request?.category || ""} ${request?.subCategory || ""}`.toLowerCase();
@@ -56,6 +59,13 @@ export function DeductionModal({
     !request?.suratDokter &&
     !request?.attachmentUrl;
 
+  // LOGIKA KELAYAKAN POTONG CUTI
+  const isGuru =
+    request?.user?.isGuru === true || String(request?.user?.isGuru) === "true";
+  const isSakit = combinedType.includes("sakit");
+  const sisaCuti = request?.user?.sisaCuti || 0;
+  const canPotongCuti = !isGuru && isSakit && sisaCuti > 0;
+
   useEffect(() => {
     if (request) {
       if (hideNoDeduction) {
@@ -69,6 +79,7 @@ export function DeductionModal({
       }
       setIsPotongGaji(request.potongGaji || false);
       setRekomendasi(request.rekomendasiAtasan || null);
+      setPotongCuti(false); // Reset potong cuti saat modal dibuka
     }
   }, [request, isOpen, hideNoDeduction]);
 
@@ -80,6 +91,7 @@ export function DeductionModal({
       setRekomendasi(opsi);
       setDeductionType("DIPOTONG"); // Otomatis aktifkan pemotongan
       setIsPotongGaji(true); // Otomatis ceklis Potong Gaji
+      setPotongCuti(false); // Nonaktifkan potong cuti jika rekomendasi atasan dipilih
     }
   };
 
@@ -101,11 +113,24 @@ export function DeductionModal({
 
     setIsSubmitting(true);
     const formData = new FormData(e.currentTarget);
-    const payload = Object.fromEntries(formData);
+    const payload = Object.fromEntries(formData) as any;
 
     const noDeduction = deductionType === "TIDAK_DIPOTONG";
 
-    // PERBAIKAN: Buat URL dinamis berdasarkan source
+    // INJEKSI PAYLOAD POTONG CUTI
+    payload.potongCuti = potongCuti;
+
+    // Jika potong cuti aktif, pastikan variabel potongan lainnya dimatikan
+    if (potongCuti) {
+      payload.potongGaji = false;
+      payload.potongKonsumsi = false;
+      payload.potongTransport = false;
+      payload.potongLainnya = false;
+      payload.lateFine = "0";
+      payload.invalCount = "0";
+      payload.shiftCount = "0";
+    }
+
     const endpointUrl =
       source === "approval"
         ? `/api/requests/${request.id}/approve`
@@ -123,7 +148,6 @@ export function DeductionModal({
         throw new Error(errorData.error || "Gagal menyimpan data denda");
       }
 
-      // PERBAIKAN: Notifikasi sukses menjadi dinamis
       toast.success(
         source === "approval"
           ? "Pengajuan disetujui & denda berhasil disimpan"
@@ -169,7 +193,6 @@ export function DeductionModal({
                      [&::-webkit-scrollbar-thumb]:bg-gray-700 
                      [&::-webkit-scrollbar-thumb]:rounded-full"
         >
-          {/* FITUR BARU: Alert Rekomendasi Sakit Tanpa Surat */}
           {isSakitTanpaSurat && (
             <div className="bg-rose-950/40 p-4 rounded-lg border border-rose-900/60 space-y-3">
               <Label className="text-rose-400 font-bold text-sm uppercase">
@@ -210,7 +233,6 @@ export function DeductionModal({
                   </div>
                 </div>
 
-                {/* Input Teks Alasan muncul jika rekomendasi dipilih */}
                 {rekomendasi && (
                   <div className="pt-3 animate-in fade-in slide-in-from-top-2">
                     <Label className="text-xs text-gray-400">
@@ -233,16 +255,18 @@ export function DeductionModal({
             </div>
           )}
 
-          {/* Section Pilihan Utama */}
           <div className="flex flex-col gap-3 bg-gray-950/50 p-3 rounded-lg border border-gray-800">
             {!hideNoDeduction && (
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="no_deduction"
                   checked={deductionType === "TIDAK_DIPOTONG"}
-                  onCheckedChange={(c) =>
-                    c && setDeductionType("TIDAK_DIPOTONG")
-                  }
+                  onCheckedChange={(c) => {
+                    if (c) {
+                      setDeductionType("TIDAK_DIPOTONG");
+                      setPotongCuti(false);
+                    }
+                  }}
                 />
                 <Label
                   htmlFor="no_deduction"
@@ -268,139 +292,178 @@ export function DeductionModal({
             </div>
           </div>
 
-          {/* Munculkan rincian jika "Dikenakan Pemotongan" aktif */}
           {deductionType === "DIPOTONG" && (
             <div className="pl-4 space-y-6 border-l-2 border-gray-800 py-2">
-              {/* Section Jenis Potongan */}
-              <div className="space-y-3">
-                <Label className="text-sm font-semibold text-white border-b border-gray-800 w-full flex pb-2">
-                  Rincian Pemotongan:
-                </Label>
-
-                <div className="space-y-3 pt-1">
-                  <Label className="text-xs font-semibold uppercase text-gray-500">
-                    Jenis Potongan
-                  </Label>
-                  <div className="flex flex-col gap-2.5">
-                    <div className="flex items-center space-x-2">
-                      {/* Checkbox dikontrol oleh state agar bisa otomatis diceklis */}
-                      <Checkbox
-                        id="p_gaji"
-                        name="potongGaji"
-                        checked={isPotongGaji}
-                        onCheckedChange={(c) => setIsPotongGaji(c as boolean)}
-                      />
-                      <label
-                        htmlFor="p_gaji"
-                        className="text-sm text-gray-300 cursor-pointer"
-                      >
-                        Potong Gaji
-                      </label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="p_konsum"
-                        name="potongKonsumsi"
-                        defaultChecked={request?.potongKonsumsi}
-                      />
-                      <label
-                        htmlFor="p_konsum"
-                        className="text-sm text-gray-300 cursor-pointer"
-                      >
-                        Tunjangan Konsumsi
-                      </label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="p_trans"
-                        name="potongTransport"
-                        defaultChecked={request?.potongTransport}
-                      />
-                      <label
-                        htmlFor="p_trans"
-                        className="text-sm text-gray-300 cursor-pointer"
-                      >
-                        Tunjangan Transportasi
-                      </label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="p_lainnya"
-                        name="potongLainnya"
-                        defaultChecked={request?.potongLainnya}
-                      />
-                      <label
-                        htmlFor="p_lainnya"
-                        className="text-sm text-gray-300 cursor-pointer"
-                      >
-                        Tunjangan Lainnya
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Sisa input (Denda, Multiplier) tetap sama */}
-              <div className="space-y-3">
-                <Label className="text-xs font-semibold uppercase text-gray-500">
-                  Denda Telat
-                </Label>
-                <RadioGroup
-                  defaultValue={request?.lateFine?.toString() || "0"}
-                  name="lateFine"
-                  className="flex flex-col gap-2.5"
-                >
+              {/* OPSI POTONG CUTI (Hanya tampil jika syarat terpenuhi) */}
+              {canPotongCuti && (
+                <div className="bg-emerald-950/30 border border-emerald-900/50 p-3 rounded-lg space-y-1 mb-4">
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="0" id="t_0" />
-                    <Label htmlFor="t_0" className="text-gray-300">
-                      Tidak ada
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="5000" id="t_5000" />
-                    <Label htmlFor="t_5000" className="text-gray-300">
-                      Rp 5.000 (menit ke-6 s/d 15)
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="10000" id="t_10000" />
-                    <Label htmlFor="t_10000" className="text-gray-300">
-                      Rp 10.000 (&gt;15 menit)
-                    </Label>
-                  </div>
-                </RadioGroup>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 pt-2">
-                <div className="space-y-2">
-                  <Label className="text-xs text-gray-400">Jumlah Inval</Label>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="number"
-                      name="invalCount"
-                      className="w-16 bg-gray-950 border-gray-700 text-gray-200"
-                      defaultValue={request?.invalCount || 0}
-                      min={0}
+                    <Checkbox
+                      id="p_cuti"
+                      checked={potongCuti}
+                      onCheckedChange={(c) => setPotongCuti(c as boolean)}
+                      className="border-emerald-700 data-[state=checked]:bg-emerald-600"
                     />
-                    <span className="text-xs text-gray-500">x Rp 5.000</span>
+                    <Label
+                      htmlFor="p_cuti"
+                      className="text-sm font-semibold text-emerald-400 cursor-pointer"
+                    >
+                      Potong Jatah Cuti Tahunan
+                    </Label>
+                  </div>
+                  <p className="text-xs text-gray-400 ml-6">
+                    Sisa Cuti Pegawai:{" "}
+                    <strong className="text-emerald-300">
+                      {sisaCuti} Hari
+                    </strong>
+                  </p>
+                  <p className="text-xs text-gray-500 ml-6 italic mt-1">
+                    *Jika opsi ini dicentang, semua opsi pemotongan uang di
+                    bawah akan diabaikan.
+                  </p>
+                </div>
+              )}
+
+              {/* SEMBUNYIKAN RINCIAN LAIN JIKA POTONG CUTI DIPILIH */}
+              {!potongCuti && (
+                <div className="space-y-6 animate-in fade-in duration-300">
+                  <div className="space-y-3">
+                    <Label className="text-sm font-semibold text-white border-b border-gray-800 w-full flex pb-2">
+                      Rincian Pemotongan:
+                    </Label>
+
+                    <div className="space-y-3 pt-1">
+                      <Label className="text-xs font-semibold uppercase text-gray-500">
+                        Jenis Potongan
+                      </Label>
+                      <div className="flex flex-col gap-2.5">
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="p_gaji"
+                            name="potongGaji"
+                            checked={isPotongGaji}
+                            onCheckedChange={(c) =>
+                              setIsPotongGaji(c as boolean)
+                            }
+                          />
+                          <label
+                            htmlFor="p_gaji"
+                            className="text-sm text-gray-300 cursor-pointer"
+                          >
+                            Potong Gaji
+                          </label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="p_konsum"
+                            name="potongKonsumsi"
+                            defaultChecked={request?.potongKonsumsi}
+                          />
+                          <label
+                            htmlFor="p_konsum"
+                            className="text-sm text-gray-300 cursor-pointer"
+                          >
+                            Tunjangan Konsumsi
+                          </label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="p_trans"
+                            name="potongTransport"
+                            defaultChecked={request?.potongTransport}
+                          />
+                          <label
+                            htmlFor="p_trans"
+                            className="text-sm text-gray-300 cursor-pointer"
+                          >
+                            Tunjangan Transportasi
+                          </label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="p_lainnya"
+                            name="potongLainnya"
+                            defaultChecked={request?.potongLainnya}
+                          />
+                          <label
+                            htmlFor="p_lainnya"
+                            className="text-sm text-gray-300 cursor-pointer"
+                          >
+                            Tunjangan Lainnya
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-xs font-semibold uppercase text-gray-500">
+                      Denda Telat
+                    </Label>
+                    <RadioGroup
+                      defaultValue={request?.lateFine?.toString() || "0"}
+                      name="lateFine"
+                      className="flex flex-col gap-2.5"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="0" id="t_0" />
+                        <Label htmlFor="t_0" className="text-gray-300">
+                          Tidak ada
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="5000" id="t_5000" />
+                        <Label htmlFor="t_5000" className="text-gray-300">
+                          Rp 5.000 (menit ke-6 s/d 15)
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="10000" id="t_10000" />
+                        <Label htmlFor="t_10000" className="text-gray-300">
+                          Rp 10.000 (&gt;15 menit)
+                        </Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 pt-2">
+                    <div className="space-y-2">
+                      <Label className="text-xs text-gray-400">
+                        Jumlah Inval
+                      </Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          name="invalCount"
+                          className="w-16 bg-gray-950 border-gray-700 text-gray-200"
+                          defaultValue={request?.invalCount || 0}
+                          min={0}
+                        />
+                        <span className="text-xs text-gray-500">
+                          x Rp 5.000
+                        </span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs text-gray-400">
+                        Jumlah Shift
+                      </Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          name="shiftCount"
+                          className="w-16 bg-gray-950 border-gray-700 text-gray-200"
+                          defaultValue={request?.shiftCount || 0}
+                          min={0}
+                        />
+                        <span className="text-xs text-gray-500">
+                          x Rp {request?.shiftRate || 30000}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-xs text-gray-400">Jumlah Shift</Label>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="number"
-                      name="shiftCount"
-                      className="w-16 bg-gray-950 border-gray-700 text-gray-200"
-                      defaultValue={request?.shiftCount || 0}
-                      min={0}
-                    />
-                    <span className="text-xs text-gray-500">
-                      x Rp {request?.shiftRate || 30000}
-                    </span>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
           )}
 
