@@ -692,12 +692,11 @@ export default function AdminLaporanView({
 
                           <td className="py-2 px-3 border border-black text-black">
                             {item.keterangan || "-"}
-
                             {displayStatus === "CUTI" &&
                               (person.sisaCuti !== undefined ||
                                 item.sisaCuti !== undefined) && (
                                 <div className="mt-1 text-xs font-semibold text-purple-700 print:text-black">
-                                  (Sisa Cuti: {person.sisaCuti ?? item.sisaCuti}{" "}
+                                  (Sisa Cuti: {item.sisaCuti ?? person.sisaCuti}{" "}
                                   Hari)
                                 </div>
                               )}
