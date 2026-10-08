@@ -60,7 +60,10 @@ export default function PermissionForm({
   sisaIzinKeluar,
 }: PermissionFormProps) {
   const { states, actions } = usePermissionForm({
-    user,
+    user: {
+      ...user,
+      isGuru: user.isGuru ?? undefined,
+    },
     potentialSubstitutes,
     onSuccess,
     userId,
