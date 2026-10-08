@@ -3,35 +3,71 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ShieldCheck, LayoutDashboard, FileCheck2, KeyRound, Wrench, Car, ClipboardPenLine, ClipboardList } from "lucide-react";
+import {
+  ShieldCheck,
+  LayoutDashboard,
+  FileCheck2,
+  KeyRound,
+  Wrench,
+  Car,
+  ClipboardPenLine,
+  ClipboardList,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useDashboard } from "../../context/DashboardContext";
 
 export function Sidebar() {
   const pathname = usePathname();
   // Ambil state global untuk persetujuan dan pengembalian
-  const { persetujuan, pengembalian } = useDashboard(); 
+  const { persetujuan, pengembalian } = useDashboard();
 
   // Pindahkan menuItems ke dalam komponen agar bisa membaca variabel state
   const menuItems = [
-    { title: "Ringkasan GA", icon: LayoutDashboard, href: "/carfleet/admin/dashboard" },
-    { 
-      title: "Persetujuan", 
-      icon: FileCheck2, 
-      href: "/carfleet/admin/dashboard/persetujuan", 
-      badge: persetujuan.length > 0 ? persetujuan.length : null // <-- Dinamis
+    {
+      title: "Ringkasan GA",
+      icon: LayoutDashboard,
+      href: "/carfleet/admin/dashboard",
     },
-    { 
-      title: "Validasi Kembali", 
-      icon: KeyRound, 
-      href: "/carfleet/admin/dashboard/pengembalian", 
+    {
+      title: "Persetujuan",
+      icon: FileCheck2,
+      href: "/carfleet/admin/dashboard/persetujuan",
+      badge: persetujuan.length > 0 ? persetujuan.length : null, // <-- Dinamis
+    },
+    {
+      title: "Pengambilan Kunci",
+      icon: KeyRound,
+      href: "/carfleet/admin/dashboard/pengambilan-kunci",
       badge: pengembalian.length > 0 ? pengembalian.length : null, // <-- Dinamis
-      badgeColor: "bg-emerald-500" 
+      badgeColor: "bg-emerald-500",
     },
-    { title: "Servis & BBM", icon: Wrench, href: "/carfleet/admin/dashboard/perawatan" },
-    { title: "Riwayat Pemakaian", icon: ClipboardList, href: "/carfleet/admin/dashboard/history" },
-    { title: "Pengajuan Servis", icon: ClipboardPenLine, href: "/carfleet/admin/dashboard/pengajuan-servis" },
-    { title: "Master Data", icon: Car, href: "/carfleet/admin/dashboard/master" },
+    {
+      title: "Validasi Kembali",
+      icon: KeyRound,
+      href: "/carfleet/admin/dashboard/pengembalian",
+      badge: pengembalian.length > 0 ? pengembalian.length : null, // <-- Dinamis
+      badgeColor: "bg-emerald-500",
+    },
+    {
+      title: "Servis & BBM",
+      icon: Wrench,
+      href: "/carfleet/admin/dashboard/perawatan",
+    },
+    {
+      title: "Riwayat Pemakaian",
+      icon: ClipboardList,
+      href: "/carfleet/admin/dashboard/history",
+    },
+    {
+      title: "Pengajuan Servis",
+      icon: ClipboardPenLine,
+      href: "/carfleet/admin/dashboard/pengajuan-servis",
+    },
+    {
+      title: "Master Data",
+      icon: Car,
+      href: "/carfleet/admin/dashboard/master",
+    },
   ];
 
   return (
@@ -43,7 +79,9 @@ export function Sidebar() {
         </div>
         <div>
           <h1 className="font-bold text-lg tracking-tight">SekolahApp</h1>
-          <p className="text-[11px] text-slate-400 uppercase tracking-wider font-bold mt-0.5">General Affairs</p>
+          <p className="text-[11px] text-slate-400 uppercase tracking-wider font-bold mt-0.5">
+            General Affairs
+          </p>
         </div>
       </div>
 
@@ -52,16 +90,23 @@ export function Sidebar() {
         {menuItems.map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;
-          
+
           return (
             <Link key={item.href} href={item.href}>
-              <div className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-200 ${
-                isActive ? "bg-teal-600 text-white shadow-lg shadow-teal-600/30" : "text-slate-300 hover:bg-white/5 hover:text-white"
-              }`}>
+              <div
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-200 ${
+                  isActive
+                    ? "bg-teal-600 text-white shadow-lg shadow-teal-600/30"
+                    : "text-slate-300 hover:bg-white/5 hover:text-white"
+                }`}
+              >
                 <Icon size={20} />
                 <span>{item.title}</span>
                 {item.badge && (
-                  <Badge variant="destructive" className={`ml-auto ${item.badgeColor || ''}`}>
+                  <Badge
+                    variant="destructive"
+                    className={`ml-auto ${item.badgeColor || ""}`}
+                  >
                     {item.badge}
                   </Badge>
                 )}
@@ -73,7 +118,9 @@ export function Sidebar() {
 
       {/* Footer */}
       <div className="p-6 border-t border-white/10 flex items-center gap-3">
-        <div className="w-9 h-9 rounded-full bg-teal-600 flex items-center justify-center font-bold text-sm">GA</div>
+        <div className="w-9 h-9 rounded-full bg-teal-600 flex items-center justify-center font-bold text-sm">
+          GA
+        </div>
         <div>
           <h4 className="text-sm font-bold">Admin Sarpras</h4>
           <p className="text-xs text-slate-400">admin.ga@sekolah.sch.id</p>

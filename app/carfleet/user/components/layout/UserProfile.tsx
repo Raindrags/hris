@@ -3,8 +3,15 @@
 import { Contact, GraduationCap, PhoneCall } from "lucide-react";
 import { useEffect, useState } from "react";
 
+const extractString = (val: any, fallback: string): string => {
+  if (!val) return fallback;
+  if (typeof val === "string" || typeof val === "number") return String(val);
+  if (typeof val === "object")
+    return String(val.name || val.title || val.id || fallback);
+  return fallback;
+};
+
 export default function UserProfile() {
-  // 1. Set state awal (default) untuk mencegah hydration mismatch
   const [user, setUser] = useState({
     name: "Memuat data...",
     niy: "-",
@@ -12,7 +19,6 @@ export default function UserProfile() {
     divisi: "-",
   });
 
-  // 2. Baca cookie HANYA saat komponen sudah dimuat di browser
   useEffect(() => {
     const getCookie = (name: string) => {
       const value = `; ${document.cookie}`;
@@ -26,11 +32,13 @@ export default function UserProfile() {
     if (userDataCookie) {
       try {
         const parsedUser = JSON.parse(decodeURIComponent(userDataCookie));
+
+        // PENCEGAHAN ERROR: Gunakan extractString untuk semua properti
         setUser({
-          name: parsedUser.name || "Pengguna",
-          niy: parsedUser.niy || "-",
-          role: parsedUser.role || "PEGAWAI",
-          divisi: parsedUser.divisi || "-",
+          name: extractString(parsedUser.name, "Pengguna"),
+          niy: extractString(parsedUser.niy, "-"),
+          role: extractString(parsedUser.role, "PEGAWAI"),
+          divisi: extractString(parsedUser.divisi, "-"),
         });
       } catch (error) {
         console.error("Gagal membaca cookie user_data:", error);
@@ -41,7 +49,6 @@ export default function UserProfile() {
     }
   }, []);
 
-  // 3. Fungsi pembuat Inisial Nama
   const getInitials = (name: string) => {
     if (
       name === "Memuat data..." ||
@@ -57,23 +64,19 @@ export default function UserProfile() {
   return (
     <div className="bg-white border border-slate-100 rounded-3xl p-6 mb-8 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-6">
       <div className="flex items-center gap-4 text-center sm:text-left flex-col sm:flex-row">
-        {/* Avatar Inisial Dinamis */}
         <div className="w-16 h-16 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center font-black text-xl">
           {getInitials(user.name)}
         </div>
 
         <div>
-          {/* Nama Dinamis */}
           <h2 className="font-extrabold text-lg text-slate-900">{user.name}</h2>
 
           <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 mt-1 text-xs text-slate-500 font-semibold">
-            {/* NIY Dinamis */}
             <span className="flex items-center gap-1">
               <Contact className="w-3.5 h-3.5" /> NIY: {user.niy}
             </span>
             <span>•</span>
 
-            {/* Role / Divisi Dinamis */}
             <span className="flex items-center gap-1">
               <GraduationCap className="w-3.5 h-3.5" />
               {user.divisi && user.divisi !== "-" ? user.divisi : user.role}
