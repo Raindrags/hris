@@ -42,14 +42,19 @@ interface RideShareData {
   seats: number;
 }
 
-interface PackageData {
-  bookingId: string;
-  description: string;
-  receiver: string;
+// ✨ Tipe Data Baru Untuk Jadwal Rutin
+interface RoutineData {
+  id: string;
+  vehicleId: string;
+  route: string;
+  days: string;
+  departure: string;
+  returnTime?: string;
+  status: string;
 }
 
 // ==========================================
-// 2. DEFINISI ISI CONTEXT
+// 2. DEFINISI ISI CONTEXT (TypeScript Interface)
 // ==========================================
 
 interface UserBookingContextType {
@@ -57,16 +62,17 @@ interface UserBookingContextType {
   vehicles: VehicleData[];
   myBookings: any[];
   myRideShares: any[];
-  myPackages: any[];
   availableRides: any[];
+
+  // ✨ WAJIB ADA AGAR TYPESCRIPT TIDAK ERROR
+  routines: RoutineData[];
+  fetchRoutines: () => Promise<void>;
 
   fetchVehicles: () => Promise<void>;
   fetchMyBookings: () => Promise<void>;
   submitBooking: (data: BookingData) => Promise<boolean>;
   fetchMyRideShares: () => Promise<void>;
   submitRideShare: (data: RideShareData) => Promise<boolean>;
-  fetchMyPackages: () => Promise<void>;
-  submitPackage: (data: PackageData) => Promise<boolean>;
   fetchAvailableRides: () => Promise<void>;
 }
 
@@ -83,20 +89,33 @@ export function UserBookingProvider({ children }: { children: ReactNode }) {
   const [vehicles, setVehicles] = useState<VehicleData[]>([]);
   const [myBookings, setMyBookings] = useState<any[]>([]);
   const [myRideShares, setMyRideShares] = useState<any[]>([]);
-  const [myPackages, setMyPackages] = useState<any[]>([]);
   const [availableRides, setAvailableRides] = useState<any[]>([]);
 
-  // --- O. FUNGSI AMBIL DAFTAR ARMADA MOBIL ---
+  // ✨ State untuk routines
+  const [routines, setRoutines] = useState<RoutineData[]>([]);
+
   const fetchVehicles = useCallback(async () => {
     try {
-      const data = await apiFetch("/v1/vehicles"); // Biarkan jika memang ini URL-nya
+      const data = await apiFetch("/v1/vehicles");
       setVehicles(data);
     } catch (error: any) {
       console.error("Gagal mengambil daftar kendaraan:", error.message);
     }
   }, []);
 
-  // --- A. FUNGSI BOOKING (SEWA ARMADA) ---
+  // ✨ Fungsi untuk fetch routines
+  const fetchRoutines = useCallback(async () => {
+    try {
+      const data = await apiFetch("/v1/routines");
+      const activeRoutines = (data || []).filter(
+        (r: any) => r.status === "ACTIVE",
+      );
+      setRoutines(activeRoutines);
+    } catch (error: any) {
+      console.error("Gagal mengambil daftar rutinitas:", error.message);
+    }
+  }, []);
+
   const fetchMyBookings = useCallback(async () => {
     try {
       const data = await apiFetch("/bookings/my-status");
@@ -125,11 +144,9 @@ export function UserBookingProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // --- B. FUNGSI NEBENG (RIDE SHARE) ---
   const fetchMyRideShares = useCallback(async () => {
     try {
-      // ✨ URL sudah disesuaikan dengan Controller
-     const data = await apiFetch("/ride-shares/my-status");
+      const data = await apiFetch("/ride-shares/my-status");
       setMyRideShares(data);
     } catch (error: any) {
       console.error("Gagal mengambil status nebeng:", error.message);
@@ -139,14 +156,13 @@ export function UserBookingProvider({ children }: { children: ReactNode }) {
   const submitRideShare = async (data: RideShareData) => {
     setIsLoading(true);
     try {
-      // ✨ URL disesuaikan, dan bookingId dilempar ke body
       await apiFetch(`/ride-shares`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          bookingId: data.bookingId, 
-          dropOff: data.dropOff, 
-          seats: data.seats 
+        body: JSON.stringify({
+          bookingId: data.bookingId,
+          dropOff: data.dropOff,
+          seats: data.seats,
         }),
       });
       await fetchMyRideShares();
@@ -154,41 +170,6 @@ export function UserBookingProvider({ children }: { children: ReactNode }) {
     } catch (error: any) {
       console.error(error);
       alert(error.message || "Gagal mengirim permohonan nebeng");
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // --- C. FUNGSI TITIP BARANG (PACKAGE) ---
-  const fetchMyPackages = useCallback(async () => {
-    try {
-      // ✨ URL sudah disesuaikan dengan Controller
-      const data = await apiFetch("/packages/my-status");
-      setMyPackages(data);
-    } catch (error: any) {
-      console.error("Gagal mengambil status titip barang:", error.message);
-    }
-  }, []);
-
-  const submitPackage = async (data: PackageData) => {
-    setIsLoading(true);
-    try {
-      // ✨ URL disesuaikan, dan bookingId dilempar ke body
-     await apiFetch(`/packages`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          bookingId: data.bookingId,
-          description: data.description,
-          receiver: data.receiver,
-        }),
-      });
-      await fetchMyPackages();
-      return true;
-    } catch (error: any) {
-      console.error(error);
-      alert(error.message || "Gagal mengirim permohonan titipan");
       return false;
     } finally {
       setIsLoading(false);
@@ -212,15 +193,16 @@ export function UserBookingProvider({ children }: { children: ReactNode }) {
         fetchVehicles,
         myBookings,
         myRideShares,
-        myPackages,
         submitBooking,
         fetchMyBookings,
         submitRideShare,
         fetchMyRideShares,
-        submitPackage,
-        fetchMyPackages,
         availableRides,
         fetchAvailableRides,
+
+        // ✨ Wajib diekspor agar bisa ditangkap oleh view
+        routines,
+        fetchRoutines,
       }}
     >
       {children}
