@@ -57,7 +57,7 @@ export default function PermissionForm({
   userId,
   isAdmin = false,
   allowBackdate = false,
-  sisaIzinKeluar, // Diekstrak dari props
+  sisaIzinKeluar,
 }: PermissionFormProps) {
   const { states, actions } = usePermissionForm({
     user,
@@ -65,6 +65,7 @@ export default function PermissionForm({
     onSuccess,
     userId,
     allowBackdate,
+    sisaIzinKeluar,
   });
 
   const {
@@ -94,6 +95,10 @@ export default function PermissionForm({
     suratTidakTerlampir,
     hasSickHistory,
     isLoadingSickHistory,
+    isGuru,
+    sisaKuota,
+    requestedHours,
+    isExceedingQuota,
   } = states;
 
   const {
@@ -140,26 +145,6 @@ export default function PermissionForm({
   const todayDate = new Date();
   todayDate.setHours(0, 0, 0, 0);
 
-  // --- LOGIKA PERHITUNGAN KUOTA IZIN KELUAR ---
-  const isGuru = user.isGuru === true; // Pastikan Anda mengambil status isGuru
-  const sisaKuota = sisaIzinKeluar ?? user.sisaIzinKeluar ?? 6;
-
-  let requestedHours = 0;
-  if (category === "IzinKeluar" && timeValue && returnTime) {
-    const [startH, startM] = timeValue.split(":").map(Number);
-    const [endH, endM] = returnTime.split(":").map(Number);
-    const diffMins = endH * 60 + endM - (startH * 60 + startM);
-    if (diffMins > 0) {
-      requestedHours = diffMins / 60;
-    }
-  }
-
-  // Hanya hitung exceeded quota jika user adalah GURU
-  const isExceedingQuota =
-    isGuru &&
-    category === "IzinKeluar" &&
-    (sisaKuota <= 0 || requestedHours > sisaKuota);
-  // --------------------------------------------
   return (
     <>
       <form onSubmit={handleSubmit} className="space-y-4 px-1 pb-4">
@@ -812,8 +797,18 @@ export default function PermissionForm({
               Peringatan Pemotongan
             </AlertDialogTitle>
             <AlertDialogDescription className="text-slate-300 mt-2">
-              Pengajuan <b>Izin Pribadi</b> akan mengakibatkan{" "}
-              <b>pemotongan Gaji Pokok</b>. Yakin melanjutkan?
+              {category === "IzinKeluar" ? (
+                <>
+                  Durasi <b>Izin Keluar</b> yang Anda ajukan melebihi sisa
+                  kuota. Hal ini akan mengakibatkan <b>pemotongan gaji</b>.
+                  Yakin ingin melanjutkan?
+                </>
+              ) : (
+                <>
+                  Pengajuan <b>Izin Pribadi</b> akan mengakibatkan{" "}
+                  <b>pemotongan Gaji Pokok</b>. Yakin melanjutkan?
+                </>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

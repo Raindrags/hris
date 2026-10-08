@@ -7,11 +7,16 @@ import {
 } from "../types/permission";
 
 interface UsePermissionFormProps {
-  user: PermissionUserData & { workShift?: any };
+  user: PermissionUserData & {
+    workShift?: any;
+    isGuru?: boolean;
+    sisaIzinKeluar?: number;
+  };
   potentialSubstitutes: SubstituteUser[];
   onSuccess: () => void;
   userId?: string;
   allowBackdate?: boolean;
+  sisaIzinKeluar?: number;
 }
 
 const getLocalYYYYMMDD = (date: Date) => {
@@ -25,6 +30,7 @@ export const usePermissionForm = ({
   onSuccess,
   userId,
   allowBackdate = false,
+  sisaIzinKeluar,
 }: UsePermissionFormProps) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [startDate, setStartDate] = useState<Date>();
@@ -330,6 +336,26 @@ export const usePermissionForm = ({
     isHolidayOrSunday,
   ]);
 
+  // --- LOGIKA PERHITUNGAN KUOTA IZIN KELUAR ---
+  const isGuru = user?.isGuru === true;
+  const sisaKuota = sisaIzinKeluar ?? user?.sisaIzinKeluar ?? 6;
+
+  let requestedHours = 0;
+  if (category === "IzinKeluar" && timeValue && returnTime) {
+    const [startH, startM] = timeValue.split(":").map(Number);
+    const [endH, endM] = returnTime.split(":").map(Number);
+    const diffMins = endH * 60 + endM - (startH * 60 + startM);
+    if (diffMins > 0) {
+      requestedHours = diffMins / 60;
+    }
+  }
+
+  const isExceedingQuota =
+    isGuru &&
+    category === "IzinKeluar" &&
+    (sisaKuota <= 0 || requestedHours > sisaKuota);
+  // --------------------------------------------
+
   const processSubmit = async (payload: PermissionSubmitPayload) => {
     setLoading(true);
     try {
@@ -493,7 +519,10 @@ export const usePermissionForm = ({
       taskDetail: taskDetail || null,
     };
 
-    if (category === "Izin") {
+    if (
+      category === "Izin" ||
+      (category === "IzinKeluar" && isExceedingQuota)
+    ) {
       setPendingPayload(finalData);
       setShowWarning(true);
     } else {
@@ -558,6 +587,10 @@ export const usePermissionForm = ({
       hasSickHistory,
       isLoadingSickHistory,
       allowBackdate,
+      isGuru,
+      sisaKuota,
+      requestedHours,
+      isExceedingQuota,
     },
     actions: {
       setStartDate,

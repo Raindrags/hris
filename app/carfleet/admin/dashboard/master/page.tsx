@@ -43,7 +43,6 @@ export default function MasterDataPage() {
     toggleRoutine,
   } = useDashboard();
 
-  // State untuk form Tambah/Edit Kendaraan
   const [showFormMobil, setShowFormMobil] = useState(false);
   const [editingVehicleId, setEditingVehicleId] = useState<string | null>(null);
   const [formMobil, setFormMobil] = useState({
@@ -61,6 +60,7 @@ export default function MasterDataPage() {
     route: "",
     days: "1,2,3,4,5",
     departure: "06:00",
+    returnTime: "15:00", // Field baru ditambahkan
   });
 
   // State untuk Modal Pilihan Hari
@@ -112,7 +112,6 @@ export default function MasterDataPage() {
     setFormMobil({ name: "", platNumber: "", capacity: 4, type: "MPV" });
   };
 
-  // --- HANDLER JADWAL RUTIN ---
   const handleSimpanRutin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formRutin.days) {
@@ -140,6 +139,7 @@ export default function MasterDataPage() {
       route: rutinData.route,
       days: rutinData.days,
       departure: rutinData.departure,
+      returnTime: rutinData.returnTime || "15:00", // Fallback jika jadwal lama belum punya returnTime
     });
     setEditingRoutineId(rutinData.id);
     setShowFormRutin(true);
@@ -164,6 +164,7 @@ export default function MasterDataPage() {
       route: "",
       days: "1,2,3,4,5",
       departure: "06:00",
+      returnTime: "15:00", // Field baru di reset
     });
   };
 
@@ -445,7 +446,8 @@ export default function MasterDataPage() {
               </h3>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+            {/* Grid diperbarui menjadi 5 kolom (md:grid-cols-5) */}
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-5">
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-slate-600">
                   Rute / Kegiatan
@@ -517,6 +519,22 @@ export default function MasterDataPage() {
                   className="text-slate-900 bg-slate-50 focus-visible:ring-indigo-500"
                 />
               </div>
+
+              {/* FIELD JAM KEMBALI */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-slate-600">
+                  Jam Kembali
+                </label>
+                <Input
+                  required
+                  type="time"
+                  value={formRutin.returnTime}
+                  onChange={(e) =>
+                    setFormRutin({ ...formRutin, returnTime: e.target.value })
+                  }
+                  className="text-slate-900 bg-slate-50 focus-visible:ring-indigo-500"
+                />
+              </div>
             </div>
 
             <div className="flex justify-end gap-3 mt-6 pt-2">
@@ -582,7 +600,7 @@ export default function MasterDataPage() {
                     <td className="p-4 text-slate-700">
                       Hari: {getDaysDisplayText(r.days)} <br />
                       <span className="text-amber-600 font-bold">
-                        {r.departure} WIB
+                        {r.departure} - {r.returnTime || "Selesai"} WIB
                       </span>
                     </td>
                     <td className="p-4">
