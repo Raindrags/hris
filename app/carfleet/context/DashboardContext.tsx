@@ -57,6 +57,7 @@ interface Routine {
   days: string;
   departure: string;
   status: "ACTIVE" | "INACTIVE";
+  returnTime?: string;
   vehicle?: { name: string; platNumber: string };
   user?: { name: string };
 }
@@ -95,8 +96,8 @@ export interface VehicleReport {
   capacity: number;
   type: string;
   status: string;
-  bookings: any[]; 
-  maintenances: any[]; 
+  bookings: any[];
+  maintenances: any[];
 }
 
 interface DashboardContextType {
@@ -128,16 +129,18 @@ interface DashboardContextType {
       isiBBM?: boolean;
       topUpEtoll?: boolean;
       kondisi?: any;
-    }
+    },
   ) => Promise<void>;
-  
+
   // ✨ Fungsi CRUD Kendaraan
   addVehicle: (data: Omit<Vehicle, "id" | "status">) => Promise<void>;
   updateVehicle: (id: string, data: Partial<Vehicle>) => Promise<void>;
   deleteVehicle: (id: string) => Promise<void>;
-  
+
   // ✨ Fungsi CRUD Jadwal Rutin
-  addRoutine: (data: Omit<Routine, "id" | "status" | "vehicle" | "user">) => Promise<void>;
+  addRoutine: (
+    data: Omit<Routine, "id" | "status" | "vehicle" | "user">,
+  ) => Promise<void>;
   updateRoutine: (id: string, data: Partial<Routine>) => Promise<void>;
   deleteRoutine: (id: string) => Promise<void>;
   toggleRoutine: (id: string) => Promise<void>;
@@ -184,8 +187,12 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [bookingDetail, setBookingDetail] = useState<Booking | null>(null);
   const [isDetailLoading, setIsDetailLoading] = useState<boolean>(false);
 
-  const [persetujuanNebeng, setPersetujuanNebeng] = useState<RideSharePending[]>([]);
-  const [persetujuanTitipan, setPersetujuanTitipan] = useState<PackagePending[]>([]);
+  const [persetujuanNebeng, setPersetujuanNebeng] = useState<
+    RideSharePending[]
+  >([]);
+  const [persetujuanTitipan, setPersetujuanTitipan] = useState<
+    PackagePending[]
+  >([]);
 
   // ✨ State Laporan Kendaraan
   const [vehicleReports, setVehicleReports] = useState<VehicleReport[]>([]);
@@ -198,19 +205,21 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       const [
         allBookingsData,
         vehicleData,
-        routineData, 
+        routineData,
         nebengData,
         titipanData,
       ] = await Promise.all([
         apiFetch("/admin/bookings/all"),
         apiFetch("/v1/vehicles"),
-        apiFetch("/v1/routines"), 
+        apiFetch("/v1/routines"),
         apiFetch("/admin/bookings/rideshares/pending"),
         apiFetch("/admin/bookings/packages/pending"),
       ]);
 
-      const pendingData = allBookingsData?.filter((b: Booking) => b.status === "PENDING") || [];
-      const activeData = allBookingsData?.filter((b: Booking) => b.status === "APPROVED") || [];
+      const pendingData =
+        allBookingsData?.filter((b: Booking) => b.status === "PENDING") || [];
+      const activeData =
+        allBookingsData?.filter((b: Booking) => b.status === "APPROVED") || [];
 
       setPersetujuan(pendingData);
       setPengembalian(activeData);
@@ -230,17 +239,22 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // ✨ Fungsi Fetch Laporan Kendaraan
-  const fetchVehicleReports = useCallback(async (month: number, year: number) => {
-    setIsReportLoading(true);
-    try {
-      const data = await apiFetch(`/api/vehicles-report?month=${month}&year=${year}`);
-      setVehicleReports(data || []);
-    } catch (error: any) {
-      console.error("Gagal mengambil laporan kendaraan:", error.message);
-    } finally {
-      setIsReportLoading(false);
-    }
-  }, []);
+  const fetchVehicleReports = useCallback(
+    async (month: number, year: number) => {
+      setIsReportLoading(true);
+      try {
+        const data = await apiFetch(
+          `/api/vehicles-report?month=${month}&year=${year}`,
+        );
+        setVehicleReports(data || []);
+      } catch (error: any) {
+        console.error("Gagal mengambil laporan kendaraan:", error.message);
+      } finally {
+        setIsReportLoading(false);
+      }
+    },
+    [],
+  );
 
   // ==========================================
   // FUNGSI AKSI ARMADA UTAMA & KENDARAAN
@@ -274,7 +288,11 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const returnVehicle = async (id: string, actualTimeIn: string, physicalData?: any) => {
+  const returnVehicle = async (
+    id: string,
+    actualTimeIn: string,
+    physicalData?: any,
+  ) => {
     try {
       await apiFetch(`/admin/bookings/${id}/return`, {
         method: "PATCH",
@@ -304,7 +322,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const updateVehicle = async (id: string, data: Partial<Vehicle>) => {
     try {
       await apiFetch(`/v1/vehicles/${id}`, {
-        method: "PATCH", 
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
@@ -326,7 +344,9 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   };
 
   // ✨ CRUD MASTER JADWAL RUTIN
-  const addRoutine = async (data: Omit<Routine, "id" | "status" | "vehicle" | "user">) => {
+  const addRoutine = async (
+    data: Omit<Routine, "id" | "status" | "vehicle" | "user">,
+  ) => {
     try {
       await apiFetch("/v1/routines", {
         method: "POST",
@@ -507,7 +527,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         isDetailLoading,
         persetujuanNebeng,
         persetujuanTitipan,
-        
+
         // ✨ Data & Fungsi Laporan Kendaraan
         vehicleReports,
         isReportLoading,
@@ -517,16 +537,16 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         approveBooking,
         rejectBooking,
         returnVehicle,
-        
+
         addVehicle,
         updateVehicle,
         deleteVehicle,
-        
+
         addRoutine,
         updateRoutine,
         deleteRoutine,
         toggleRoutine,
-        
+
         startService,
         completeService,
         fetchAllBookings,
