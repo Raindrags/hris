@@ -8,9 +8,6 @@ export default function AvailableRidesView() {
 
   // State untuk mengontrol Modal mana yang terbuka dan ID perjalanan apa yang dipilih
   const [activeJoinModal, setActiveJoinModal] = useState<string | null>(null);
-  const [activePackageModal, setActivePackageModal] = useState<string | null>(
-    null,
-  );
 
   useEffect(() => {
     fetchAvailableRides(); // Tarik jadwal saat tab dibuka
@@ -69,23 +66,12 @@ export default function AvailableRidesView() {
               >
                 <Car className="w-4 h-4" /> Nebeng
               </button>
-              <button
-                onClick={() => setActivePackageModal(ride.id)}
-                className="flex-1 bg-amber-50 text-amber-600 font-bold py-3 rounded-xl hover:bg-amber-100 flex justify-center items-center gap-2 transition"
-              >
-                <Package className="w-4 h-4" /> Titip
-              </button>
             </div>
 
             {/* Render Modal jika state aktif cocok dengan ID perjalanan ini */}
             <JoinRideModal
               isOpen={activeJoinModal === ride.id}
               onClose={() => setActiveJoinModal(null)}
-              bookingId={ride.id}
-            />
-            <PackageModal
-              isOpen={activePackageModal === ride.id}
-              onClose={() => setActivePackageModal(null)}
               bookingId={ride.id}
             />
           </div>
