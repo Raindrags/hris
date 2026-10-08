@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { Car, Package, MapPin, Clock, Calendar, Users } from "lucide-react";
 import { useUserBooking } from "@/app/carfleet/context/UserBookingContext";
 import JoinRideModal from "../modals/JoinRideModal";
-import PackageModal from "../modals/PackageModal";
 
 export default function AvailableRidesView() {
   const { availableRides, fetchAvailableRides } = useUserBooking();
