@@ -11,8 +11,8 @@ import {
   ChevronRight,
   AlertTriangle,
   X,
+  UserPlus,
 } from "lucide-react";
-// ✨ Import context untuk memanggil data jadwal rutin
 import { useUserBooking } from "@/app/carfleet/context/UserBookingContext";
 
 interface Vehicle {
@@ -21,8 +21,8 @@ interface Vehicle {
   platNumber?: string;
   capacity?: number;
   status?: string;
-  upcomingBooking?: any;
-  upcomingRoutine?: any;
+  upcomingBookings?: any[];
+  upcomingRoutines?: any[];
 }
 
 interface BookingViewProps {
@@ -34,9 +34,10 @@ interface BookingViewProps {
     isNow: boolean,
     date: Date,
   ) => void;
+  // ✨ UPDATE: Menambahkan parameter 'type' agar sistem tahu ini nebeng apa
+  onOpenJoinModal?: (targetId: string, type: "booking" | "routine") => void;
 }
 
-// ✨ FUNGSI PELINDUNG: Mencegah React render object secara langsung
 const safeText = (value: any, fallback: string | number = "") => {
   if (value === null || value === undefined) return fallback;
   if (typeof value === "string" || typeof value === "number") return value;
@@ -49,35 +50,24 @@ export default function BookingView({
   vehicles,
   allBookings = [],
   onOpenBookingModal,
+  onOpenJoinModal,
 }: BookingViewProps) {
-  // ✨ Tarik data dan fungsi jadwal rutin dari context
   const { routines, fetchRoutines } = useUserBooking();
 
-  // Load jadwal rutin saat komponen pertama kali dirender
   useEffect(() => {
     if (fetchRoutines) fetchRoutines();
   }, [fetchRoutines]);
 
-  // State untuk tanggal yang DIPILIH user
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-
-  // State untuk navigasi BULAN di Kalender
   const [viewMonth, setViewMonth] = useState<Date>(new Date());
 
-  // ✨ Tambahkan activeRoutine pada state modal agar bisa menampilkan info jadwal tetap
   const [scheduleModalData, setScheduleModalData] = useState<{
     isOpen: boolean;
     vehicle: Vehicle | null;
-    activeBooking: any | null;
-    activeRoutine: any | null;
-  }>({
-    isOpen: false,
-    vehicle: null,
-    activeBooking: null,
-    activeRoutine: null,
-  });
+    activeBookings: any[];
+    activeRoutines: any[];
+  }>({ isOpen: false, vehicle: null, activeBookings: [], activeRoutines: [] });
 
-  // Nama hari untuk mencocokkan dengan field 'days' di RoutineSchedule
   const NAMA_HARI = [
     "Minggu",
     "Senin",
@@ -88,7 +78,6 @@ export default function BookingView({
     "Sabtu",
   ];
 
-  // Filter jadwal kendaraan berdasarkan TANGGAL YANG DIPILIH
   const vehiclesWithSchedule = useMemo(() => {
     const selectedDateString = new Date(
       selectedDate.getTime() - selectedDate.getTimezoneOffset() * 60000,
@@ -96,21 +85,18 @@ export default function BookingView({
       .toISOString()
       .split("T")[0];
 
-    // Dapatkan hari yang dipilih user
     const currentDayName = NAMA_HARI[selectedDate.getDay()];
     const currentDayNumber = String(selectedDate.getDay());
 
     return vehicles.map((vehicle) => {
-      // 1. Cek bentrok dengan tabel Booking (Insidental)
-      const upcomingBooking = allBookings.find(
+      const upcomingBookings = allBookings.filter(
         (b) =>
           b.vehicle?.id === vehicle.id &&
           b.status === "APPROVED" &&
           new Date(b.date).toISOString().split("T")[0] === selectedDateString,
       );
 
-      // 2. ✨ Cek bentrok dengan tabel RoutineSchedule (Jadwal Rutin)
-      const upcomingRoutine = (routines || []).find((routine: any) => {
+      const upcomingRoutines = (routines || []).filter((routine: any) => {
         if (routine.vehicleId === vehicle.id) {
           const daysString = String(routine.days || "").toLowerCase();
           return (
@@ -123,8 +109,8 @@ export default function BookingView({
 
       return {
         ...vehicle,
-        upcomingBooking: upcomingBooking || null,
-        upcomingRoutine: upcomingRoutine || null,
+        upcomingBookings,
+        upcomingRoutines,
       };
     });
   }, [vehicles, allBookings, selectedDate, routines]);
@@ -132,7 +118,9 @@ export default function BookingView({
   const handleFastTrack = () => {
     const availableVehicle = vehiclesWithSchedule.find(
       (v) =>
-        v.status === "Tersedia" && !v.upcomingBooking && !v.upcomingRoutine,
+        v.status === "Tersedia" &&
+        v.upcomingBookings.length === 0 &&
+        v.upcomingRoutines.length === 0,
     );
     if (availableVehicle) {
       onOpenBookingModal(
@@ -148,19 +136,16 @@ export default function BookingView({
     }
   };
 
-  // ================= LOGIKA KALENDER =================
   const currentYear = viewMonth.getFullYear();
   const currentMonth = viewMonth.getMonth();
-
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-  const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay(); // 0 = Minggu
+  const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
 
   const handlePrevMonth = () =>
     setViewMonth(new Date(currentYear, currentMonth - 1, 1));
   const handleNextMonth = () =>
     setViewMonth(new Date(currentYear, currentMonth + 1, 1));
 
-  // Modifikasi indikator kuning di kalender agar juga mengecek jadwal rutin
   const hasBookingOnDate = (dateToVerify: Date) => {
     const dateString = new Date(
       dateToVerify.getTime() - dateToVerify.getTimezoneOffset() * 60000,
@@ -206,20 +191,25 @@ export default function BookingView({
         key={`day-${d}`}
         onClick={() => setSelectedDate(loopDate)}
         className={`py-2 rounded-lg cursor-pointer transition relative flex justify-center items-center font-medium text-sm
-          ${isSelected ? "bg-[#1a365d] text-white shadow-md shadow-blue-900/30" : "hover:bg-slate-50 text-slate-700"}
+          ${
+            isSelected
+              ? "bg-[#1a365d] text-white shadow-md shadow-blue-900/30"
+              : "hover:bg-slate-50 text-slate-700"
+          }
           ${!isSelected && isToday ? "text-[#1a365d] font-bold bg-blue-50/50" : ""}
         `}
       >
         {d}
         {hasBooking && (
           <span
-            className={`absolute bottom-0.5 w-1.5 h-1.5 rounded-full ${isSelected ? "bg-white" : "bg-amber-500"}`}
+            className={`absolute bottom-0.5 w-1.5 h-1.5 rounded-full ${
+              isSelected ? "bg-white" : "bg-amber-500"
+            }`}
           ></span>
         )}
       </div>,
     );
   }
-  // ================= END LOGIKA KALENDER =================
 
   return (
     <div className="w-full animate-in fade-in duration-500">
@@ -235,7 +225,6 @@ export default function BookingView({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* ================= LEFT COLUMN: CALENDAR ================= */}
         <div className="lg:col-span-4">
           <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm lg:sticky lg:top-24">
             <div className="flex justify-between items-center mb-6">
@@ -296,7 +285,6 @@ export default function BookingView({
           </div>
         </div>
 
-        {/* ================= RIGHT COLUMN: VEHICLE LIST ================= */}
         <div className="lg:col-span-8">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-4 rounded-2xl border border-slate-100 shadow-sm mb-6 gap-4">
             <div className="flex items-center gap-3">
@@ -329,10 +317,15 @@ export default function BookingView({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {vehiclesWithSchedule.map((vehicle) => {
+              const hasRoutines = vehicle.upcomingRoutines.length > 0;
+              const hasBookings = vehicle.upcomingBookings.length > 0;
+              const isBusy =
+                vehicle.status === "Dipakai" || hasBookings || hasRoutines;
+
               if (
                 vehicle.status === "Tersedia" &&
-                !vehicle.upcomingBooking &&
-                !vehicle.upcomingRoutine
+                !hasBookings &&
+                !hasRoutines
               ) {
                 return (
                   <div
@@ -376,18 +369,11 @@ export default function BookingView({
                     </button>
                   </div>
                 );
-              } else if (
-                vehicle.status === "Dipakai" ||
-                vehicle.upcomingBooking ||
-                vehicle.upcomingRoutine
-              ) {
-                const activeBooking =
-                  vehicle.upcomingBooking ||
-                  allBookings.find(
-                    (b) =>
-                      b.vehicle?.id === vehicle.id && b.status === "APPROVED",
-                  );
-                const isRoutine = !!vehicle.upcomingRoutine;
+              } else if (isBusy) {
+                // ✨ LOGIKA PENENTU ID UNTUK TOMBOL NEBENG DI CARD UTAMA
+                const firstBooking = vehicle.upcomingBookings[0];
+                const firstRoutine = vehicle.upcomingRoutines[0];
+                const nebengTarget = firstBooking || firstRoutine;
 
                 return (
                   <div
@@ -401,7 +387,9 @@ export default function BookingView({
                         </div>
                         <span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-lg text-xs font-bold border border-amber-200 shadow-sm flex items-center gap-1">
                           <Clock size={14} />{" "}
-                          {isRoutine ? "Jadwal Rutin" : "Terjadwal"}
+                          {hasRoutines
+                            ? `Jadwal Rutin (${vehicle.upcomingRoutines.length})`
+                            : "Terjadwal"}
                         </span>
                       </div>
                       <h3 className="font-extrabold text-slate-900 text-lg leading-tight mb-1 relative z-10">
@@ -417,20 +405,38 @@ export default function BookingView({
                         </span>
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 relative z-10">
+
+                    <div className="flex gap-2 relative z-10">
                       <button
                         onClick={() =>
                           setScheduleModalData({
                             isOpen: true,
                             vehicle,
-                            activeBooking: activeBooking || null,
-                            activeRoutine: vehicle.upcomingRoutine || null,
+                            activeBookings: vehicle.upcomingBookings,
+                            activeRoutines: vehicle.upcomingRoutines,
                           })
                         }
-                        className="w-full py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-xl text-sm font-bold transition border border-amber-200 flex items-center justify-center gap-1"
+                        className="flex-1 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-xl text-xs font-bold transition border border-amber-200 flex items-center justify-center gap-1"
                       >
                         <Clock size={14} /> Cek Jadwal
                       </button>
+
+                      {/* ✨ TOMBOL NEBENG (Akan muncul baik untuk jadwal rutin maupun insidental) */}
+                      {nebengTarget && onOpenJoinModal && (
+                        <button
+                          onClick={() =>
+                            onOpenJoinModal(
+                              nebengTarget.id,
+                              firstBooking ? "booking" : "routine",
+                            )
+                          }
+                          className="px-3 py-2.5 bg-teal-50 hover:bg-teal-600 hover:text-white text-teal-700 rounded-xl text-xs font-bold transition border border-teal-200 flex items-center justify-center gap-1"
+                          title="Ikut Nebeng Perjalanan Ini"
+                        >
+                          <UserPlus size={14} /> Nebeng
+                        </button>
+                      )}
+
                       <button
                         onClick={() =>
                           onOpenBookingModal(
@@ -440,7 +446,7 @@ export default function BookingView({
                             selectedDate,
                           )
                         }
-                        className="w-full py-2.5 bg-white hover:bg-slate-50 text-slate-600 rounded-xl text-sm font-bold transition border border-slate-200"
+                        className="flex-1 py-2.5 bg-white hover:bg-slate-50 text-slate-600 rounded-xl text-xs font-bold transition border border-slate-200 text-center"
                       >
                         Pinjam Nanti
                       </button>
@@ -485,7 +491,6 @@ export default function BookingView({
         </div>
       </div>
 
-      {/* ================= MODAL INFO JADWAL BENTROK ================= */}
       {scheduleModalData.isOpen && scheduleModalData.vehicle && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div
@@ -494,16 +499,16 @@ export default function BookingView({
               setScheduleModalData({
                 isOpen: false,
                 vehicle: null,
-                activeBooking: null,
-                activeRoutine: null,
+                activeBookings: [],
+                activeRoutines: [],
               })
             }
           />
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md flex flex-col relative z-10 animate-in fade-in zoom-in-95 duration-200">
-            <div className="bg-amber-50 p-6 border-b border-amber-100 flex justify-between items-start rounded-t-3xl">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg flex flex-col relative z-10 animate-in fade-in zoom-in-95 duration-200 max-h-[90vh]">
+            <div className="bg-amber-50 p-6 border-b border-amber-100 flex justify-between items-start rounded-t-3xl shrink-0">
               <div>
                 <span className="bg-amber-100 text-amber-700 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-widest mb-2 inline-block border border-amber-200">
-                  Info Jadwal
+                  Info Jadwal Operasional
                 </span>
                 <h3 className="text-xl font-extrabold text-slate-900">
                   {safeText(scheduleModalData.vehicle.name, "Kendaraan")}
@@ -514,8 +519,8 @@ export default function BookingView({
                   setScheduleModalData({
                     isOpen: false,
                     vehicle: null,
-                    activeBooking: null,
-                    activeRoutine: null,
+                    activeBookings: [],
+                    activeRoutines: [],
                   })
                 }
                 className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-amber-100 text-slate-400 transition"
@@ -524,87 +529,123 @@ export default function BookingView({
               </button>
             </div>
 
-            <div className="p-6 bg-white">
-              <p className="text-sm text-slate-500 mb-5">
-                Kendaraan ini memiliki jadwal operasional pada tanggal terpilih.
-                Anda masih bisa meminjamnya jika <b>tidak bertabrakan</b> dengan
-                jadwal ini:
-              </p>
+            <div className="p-6 bg-white overflow-y-auto space-y-5">
+              {scheduleModalData.activeRoutines.length > 0 && (
+                <div className="space-y-3">
+                  <p className="text-xs font-bold text-amber-700 uppercase tracking-wider">
+                    Rute Operasional Tetap (
+                    {scheduleModalData.activeRoutines.length} Jadwal)
+                  </p>
+                  {scheduleModalData.activeRoutines.map(
+                    (routine: any, index: number) => (
+                      <div
+                        key={routine.id || index}
+                        className="relative pl-6 border-l-2 border-amber-400 pb-1"
+                      >
+                        <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-amber-400 border-4 border-white shadow-sm"></div>
+                        <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 flex justify-between items-center">
+                          <div>
+                            <p className="font-bold text-slate-800 text-sm">
+                              {safeText(routine.route, "Rute Rutin")}
+                            </p>
+                            <p className="text-xs text-slate-500">
+                              Jam: {safeText(routine.departure)} -{" "}
+                              {safeText(routine.returnTime, "Selesai")} WIB
+                            </p>
+                          </div>
 
-              {/* ✨ MENAMPILKAN DETAIL JADWAL RUTIN JIKA ADA */}
-              {scheduleModalData.activeRoutine ? (
-                <div className="relative pl-6 border-l-2 border-slate-100 pb-2">
-                  <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-amber-400 border-4 border-white shadow-sm"></div>
-                  <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                    <div className="flex justify-between items-start mb-2">
-                      <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                        Rute Operasional Tetap
-                      </p>
-                      <span className="text-xs font-bold text-[#1a365d] bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
-                        {safeText(scheduleModalData.activeRoutine.departure)} -{" "}
-                        {safeText(
-                          scheduleModalData.activeRoutine.returnTime,
-                          "Selesai",
-                        )}{" "}
-                        WIB
-                      </span>
-                    </div>
-                    <p className="font-bold text-slate-800 mb-0.5">
-                      {safeText(
-                        scheduleModalData.activeRoutine.route,
-                        "Rute tidak diketahui",
-                      )}
-                    </p>
-                    <p className="text-sm text-slate-500">
-                      Berlaku pada hari:{" "}
-                      {safeText(scheduleModalData.activeRoutine.days)}
-                    </p>
-                  </div>
+                          {/* ✨ TOMBOL NEBENG DI DALAM DAFTAR RUTIN */}
+                          {onOpenJoinModal && (
+                            <button
+                              onClick={() => {
+                                setScheduleModalData({
+                                  isOpen: false,
+                                  vehicle: null,
+                                  activeBookings: [],
+                                  activeRoutines: [],
+                                });
+                                onOpenJoinModal(routine.id, "routine");
+                              }}
+                              className="px-3 py-1.5 bg-teal-50 hover:bg-teal-600 hover:text-white text-teal-700 text-xs font-bold rounded-lg transition border border-teal-200 flex items-center gap-1 shrink-0"
+                            >
+                              <UserPlus size={14} /> Nebeng
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ),
+                  )}
                 </div>
-              ) : scheduleModalData.activeBooking ? (
-                /* ✨ MENAMPILKAN DETAIL BOOKING BIASA JIKA TIDAK ADA JADWAL RUTIN */
-                <div className="relative pl-6 border-l-2 border-slate-100 pb-2">
-                  <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-amber-400 border-4 border-white shadow-sm"></div>
-                  <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                    <div className="flex justify-between items-start mb-2">
-                      <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                        Jadwal Berjalan
-                      </p>
-                      <span className="text-xs font-bold text-[#1a365d] bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
-                        {safeText(scheduleModalData.activeBooking.timeOut)} -{" "}
-                        {safeText(scheduleModalData.activeBooking.timeIn)} WIB
-                      </span>
-                    </div>
-                    <p className="font-bold text-slate-800 mb-0.5">
-                      {safeText(
-                        scheduleModalData.activeBooking.picName,
-                        "Pegawai",
-                      )}
-                    </p>
-                    <p className="text-sm text-slate-500">
-                      {safeText(
-                        scheduleModalData.activeBooking.destination,
-                        "Tujuan tidak diketahui",
-                      )}
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-center text-sm text-slate-400 py-4">
-                  Menunggu persetujuan / data detail tidak tersedia.
-                </p>
               )}
+
+              {scheduleModalData.activeBookings.length > 0 && (
+                <div className="space-y-3">
+                  <p className="text-xs font-bold text-blue-700 uppercase tracking-wider">
+                    Jadwal Peminjaman Insidental (
+                    {scheduleModalData.activeBookings.length} Jadwal)
+                  </p>
+                  {scheduleModalData.activeBookings.map(
+                    (booking: any, index: number) => (
+                      <div
+                        key={booking.id || index}
+                        className="relative pl-6 border-l-2 border-blue-400 pb-1"
+                      >
+                        <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-blue-500 border-4 border-white shadow-sm"></div>
+                        <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 flex justify-between items-center">
+                          <div>
+                            <p className="font-bold text-slate-800 text-sm">
+                              {safeText(booking.picName, "Pegawai")}
+                            </p>
+                            <p className="text-xs text-slate-500">
+                              Tujuan: {safeText(booking.destination, "-")}
+                            </p>
+                            <span className="text-[11px] font-bold text-blue-700 mt-1 inline-block">
+                              Jam: {safeText(booking.timeOut)} -{" "}
+                              {safeText(booking.timeIn)} WIB
+                            </span>
+                          </div>
+
+                          {/* ✨ TOMBOL NEBENG DI DALAM DAFTAR BOOKING */}
+                          {onOpenJoinModal && (
+                            <button
+                              onClick={() => {
+                                setScheduleModalData({
+                                  isOpen: false,
+                                  vehicle: null,
+                                  activeBookings: [],
+                                  activeRoutines: [],
+                                });
+                                onOpenJoinModal(booking.id, "booking");
+                              }}
+                              className="px-3 py-1.5 bg-teal-50 hover:bg-teal-600 hover:text-white text-teal-700 text-xs font-bold rounded-lg transition border border-teal-200 flex items-center gap-1 shrink-0"
+                            >
+                              <UserPlus size={14} /> Nebeng
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ),
+                  )}
+                </div>
+              )}
+
+              {scheduleModalData.activeRoutines.length === 0 &&
+                scheduleModalData.activeBookings.length === 0 && (
+                  <p className="text-center text-sm text-slate-400 py-4">
+                    Tidak ada detail jadwal tambahan.
+                  </p>
+                )}
             </div>
 
-            <div className="p-5 bg-slate-50 border-t border-slate-100 flex justify-end rounded-b-3xl">
+            <div className="p-5 bg-slate-50 border-t border-slate-100 flex justify-end rounded-b-3xl shrink-0">
               <button
                 onClick={() => {
                   const v = scheduleModalData.vehicle;
                   setScheduleModalData({
                     isOpen: false,
                     vehicle: null,
-                    activeBooking: null,
-                    activeRoutine: null,
+                    activeBookings: [],
+                    activeRoutines: [],
                   });
                   if (v)
                     onOpenBookingModal(

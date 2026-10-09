@@ -165,7 +165,6 @@ interface DashboardContextType {
   ) => Promise<void>;
 
   persetujuanNebeng: RideSharePending[];
-  persetujuanTitipan: PackagePending[];
   approveRideShare: (id: string) => Promise<void>;
   rejectRideShare: (id: string, reason: string) => Promise<void>;
   approvePackage: (id: string) => Promise<void>;
@@ -190,9 +189,6 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [persetujuanNebeng, setPersetujuanNebeng] = useState<
     RideSharePending[]
   >([]);
-  const [persetujuanTitipan, setPersetujuanTitipan] = useState<
-    PackagePending[]
-  >([]);
 
   // ✨ State Laporan Kendaraan
   const [vehicleReports, setVehicleReports] = useState<VehicleReport[]>([]);
@@ -202,19 +198,13 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     try {
       setIsLoading(true);
 
-      const [
-        allBookingsData,
-        vehicleData,
-        routineData,
-        nebengData,
-        titipanData,
-      ] = await Promise.all([
-        apiFetch("/admin/bookings/all"),
-        apiFetch("/v1/vehicles"),
-        apiFetch("/v1/routines"),
-        apiFetch("/admin/bookings/rideshares/pending"),
-        apiFetch("/admin/bookings/packages/pending"),
-      ]);
+      const [allBookingsData, vehicleData, routineData, nebengData] =
+        await Promise.all([
+          apiFetch("/admin/bookings/all"),
+          apiFetch("/v1/vehicles"),
+          apiFetch("/v1/routines"),
+          apiFetch("/admin/bookings/rideshares/pending"),
+        ]);
 
       const pendingData =
         allBookingsData?.filter((b: Booking) => b.status === "PENDING") || [];
@@ -226,7 +216,6 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       setKendaraan(vehicleData || []);
       setRutin(routineData || []);
       setPersetujuanNebeng(nebengData || []);
-      setPersetujuanTitipan(titipanData || []);
     } catch (error) {
       console.error("Gagal mengambil data GA:", error);
     } finally {
@@ -433,7 +422,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   };
 
   // ==========================================
-  // FUNGSI AKSI: NEBENG & TITIPAN
+  // FUNGSI AKSI: NEBENG
   // ==========================================
   const approveRideShare = async (id: string) => {
     try {
@@ -526,7 +515,6 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         bookingDetail,
         isDetailLoading,
         persetujuanNebeng,
-        persetujuanTitipan,
 
         // ✨ Data & Fungsi Laporan Kendaraan
         vehicleReports,

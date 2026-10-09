@@ -137,8 +137,7 @@ export function UserBookingProvider({ children }: { children: ReactNode }) {
       return true;
     } catch (error: any) {
       console.error("Gagal submit booking:", error.message);
-      alert(error.message);
-      return false;
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -169,8 +168,7 @@ export function UserBookingProvider({ children }: { children: ReactNode }) {
       return true;
     } catch (error: any) {
       console.error(error);
-      alert(error.message || "Gagal mengirim permohonan nebeng");
-      return false;
+      throw error;
     } finally {
       setIsLoading(false);
     }

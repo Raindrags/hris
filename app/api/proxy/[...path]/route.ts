@@ -50,7 +50,6 @@ async function handleProxy(request: NextRequest, pathSegments: string[]) {
   const targetPath = pathSegments.join("/");
   const url = new URL(`${backendUrl}/${targetPath}`);
 
-  // Salin query parameters
   request.nextUrl.searchParams.forEach((value, key) => {
     url.searchParams.set(key, value);
   });
@@ -61,7 +60,6 @@ async function handleProxy(request: NextRequest, pathSegments: string[]) {
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  // Ambil body jika ada
   let body: BodyInit | null = null;
   if (request.method !== "GET" && request.method !== "HEAD") {
     body = await request.text();

@@ -108,17 +108,8 @@ function PortalContent() {
       ...formData,
       passengers: parseInt(formData.passengers as string, 10) || 1,
     };
-
-    console.log("MENGIRIM DATA KE BACKEND:", payloadToBackend);
-
-    const isSuccess = await submitBooking(payloadToBackend);
-
-    if (isSuccess) {
-      alert("Sukses! Permohonan peminjaman berhasil dikirim ke Admin GA.");
-      setIsModalOpen(false);
-    }
+    await submitBooking(payloadToBackend);
   };
-
   return (
     <div className="min-h-screen bg-[#fcfbf9] text-slate-800 font-sans">
       <PortalNavbar activeTab={activeTab} setActiveTab={handleTabChange} />
@@ -132,6 +123,9 @@ function PortalContent() {
             vehicles={vehicles}
             allBookings={availableRides}
             onOpenBookingModal={handleOpenBookingModal}
+            onOpenJoinModal={(targetId: string, type: "booking" | "routine") =>
+              setJoinModalData({ isOpen: true, bookingId: targetId })
+            }
           />
         )}
 
