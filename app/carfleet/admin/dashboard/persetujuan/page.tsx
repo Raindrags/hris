@@ -104,8 +104,7 @@ export default function PersetujuanPage() {
       if (type === "approve") {
         const targetBooking = persetujuan.find((b: any) => b.id === targetId);
 
-        const existingVehicleId =
-          targetBooking?.vehicle?.id || targetBooking?.vehicleId || "";
+        const existingVehicleId = targetBooking?.vehicle?.id || "";
 
         await approveBooking(targetId, existingVehicleId);
         showNotif("success", "Peminjaman berhasil disetujui!");
