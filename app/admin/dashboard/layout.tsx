@@ -12,6 +12,7 @@ import {
   FileText,
   CalendarRange,
   UserCog,
+  AlertTriangle, // <-- Ikon baru untuk menu Pelanggaran
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -66,6 +67,12 @@ const allNavItems = [
     href: "/admin/dashboard/fp",
     icon: FileText,
     allowedRoles: ["ADMIN", "ADMIN_SD", "ADMIN_SMP", "ADMIN_SMA", "ADMIN_PAUD"],
+  },
+  {
+    title: "Pelanggaran",
+    href: "/admin/dashboard/pelanggaran",
+    icon: AlertTriangle,
+    allowedRoles: ["ADMIN"],
   },
   {
     title: "Jadwal",

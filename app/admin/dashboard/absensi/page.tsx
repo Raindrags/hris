@@ -34,10 +34,12 @@ export default function RekapAbsensiView() {
     isOpen: boolean;
     emp: any | null;
   }>({ isOpen: false, emp: null });
+
   const [warningForm, setWarningForm] = useState({
     level: "TEGURAN_1",
     category: "KEHADIRAN",
     description: "",
+    fineAmount: 50000, // Tambahan properti fineAmount
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -68,6 +70,7 @@ export default function RekapAbsensiView() {
       level: "TEGURAN_1",
       category: "KEHADIRAN",
       description: autoDesc,
+      fineAmount: 50000, // Reset fineAmount saat modal dibuka
     });
     setWarningModal({ isOpen: true, emp });
   };
@@ -86,6 +89,7 @@ export default function RekapAbsensiView() {
           level: warningForm.level,
           category: warningForm.category,
           description: warningForm.description,
+          fineAmount: Number(warningForm.fineAmount), // Kirim fineAmount ke backend
           issuerName: "Admin HRD",
         }),
       });
@@ -373,6 +377,23 @@ export default function RekapAbsensiView() {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+
+              {/* Tambahan Input Nominal Denda */}
+              <div className="space-y-2">
+                <Label className="text-gray-300">Nominal Denda (Rp)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  className="bg-gray-800 border-gray-700 text-white focus:border-amber-500"
+                  value={warningForm.fineAmount}
+                  onChange={(e) =>
+                    setWarningForm({
+                      ...warningForm,
+                      fineAmount: Number(e.target.value),
+                    })
+                  }
+                />
               </div>
 
               <div className="space-y-2">

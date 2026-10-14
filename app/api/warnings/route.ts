@@ -62,3 +62,45 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+export async function GET(req: NextRequest) {
+  try {
+    const authHeader = req.headers.get("authorization");
+    let token = authHeader ? authHeader.split(" ")[1] : undefined;
+    if (!token) {
+      token = req.cookies.get("access_token")?.value;
+    }
+
+    const backendUrl = process.env.BACKEND_API_URL;
+    if (!backendUrl) {
+      return NextResponse.json(
+        { success: false, error: "Backend URL not configured" },
+        { status: 500 },
+      );
+    }
+
+    // Ambil query parameter dari request Next.js
+    const { searchParams } = new URL(req.url);
+    const page = searchParams.get("page") || "1";
+    const limit = searchParams.get("limit") || "10";
+    const category = searchParams.get("category") || "";
+
+    let queryUrl = `${backendUrl}/warnings?page=${page}&limit=${limit}`;
+    if (category) queryUrl += `&category=${category}`;
+
+    const res = await fetch(queryUrl, {
+      method: "GET",
+      headers: {
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+    });
+
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  } catch (error) {
+    return NextResponse.json(
+      { success: false, error: "Terjadi kesalahan proxy" },
+      { status: 500 },
+    );
+  }
+}
