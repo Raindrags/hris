@@ -6,7 +6,6 @@ import { StatCard } from "@/app/admin/dashboard/components/StatCard";
 import { LeaveHistoryTable } from "@/app/admin/dashboard/components/LeaveHistoryTable";
 
 export default function AdminDashboardView({
-  leaveHistory,
   user,
   totalEmployees,
   divisions,
@@ -20,7 +19,6 @@ export default function AdminDashboardView({
     router.push("/login");
   };
 
-  // Deteksi Super Admin (True jika role-nya mutlak "ADMIN")
   const isSuperAdmin = user?.role === "ADMIN";
 
   return (
@@ -46,7 +44,6 @@ export default function AdminDashboardView({
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
-          {/* Card Total Pegawai dinamis (Hanya jumlah pegawai div tersebut jika admin div) */}
           <StatCard
             title="Total Pegawai"
             value={totalEmployees}
@@ -73,12 +70,8 @@ export default function AdminDashboardView({
           />
         </div>
 
-        {/* Mengoper prop isSuperAdmin ke LeaveHistoryTable */}
-        <LeaveHistoryTable
-          leaveHistory={leaveHistory}
-          divisions={divisions}
-          isSuperAdmin={isSuperAdmin}
-        />
+        {/* 👇 leaveHistory Dihapus, komponen akan melakukan fetching mandiri */}
+        <LeaveHistoryTable divisions={divisions} isSuperAdmin={isSuperAdmin} />
       </main>
     </div>
   );

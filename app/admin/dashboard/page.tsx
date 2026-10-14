@@ -1,14 +1,30 @@
 import AdminDashboardView from "@/app/components/dashboard/admin-dashboard-view";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
+import { Loader2 } from "lucide-react";
 
-export default async function DashboardPage() {
+// ==========================================
+// 1. KOMPONEN UTAMA (Render Instan)
+// ==========================================
+export default function DashboardPage() {
+  return (
+    // Suspense akan memunculkan 'fallback' (Skeleton) selama DashboardDataFetcher masih loading
+    <Suspense fallback={<DashboardSkeleton />}>
+      <DashboardDataFetcher />
+    </Suspense>
+  );
+}
+
+// ==========================================
+// 2. SUB-KOMPONEN FETCHING DATA
+// ==========================================
+async function DashboardDataFetcher() {
   const cookieStore = await cookies();
   const token = cookieStore.get("access_token")?.value;
 
   // Jika tidak ada token, langsung arahkan ke login
   if (!token) {
-    console.log("DEBUG: Token tidak ditemukan di cookies. Redirect ke /login");
     redirect("/login");
   }
 
@@ -23,35 +39,20 @@ export default async function DashboardPage() {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
-      cache: "no-store",
+      cache: "no-store", // Jangan gunakan cache agar data selalu real-time
     });
 
-    // ==========================================
-    // AREA DEBUGGING KE BACKEND
-    // ==========================================
-    console.log("=== DEBUGGING KE BACKEND ===");
-    console.log("Mencoba fetch ke URL:", endpoint);
-    console.log("Status HTTP dari Backend:", res.status);
-
     if (!res.ok) {
-      const errBody = await res.text();
-      console.log("Pesan Error dari Backend:", errBody);
-
       if (res.status === 401 || res.status === 403) {
         throw new Error(
-          `Akses ditolak (Status: ${res.status}). Token mungkin expired atau tidak valid.`,
+          `Akses ditolak. Token mungkin expired atau tidak valid.`,
         );
       }
-
       if (res.status === 404) {
-        throw new Error(
-          `Endpoint tidak ditemukan (404) di Backend! Pastikan alamat URL di NestJS benar-benar "${endpoint}".`,
-        );
+        throw new Error(`Endpoint tidak ditemukan (404) di Backend!`);
       }
-
       throw new Error(`Backend mengembalikan status ${res.status}`);
     }
-    console.log("============================");
 
     // Parsing data JSON dari backend
     const data = await res.json();
@@ -60,14 +61,13 @@ export default async function DashboardPage() {
       throw new Error("Data yang diterima dari backend kosong");
     }
 
-    // Tampilkan komponen UI dengan data dari backend
+    // Kembalikan komponen View yang sudah diisi data statisnya
     return (
       <AdminDashboardView
         user={data.user}
         totalEmployees={data.totalEmployees}
         divisions={data.divisions}
         totalDivisions={data.totalDivisions}
-        leaveHistory={data.leaveHistory}
       />
     );
   } catch (error: unknown) {
@@ -90,11 +90,24 @@ export default async function DashboardPage() {
             <strong className="text-red-500 break-words">{errorMessage}</strong>
           </div>
           <p className="text-gray-400 text-xs">
-            Sistem gagal memuat halaman. Silakan periksa log server di dashboard
-            Vercel.
+            Sistem gagal memuat halaman dashboard utama.
           </p>
         </div>
       </main>
     );
   }
+}
+
+// ==========================================
+// 3. SKELETON / LOADING STATE
+// ==========================================
+function DashboardSkeleton() {
+  return (
+    <div className="min-h-[80vh] bg-gray-950 flex flex-col items-center justify-center text-gray-400">
+      <Loader2 className="h-12 w-12 animate-spin text-blue-500 mb-4" />
+      <p className="text-lg font-medium animate-pulse">
+        Memuat Data Dashboard...
+      </p>
+    </div>
+  );
 }
