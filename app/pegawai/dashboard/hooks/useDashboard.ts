@@ -32,6 +32,7 @@ export const useDashboard = () => {
   const [deductionSummary, setDeductionSummary] =
     useState<DeductionSummary | null>(null);
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const [subordinateRequests, setSubordinateRequests] = useState<any[]>([]);
 
   // Membersihkan status isMounted saat komponen tertutup
   useEffect(() => {
@@ -58,6 +59,7 @@ export const useDashboard = () => {
         setPotentialSubstitutes([]);
         setAttendanceSummary(null);
         setDeductionSummary(null);
+        setSubordinateRequests([]);
         return;
       }
 
@@ -67,6 +69,7 @@ export const useDashboard = () => {
       setPotentialSubstitutes(data.potentialSubstitutes || []);
       setAttendanceSummary(data.attendanceSummary || null);
       setDeductionSummary(data.deductionSummary || null);
+      setSubordinateRequests(data.subordinateRequests || []);
     } catch (error) {
       console.error("Refresh dashboard error:", error);
     } finally {
@@ -116,6 +119,7 @@ export const useDashboard = () => {
       attendanceSummary,
       currentUser,
       deductionSummary,
+      subordinateRequests,
     },
     actions: {
       refreshData,

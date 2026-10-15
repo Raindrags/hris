@@ -68,19 +68,11 @@ export interface DashboardDataResponse {
   potentialSubstitutes?: SubstituteUser[];
   attendanceSummary?: AttendanceSummary;
   deductionSummary?: DeductionSummary;
+  subordinateRequests?: any[];
 }
 
 export interface DashboardStatsProps {
   userData: UserData;
   attendanceSummary: AttendanceSummary | null;
   deductionSummary?: DeductionSummary | null;
-}
-export interface DeductionSummary {
-  transportCount: number;
-  konsumsiCount: number;
-  gajiCount: number;
-  shiftCount: number;
-  shiftRate: number;
-  shiftTotal: number;
-  lateFineTotal: number;
 }

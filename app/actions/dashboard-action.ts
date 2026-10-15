@@ -24,8 +24,7 @@ export async function getDashboardData() {
       console.error("[DEBUG] Failed to parse user_data cookie");
     }
   }
-
-  const url = `${backendUrl}/pegawai/dashboard`;
+  const url = `${backendUrl}/dashboard/user`;
 
   try {
     const res = await fetch(url, {
@@ -52,6 +51,7 @@ export async function getDashboardData() {
       potentialSubstitutes: data.potentialSubstitutes || [],
       attendanceSummary: data.attendanceSummary || null,
       deductionSummary: data.deductionSummary || null,
+      subordinateRequests: data.subordinateRequests || [],
     };
   } catch (error: any) {
     console.error("[DEBUG] Fetch error:", error.message);

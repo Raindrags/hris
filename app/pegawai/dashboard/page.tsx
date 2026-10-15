@@ -21,6 +21,7 @@ export default function PegawaiDashboardPage() {
     attendanceSummary,
     currentUser,
     deductionSummary,
+    subordinateRequests,
   } = states;
 
   if (loading) {
@@ -86,7 +87,10 @@ export default function PegawaiDashboardPage() {
           potentialSubstitutes={potentialSubstitutes}
           onRefresh={actions.refreshData}
         />
-        <RecentRequestsList requests={recentRequests} />
+        <RecentRequestsList
+          requests={recentRequests}
+          subordinateRequests={subordinateRequests}
+        />
       </div>
     </main>
   );
