@@ -46,6 +46,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Search,
+  UserCog, // Icon tambahan untuk admin bypass
 } from "lucide-react";
 import { DeductionModal } from "@/app/components/dashboard/deductions-modal";
 
@@ -101,7 +102,6 @@ export function LeaveHistoryTable({ divisions, isSuperAdmin = true }: any) {
 
   // Efek berjalan saat komponen dimuat atau state berubah
   useEffect(() => {
-    // Memberikan sedikit jeda pada pencarian (debounce sederhana) agar tidak spamming request
     const delayDebounceFn = setTimeout(() => {
       fetchHistory();
     }, 300);
@@ -111,12 +111,12 @@ export function LeaveHistoryTable({ divisions, isSuperAdmin = true }: any) {
   // Handlers
   const handleDivisionChange = (v: string) => {
     setSelectedDivisionId(v);
-    setCurrentPage(1); // Reset ke halaman 1 saat filter berubah
+    setCurrentPage(1);
   };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
-    setCurrentPage(1); // Reset ke halaman 1 saat pencarian berubah
+    setCurrentPage(1);
   };
 
   const handleOpenDetail = (req: any) => {
@@ -149,7 +149,7 @@ export function LeaveHistoryTable({ divisions, isSuperAdmin = true }: any) {
 
       toast.success("Pengajuan berhasil dibatalkan");
       setIsDiscardModalOpen(false);
-      fetchHistory(); // Refresh data tabel
+      fetchHistory();
     } catch (error: any) {
       toast.error(error.message || "Terjadi kesalahan pada server");
     } finally {
@@ -238,13 +238,21 @@ export function LeaveHistoryTable({ divisions, isSuperAdmin = true }: any) {
                     <TableRow key={req.id} className="border-b border-gray-800">
                       <TableCell className="font-medium text-white">
                         {req.user?.name}
+                        {/* ✨ IDENTIFIKATOR INPUT ADMIN ✨ */}
+                        {req.createdBy && (
+                          <div className="flex items-center gap-1 mt-1 text-[10px] uppercase font-bold text-purple-400 bg-purple-900/30 px-1.5 py-0.5 rounded-sm w-fit border border-purple-800/50">
+                            <UserCog className="w-3 h-3" />
+                            Diinput Admin: {req.createdBy.name}
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell className="text-gray-400">
                         {req.user?.divisi?.name || "-"}
                       </TableCell>
                       <TableCell className="text-gray-300">
-                        {new Date(req.startDate).toLocaleDateString("id-ID")} -{" "}
-                        {new Date(req.endDate).toLocaleDateString("id-ID")}
+                        {new Date(req.startDate).toLocaleDateString("id-ID")}
+                        {req.startDate !== req.endDate &&
+                          ` - ${new Date(req.endDate).toLocaleDateString("id-ID")}`}
                       </TableCell>
                       <TableCell>
                         <Badge
@@ -324,7 +332,6 @@ export function LeaveHistoryTable({ divisions, isSuperAdmin = true }: any) {
             </Table>
           </div>
 
-          {/* KONTROL PAGINATION */}
           {totalData > 0 && (
             <div className="flex items-center justify-between px-6 py-4 border-t border-gray-800 gap-4 mt-auto">
               <div className="text-sm text-gray-400">
@@ -362,7 +369,6 @@ export function LeaveHistoryTable({ divisions, isSuperAdmin = true }: any) {
         </CardContent>
       </Card>
 
-      {/* Sisa Modals (Detail, Deduction, Discard) Anda dibiarkan persis sama seperti aslinya... */}
       <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
         <DialogContent className="bg-gray-900 border-gray-800 text-gray-200 sm:max-w-md">
           <DialogHeader>
@@ -371,6 +377,21 @@ export function LeaveHistoryTable({ divisions, isSuperAdmin = true }: any) {
 
           {selectedRequest && (
             <div className="space-y-4 mt-2">
+              {/* ✨ INFO ADMIN DI DALAM MODAL DETAIL ✨ */}
+              {selectedRequest.createdBy && (
+                <div className="bg-purple-900/20 border border-purple-800/50 text-purple-300 p-2.5 rounded-md flex flex-col gap-1 text-sm mb-4">
+                  <div className="flex items-center gap-1.5 font-semibold text-purple-200">
+                    <UserCog className="w-4 h-4" />
+                    Status Bypass Admin
+                  </div>
+                  <p className="text-xs text-purple-300/80">
+                    Pengajuan ini diinput secara paksa oleh Admin sistem (
+                    <strong>{selectedRequest.createdBy.name}</strong>), bukan
+                    diajukan secara mandiri oleh pegawai bersangkutan.
+                  </p>
+                </div>
+              )}
+
               <div className="grid grid-cols-3 gap-2 text-sm border-b border-gray-800 pb-3">
                 <span className="text-gray-400">Nama</span>
                 <span className="col-span-2 font-medium text-white">
@@ -391,10 +412,8 @@ export function LeaveHistoryTable({ divisions, isSuperAdmin = true }: any) {
                   {new Date(selectedRequest.startDate).toLocaleDateString(
                     "id-ID",
                   )}{" "}
-                  s/d{" "}
-                  {new Date(selectedRequest.endDate).toLocaleDateString(
-                    "id-ID",
-                  )}
+                  {selectedRequest.startDate !== selectedRequest.endDate &&
+                    ` s/d ${new Date(selectedRequest.endDate).toLocaleDateString("id-ID")}`}
                 </span>
                 {selectedRequest.time && (
                   <>
