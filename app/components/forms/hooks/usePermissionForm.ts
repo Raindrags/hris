@@ -9,8 +9,8 @@ import {
 interface UsePermissionFormProps {
   user: PermissionUserData & {
     workShift?: any;
-    isGuru?: boolean;
-    sisaIzinKeluar?: number;
+    isGuru?: boolean | null; // ✨ FIX: Izinkan null agar sesuai dengan PermissionUserData
+    sisaIzinKeluar?: number | null; // ✨ FIX: Izinkan null
   };
   potentialSubstitutes: SubstituteUser[];
   onSuccess: () => void;
@@ -65,7 +65,7 @@ export const usePermissionForm = ({
   const [isLoadingSickHistory, setIsLoadingSickHistory] =
     useState<boolean>(false);
 
-  // ✨ BARU: Menyimpan H-1 terakhir yang valid untuk batas kalender
+  // Menyimpan H-1 terakhir yang valid untuk batas kalender
   const [h1WorkDay, setH1WorkDay] = useState<Date | null>(null);
 
   const [returnTime, setReturnTime] = useState<string>("");
@@ -249,7 +249,6 @@ export const usePermissionForm = ({
               }
 
               setEndDate(lastWorkDay);
-              // ✨ BARU: Menyimpan H-1 untuk dilempar ke UI Calendar
               setH1WorkDay(lastWorkDay);
             } else {
               setHasSickHistory(false);
