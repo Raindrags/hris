@@ -108,20 +108,23 @@ export default function RekapAbsensiView() {
   // State sementara di dalam modal sebelum dikonfirmasi
   const [tempSelectedEmployees, setTempSelectedEmployees] = useState<any[]>([]);
 
-  // Handle perubahan Shift
-  const handleShiftChange = (shiftId: string) => {
-    const selectedShift = MOCK_SHIFTS.find((s) => s.id === shiftId);
+  // ✨ Handle perubahan Shift (Fix TypeScript Build Error)
+  const handleShiftChange = (shiftId: string | null) => {
+    // Memberikan fallback jika shiftId bernilai null
+    const safeShiftId = shiftId ?? "";
+
+    const selectedShift = MOCK_SHIFTS.find((s) => s.id === safeShiftId);
     if (selectedShift) {
       setManualForm({
         ...manualForm,
-        shiftId: shiftId,
+        shiftId: safeShiftId,
         timeIn: selectedShift.startTime,
         timeOut: selectedShift.endTime,
       });
     } else {
       setManualForm({
         ...manualForm,
-        shiftId: shiftId,
+        shiftId: safeShiftId,
         timeIn: "",
         timeOut: "",
       });
@@ -303,7 +306,6 @@ export default function RekapAbsensiView() {
 
     setIsSubmittingManual(true);
     try {
-      // ✨ MENGUBAH "" MENJADI undefined AGAR SESUAI DENGAN BACKEND DTO
       const payload = {
         date: manualForm.date,
         timeIn: manualForm.timeIn || undefined,
@@ -312,7 +314,6 @@ export default function RekapAbsensiView() {
         employeeIds: selectedEmployees.map((emp) => emp.id),
       };
 
-      // ✨ MENGGUNAKAN API_BASE_URL UNTUK MENGARAH KE BACKEND NESTJS
       const res = await fetch(`${API_BASE_URL}/attendance/manual-batch`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
