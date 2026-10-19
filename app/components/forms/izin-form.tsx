@@ -47,7 +47,7 @@ interface PermissionFormProps {
   userId?: string;
   isAdmin?: boolean;
   allowBackdate?: boolean;
-  sisaIzinKeluar?: number; // Telah ditambahkan
+  sisaIzinKeluar?: number;
 }
 
 export default function PermissionForm({
@@ -60,10 +60,7 @@ export default function PermissionForm({
   sisaIzinKeluar,
 }: PermissionFormProps) {
   const { states, actions } = usePermissionForm({
-    user: {
-      ...user,
-      isGuru: user.isGuru ?? undefined,
-    },
+    user,
     potentialSubstitutes,
     onSuccess,
     userId,
@@ -102,6 +99,7 @@ export default function PermissionForm({
     sisaKuota,
     requestedHours,
     isExceedingQuota,
+    h1WorkDay,
   } = states;
 
   const {
@@ -301,6 +299,8 @@ export default function PermissionForm({
                       onSelect={setStartDate}
                       initialFocus
                       disabled={(date) => {
+                        if (category === "Sakit" && isSakitHariBerikutnya)
+                          return true;
                         if (category === "NoFP" || allowBackdate) return false;
                         return date < todayDate;
                       }}
@@ -357,8 +357,17 @@ export default function PermissionForm({
                           onSelect={setEndDate}
                           initialFocus
                           disabled={(date) => {
+                            // ✨ HANYA KUNCI TANGGAL SEBELUM H-1 (HARI INI & KEDEPAN BEBAS)
+                            if (category === "Sakit" && isSakitHariBerikutnya) {
+                              if (h1WorkDay) {
+                                return date < h1WorkDay;
+                              }
+                              return false;
+                            }
+
                             if (category === "NoFP" || allowBackdate)
                               return false;
+
                             return date < todayDate;
                           }}
                           modifiers={{ holiday: isHolidayOrSunday }}

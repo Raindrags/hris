@@ -65,6 +65,9 @@ export const usePermissionForm = ({
   const [isLoadingSickHistory, setIsLoadingSickHistory] =
     useState<boolean>(false);
 
+  // ✨ BARU: Menyimpan H-1 terakhir yang valid untuk batas kalender
+  const [h1WorkDay, setH1WorkDay] = useState<Date | null>(null);
+
   const [returnTime, setReturnTime] = useState<string>("");
   const [delegatedTo, setDelegatedTo] = useState<string>("");
   const [taskDetail, setTaskDetail] = useState<string>("");
@@ -185,7 +188,7 @@ export const usePermissionForm = ({
     };
 
     if (userId || user?.id) fetchSpecialWorkDays();
-  }, [userId, user]);
+  }, [userId, user?.id]);
 
   useEffect(() => {
     if (
@@ -234,10 +237,20 @@ export const usePermissionForm = ({
               setHasSickHistory(true);
               const backendDate = new Date(data.startDate);
               setStartDate(backendDate);
-              const yesterday = new Date();
-              yesterday.setDate(yesterday.getDate() - 1);
-              yesterday.setHours(0, 0, 0, 0);
-              setEndDate(yesterday);
+
+              let lastWorkDay = new Date();
+              lastWorkDay.setDate(lastWorkDay.getDate() - 1);
+              lastWorkDay.setHours(0, 0, 0, 0);
+
+              let loopCount = 0;
+              while (isHolidayOrSunday(lastWorkDay) && loopCount < 7) {
+                lastWorkDay.setDate(lastWorkDay.getDate() - 1);
+                loopCount++;
+              }
+
+              setEndDate(lastWorkDay);
+              // ✨ BARU: Menyimpan H-1 untuk dilempar ke UI Calendar
+              setH1WorkDay(lastWorkDay);
             } else {
               setHasSickHistory(false);
             }
@@ -254,6 +267,7 @@ export const usePermissionForm = ({
     } else {
       setHasSickHistory(null);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [category, isSakitHariBerikutnya, userId, user?.id]);
 
   // Sinkronisasi otomatis Tanggal Selesai untuk No FP
@@ -336,7 +350,6 @@ export const usePermissionForm = ({
     isHolidayOrSunday,
   ]);
 
-  // --- LOGIKA PERHITUNGAN KUOTA IZIN KELUAR ---
   const isGuru = user?.isGuru === true;
   const sisaKuota = sisaIzinKeluar ?? user?.sisaIzinKeluar ?? 6;
 
@@ -354,7 +367,6 @@ export const usePermissionForm = ({
     isGuru &&
     category === "IzinKeluar" &&
     (sisaKuota <= 0 || requestedHours > sisaKuota);
-  // --------------------------------------------
 
   const processSubmit = async (payload: PermissionSubmitPayload) => {
     setLoading(true);
@@ -380,7 +392,6 @@ export const usePermissionForm = ({
       if (payload.returnTime)
         formDataObj.append("returnTime", payload.returnTime);
 
-      // Kirim attachment jika ada
       if (payload.file) formDataObj.append("file", payload.file);
       if (payload.attachmentLink)
         formDataObj.append("attachmentLink", payload.attachmentLink);
@@ -551,6 +562,7 @@ export const usePermissionForm = ({
     setSuratTerlampir(false);
     setSuratTidakTerlampir(false);
     setHasSickHistory(null);
+    setH1WorkDay(null); // Reset H-1
   };
 
   const isAutoEndDate = category === "IzinKhusus";
@@ -591,6 +603,7 @@ export const usePermissionForm = ({
       sisaKuota,
       requestedHours,
       isExceedingQuota,
+      h1WorkDay, // Mengekspor H-1 untuk UI
     },
     actions: {
       setStartDate,
