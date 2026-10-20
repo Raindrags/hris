@@ -135,7 +135,8 @@ export default function PermissionForm({
 
   const onCategorySelect = (val: string | null) => {
     handleCategoryChange(val);
-    if (val === "IzinKeluar" && !allowBackdate) {
+    // ✨ FIX: Bypass reset tanggal untuk Admin
+    if (val === "IzinKeluar" && !allowBackdate && !isAdmin) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       setStartDate(today);
@@ -271,7 +272,8 @@ export default function PermissionForm({
               <Popover>
                 <PopoverTrigger
                   disabled={
-                    (category === "IzinKeluar" && !allowBackdate) ||
+                    // ✨ FIX: Jangan kunci Izin Keluar bagi Admin
+                    (category === "IzinKeluar" && !allowBackdate && !isAdmin) ||
                     (category === "Sakit" && isSakitHariBerikutnya)
                   }
                 >
@@ -280,7 +282,7 @@ export default function PermissionForm({
                       buttonVariants({ variant: "outline" }),
                       "justify-start text-left font-normal bg-slate-900 border-slate-700 text-slate-100 hover:bg-slate-800 w-full",
                       !startDate && "text-slate-400",
-                      ((category === "IzinKeluar" && !allowBackdate) ||
+                      ((category === "IzinKeluar" && !allowBackdate && !isAdmin) ||
                         (category === "Sakit" && isSakitHariBerikutnya)) &&
                         "opacity-60 cursor-not-allowed",
                     )}
@@ -301,7 +303,8 @@ export default function PermissionForm({
                       disabled={(date) => {
                         if (category === "Sakit" && isSakitHariBerikutnya)
                           return true;
-                        if (category === "NoFP" || allowBackdate) return false;
+                        // ✨ FIX: Bypass kunci backdate jika NoFP ATAU (allowBackdate / Admin)
+                        if (category === "NoFP" || allowBackdate || isAdmin) return false;
                         return date < todayDate;
                       }}
                       modifiers={{ holiday: isHolidayOrSunday }}
@@ -327,7 +330,7 @@ export default function PermissionForm({
                     <PopoverTrigger
                       disabled={
                         isAutoEndDate ||
-                        (category === "IzinKeluar" && !allowBackdate)
+                        (category === "IzinKeluar" && !allowBackdate && !isAdmin)
                       }
                     >
                       <div
@@ -336,7 +339,7 @@ export default function PermissionForm({
                           "justify-start text-left font-normal bg-slate-900 border-slate-700 text-slate-100 hover:bg-slate-800 w-full",
                           !endDate && "text-slate-400",
                           (isAutoEndDate ||
-                            (category === "IzinKeluar" && !allowBackdate)) &&
+                            (category === "IzinKeluar" && !allowBackdate && !isAdmin)) &&
                             "opacity-60 cursor-not-allowed",
                         )}
                       >
@@ -348,7 +351,7 @@ export default function PermissionForm({
                     </PopoverTrigger>
                     {!(
                       isAutoEndDate ||
-                      (category === "IzinKeluar" && !allowBackdate)
+                      (category === "IzinKeluar" && !allowBackdate && !isAdmin)
                     ) && (
                       <PopoverContent className="w-auto p-0 bg-slate-900 border-slate-700">
                         <Calendar
@@ -357,7 +360,6 @@ export default function PermissionForm({
                           onSelect={setEndDate}
                           initialFocus
                           disabled={(date) => {
-                            // ✨ HANYA KUNCI TANGGAL SEBELUM H-1 (HARI INI & KEDEPAN BEBAS)
                             if (category === "Sakit" && isSakitHariBerikutnya) {
                               if (h1WorkDay) {
                                 return date < h1WorkDay;
@@ -365,7 +367,8 @@ export default function PermissionForm({
                               return false;
                             }
 
-                            if (category === "NoFP" || allowBackdate)
+                            // ✨ FIX: Bypass kunci backdate endDate jika NoFP ATAU (allowBackdate / Admin)
+                            if (category === "NoFP" || allowBackdate || isAdmin)
                               return false;
 
                             return date < todayDate;
