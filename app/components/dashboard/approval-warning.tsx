@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ApprovalRequestData } from "../forms/types";
 
@@ -98,6 +98,11 @@ export function ApprovalWarning({
         messages.push(
           "- Jika pegawai mengajukan izin kurang dari h-7, gaji pokok, tunjangan transport, dan tunjangan konsumsi tidak akan dibayarkan.",
         );
+      } else {
+        // ✨ PERBAIKAN 1: Default Warning Jika nama divisi tidak ada yang cocok di atas
+        messages.push(
+          "- Jika pegawai mengajukan izin, maka gaji pokok, tunjangan transport, dan tunjangan konsumsi tidak akan dibayarkan mengikuti peraturan standar perusahaan.",
+        );
       }
     }
 
@@ -105,9 +110,19 @@ export function ApprovalWarning({
   };
 
   const messages = getWarningMessages();
+  const hasMessages = messages.length > 0;
 
-  if (messages.length === 0) {
-    return null;
+  // ✨ PERBAIKAN 2: Auto-Proceed (Mencegah Layar Blank / Tersangkut)
+  // Jika tidak ada warning sama sekali, UI akan langsung melompat ke Deduction Modal.
+  useEffect(() => {
+    if (!hasMessages) {
+      onProceed();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasMessages]);
+
+  if (!hasMessages) {
+    return null; // Sementara di-render null selagi useEffect menembakkan onProceed ke komponen induk
   }
 
   return (
