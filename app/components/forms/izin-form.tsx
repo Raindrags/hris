@@ -135,7 +135,6 @@ export default function PermissionForm({
 
   const onCategorySelect = (val: string | null) => {
     handleCategoryChange(val);
-    // ✨ FIX: Bypass reset tanggal untuk Admin
     if (val === "IzinKeluar" && !allowBackdate && !isAdmin) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -272,9 +271,9 @@ export default function PermissionForm({
               <Popover>
                 <PopoverTrigger
                   disabled={
-                    // ✨ FIX: Jangan kunci Izin Keluar bagi Admin
                     (category === "IzinKeluar" && !allowBackdate && !isAdmin) ||
-                    (category === "Sakit" && isSakitHariBerikutnya)
+                    // ✨ FIX: Jangan kunci jika Admin
+                    (category === "Sakit" && isSakitHariBerikutnya && !isAdmin) 
                   }
                 >
                   <div
@@ -283,7 +282,8 @@ export default function PermissionForm({
                       "justify-start text-left font-normal bg-slate-900 border-slate-700 text-slate-100 hover:bg-slate-800 w-full",
                       !startDate && "text-slate-400",
                       ((category === "IzinKeluar" && !allowBackdate && !isAdmin) ||
-                        (category === "Sakit" && isSakitHariBerikutnya)) &&
+                        // ✨ FIX: Jangan buat opacity pudar jika Admin
+                        (category === "Sakit" && isSakitHariBerikutnya && !isAdmin)) &&
                         "opacity-60 cursor-not-allowed",
                     )}
                   >
@@ -293,7 +293,8 @@ export default function PermissionForm({
                       : "Pilih tanggal"}
                   </div>
                 </PopoverTrigger>
-                {!(category === "Sakit" && isSakitHariBerikutnya) && (
+                {/* ✨ FIX: Tampilkan PopoverContent jika Admin */}
+                {!(category === "Sakit" && isSakitHariBerikutnya && !isAdmin) && (
                   <PopoverContent className="w-auto p-0 bg-slate-900 border-slate-700">
                     <Calendar
                       mode="single"
@@ -301,9 +302,9 @@ export default function PermissionForm({
                       onSelect={setStartDate}
                       initialFocus
                       disabled={(date) => {
-                        if (category === "Sakit" && isSakitHariBerikutnya)
+                        // ✨ FIX: Lepas kunci klik kalender jika Admin
+                        if (category === "Sakit" && isSakitHariBerikutnya && !isAdmin)
                           return true;
-                        // ✨ FIX: Bypass kunci backdate jika NoFP ATAU (allowBackdate / Admin)
                         if (category === "NoFP" || allowBackdate || isAdmin) return false;
                         return date < todayDate;
                       }}
@@ -360,14 +361,14 @@ export default function PermissionForm({
                           onSelect={setEndDate}
                           initialFocus
                           disabled={(date) => {
-                            if (category === "Sakit" && isSakitHariBerikutnya) {
+                            // ✨ FIX: Lepas kunci batas H-1 jika Admin
+                            if (category === "Sakit" && isSakitHariBerikutnya && !isAdmin) {
                               if (h1WorkDay) {
                                 return date < h1WorkDay;
                               }
                               return false;
                             }
 
-                            // ✨ FIX: Bypass kunci backdate endDate jika NoFP ATAU (allowBackdate / Admin)
                             if (category === "NoFP" || allowBackdate || isAdmin)
                               return false;
 
@@ -489,7 +490,7 @@ export default function PermissionForm({
               </span>
               <Input
                 type="url"
-                placeholder="Masukkan Link Dokumen (Google Drive, dll)"
+                placeholder="Masukkan Link Foto (Google Drive, dll)"
                 value={attachmentLink}
                 onChange={(e) => setAttachmentLink(e.target.value)}
                 className="bg-slate-900 border-slate-700 text-slate-100"
