@@ -610,7 +610,8 @@ export default function AdminLaporanView({
                           currentGroup.isCutiIzin &&
                           currentGroup.rawStatus === rawStatus &&
                           currentGroup.alasan === item.alasan &&
-                          selisihHari === 1 // ✨ PERBAIKAN: Hanya gabungkan jika harinya berurutan persis (Selisih 1 hari)
+                          selisihHari === 1 &&
+                          !rawStatus.toUpperCase().includes("CUTI")
                         ) {
                           currentGroup.endTanggal = item.tanggal;
                         } else {
