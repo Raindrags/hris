@@ -37,9 +37,13 @@ export function DeductionModal({
   >(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  // State Rekomendasi Atasan & Sinkronisasi Ceklis Potong Gaji
+  // State Rekomendasi Atasan & Sinkronisasi Ceklis Potongan
   const [rekomendasi, setRekomendasi] = useState<string | null>(null);
   const [isPotongGaji, setIsPotongGaji] = useState<boolean>(false);
+
+  // ✨ STATE BARU: State khusus untuk melacak checkbox konsumsi & transport
+  const [isPotongKonsumsi, setIsPotongKonsumsi] = useState<boolean>(false);
+  const [isPotongTransport, setIsPotongTransport] = useState<boolean>(false);
 
   // STATE BARU: Potong Cuti
   const [potongCuti, setPotongCuti] = useState<boolean>(false);
@@ -78,6 +82,8 @@ export function DeductionModal({
         );
       }
       setIsPotongGaji(request.potongGaji || false);
+      setIsPotongKonsumsi(!!request.potongKonsumsi);
+      setIsPotongTransport(!!request.potongTransport);
       setRekomendasi(request.rekomendasiAtasan || null);
       setPotongCuti(false); // Reset potong cuti saat modal dibuka
     }
@@ -117,8 +123,11 @@ export function DeductionModal({
 
     const noDeduction = deductionType === "TIDAK_DIPOTONG";
 
-    // INJEKSI PAYLOAD POTONG CUTI
+    // INJEKSI PAYLOAD POTONG CUTI & CHECKBOX CONTROLLED STATE
     payload.potongCuti = potongCuti;
+    payload.potongGaji = isPotongGaji;
+    payload.potongKonsumsi = isPotongKonsumsi;
+    payload.potongTransport = isPotongTransport;
 
     // Jika potong cuti aktif, pastikan variabel potongan lainnya dimatikan
     if (potongCuti) {
@@ -129,6 +138,12 @@ export function DeductionModal({
       payload.lateFine = "0";
       payload.invalCount = "0";
       payload.shiftCount = "0";
+      payload.potongKonsumsiCount = "0";
+      payload.potongTransportCount = "0";
+    } else {
+      // Pastikan nilai count tidak terkirim jika checkbox tidak dicentang
+      if (!isPotongKonsumsi) payload.potongKonsumsiCount = "0";
+      if (!isPotongTransport) payload.potongTransportCount = "0";
     }
 
     const endpointUrl =
@@ -294,7 +309,7 @@ export function DeductionModal({
 
           {deductionType === "DIPOTONG" && (
             <div className="pl-4 space-y-6 border-l-2 border-gray-800 py-2">
-              {/* OPSI POTONG CUTI (Hanya tampil jika syarat terpenuhi) */}
+              {/* OPSI POTONG CUTI */}
               {canPotongCuti && (
                 <div className="bg-emerald-950/30 border border-emerald-900/50 p-3 rounded-lg space-y-1 mb-4">
                   <div className="flex items-center space-x-2">
@@ -332,15 +347,14 @@ export function DeductionModal({
                       Rincian Pemotongan:
                     </Label>
 
-                    <div className="space-y-3 pt-1">
+                    <div className="space-y-4 pt-1">
                       <Label className="text-xs font-semibold uppercase text-gray-500">
                         Jenis Potongan
                       </Label>
-                      <div className="flex flex-col gap-2.5">
+                      <div className="flex flex-col gap-3.5">
                         <div className="flex items-center space-x-2">
                           <Checkbox
                             id="p_gaji"
-                            name="potongGaji"
                             checked={isPotongGaji}
                             onCheckedChange={(c) =>
                               setIsPotongGaji(c as boolean)
@@ -353,32 +367,75 @@ export function DeductionModal({
                             Potong Gaji
                           </label>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id="p_konsum"
-                            name="potongKonsumsi"
-                            defaultChecked={request?.potongKonsumsi}
-                          />
-                          <label
-                            htmlFor="p_konsum"
-                            className="text-sm text-gray-300 cursor-pointer"
-                          >
-                            Tunjangan Konsumsi
-                          </label>
+
+                        {/* ✨ MODIFIKASI: Tunjangan Konsumsi dengan Input Jumlah */}
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="p_konsum"
+                              checked={isPotongKonsumsi}
+                              onCheckedChange={(c) =>
+                                setIsPotongKonsumsi(c as boolean)
+                              }
+                            />
+                            <label
+                              htmlFor="p_konsum"
+                              className="text-sm text-gray-300 cursor-pointer"
+                            >
+                              Tunjangan Konsumsi
+                            </label>
+                          </div>
+                          {isPotongKonsumsi && (
+                            <div className="flex items-center gap-2 ml-6 animate-in fade-in">
+                              <Label className="text-xs text-gray-400">
+                                Jumlah (x):
+                              </Label>
+                              <Input
+                                type="number"
+                                name="potongKonsumsiCount"
+                                defaultValue={request?.potongKonsumsiCount || 1}
+                                min={1}
+                                className="w-16 h-7 bg-gray-950 border-gray-700 text-gray-200 text-xs px-2"
+                              />
+                            </div>
+                          )}
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id="p_trans"
-                            name="potongTransport"
-                            defaultChecked={request?.potongTransport}
-                          />
-                          <label
-                            htmlFor="p_trans"
-                            className="text-sm text-gray-300 cursor-pointer"
-                          >
-                            Tunjangan Transportasi
-                          </label>
+
+                        {/* ✨ MODIFIKASI: Tunjangan Transportasi dengan Input Jumlah */}
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="p_trans"
+                              checked={isPotongTransport}
+                              onCheckedChange={(c) =>
+                                setIsPotongTransport(c as boolean)
+                              }
+                            />
+                            <label
+                              htmlFor="p_trans"
+                              className="text-sm text-gray-300 cursor-pointer"
+                            >
+                              Tunjangan Transportasi
+                            </label>
+                          </div>
+                          {isPotongTransport && (
+                            <div className="flex items-center gap-2 ml-6 animate-in fade-in">
+                              <Label className="text-xs text-gray-400">
+                                Jumlah (x):
+                              </Label>
+                              <Input
+                                type="number"
+                                name="potongTransportCount"
+                                defaultValue={
+                                  request?.potongTransportCount || 1
+                                }
+                                min={1}
+                                className="w-16 h-7 bg-gray-950 border-gray-700 text-gray-200 text-xs px-2"
+                              />
+                            </div>
+                          )}
                         </div>
+
                         <div className="flex items-center space-x-2">
                           <Checkbox
                             id="p_lainnya"

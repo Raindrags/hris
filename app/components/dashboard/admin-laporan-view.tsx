@@ -598,11 +598,19 @@ export default function AdminLaporanView({
                           endTanggal: item.tanggal,
                         };
                       } else {
+                        // ✨ PERBAIKAN: Hitung selisih hari antara tanggal terakhir di grup dengan tanggal item saat ini
+                        const prevDate = new Date(currentGroup.endTanggal);
+                        const currDate = new Date(item.tanggal);
+                        const selisihHari =
+                          (currDate.getTime() - prevDate.getTime()) /
+                          (1000 * 3600 * 24);
+
                         if (
                           isCutiIzin &&
                           currentGroup.isCutiIzin &&
                           currentGroup.rawStatus === rawStatus &&
-                          currentGroup.alasan === item.alasan
+                          currentGroup.alasan === item.alasan &&
+                          selisihHari === 1 // ✨ PERBAIKAN: Hanya gabungkan jika harinya berurutan persis (Selisih 1 hari)
                         ) {
                           currentGroup.endTanggal = item.tanggal;
                         } else {
