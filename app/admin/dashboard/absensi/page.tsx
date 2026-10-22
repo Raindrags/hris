@@ -82,6 +82,7 @@ export default function RekapAbsensiView() {
     category: "KEHADIRAN",
     description: "",
     fineAmount: 50000,
+    issuedDate: new Date().toISOString().split("T")[0],
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -231,6 +232,7 @@ export default function RekapAbsensiView() {
       category: "KEHADIRAN",
       description: autoDesc,
       fineAmount: 50000,
+      issuedDate: new Date().toISOString().split("T")[0],
     });
     setWarningModal({ isOpen: true, emp });
   };
@@ -250,6 +252,7 @@ export default function RekapAbsensiView() {
           category: warningForm.category,
           description: warningForm.description,
           fineAmount: Number(warningForm.fineAmount),
+          issuedDate: warningForm.issuedDate,
           issuerName: "Admin HRD",
         }),
       });
@@ -951,7 +954,7 @@ export default function RekapAbsensiView() {
                       <SelectItem value="TEGURAN_1">ST 1</SelectItem>
                       <SelectItem value="TEGURAN_2">ST 2</SelectItem>
                       <SelectItem value="TEGURAN_3">ST 3</SelectItem>
-                      <SelectItem value="SP_1">SP 1</SelectItem>
+                      <SelectItem value="SP_1"> </SelectItem>
                       <SelectItem value="SP_2">SP 2</SelectItem>
                       <SelectItem value="SP_3">SP 3</SelectItem>
                     </SelectContent>
@@ -990,20 +993,36 @@ export default function RekapAbsensiView() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-gray-300">Nominal Denda (Rp)</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  className="bg-gray-800 border-gray-700 text-white focus:border-amber-500"
-                  value={warningForm.fineAmount}
-                  onChange={(e) =>
-                    setWarningForm({
-                      ...warningForm,
-                      fineAmount: Number(e.target.value),
-                    })
-                  }
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-gray-300">Tanggal Surat</Label>
+                  <Input
+                    type="date"
+                    className="bg-gray-800 border-gray-700 text-white focus:border-amber-500"
+                    value={warningForm.issuedDate}
+                    onChange={(e) =>
+                      setWarningForm({
+                        ...warningForm,
+                        issuedDate: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-gray-300">Nominal Denda (Rp)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    className="bg-gray-800 border-gray-700 text-white focus:border-amber-500"
+                    value={warningForm.fineAmount}
+                    onChange={(e) =>
+                      setWarningForm({
+                        ...warningForm,
+                        fineAmount: Number(e.target.value),
+                      })
+                    }
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">

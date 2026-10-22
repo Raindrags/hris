@@ -300,7 +300,7 @@ export default function AdminLaporanView({
           {denda.detailTeguran &&
             denda.detailTeguran.length > 0 &&
             denda.detailTeguran.map((teguran: string, idx: number) => (
-              <li key={`st-${idx}`}>• {teguran}: Rp 50.000</li>
+              <li key={`st-${idx}`}>• {teguran}</li>
             ))}
         </ul>
         {denda.totalDendaRupiah > 0 && (

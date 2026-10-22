@@ -41,10 +41,15 @@ export default function ManageWarningsView() {
     data: any | null;
   }>({ isOpen: false, data: null });
 
-  const [editForm, setEditForm] = useState({
+  // ✨ PERBAIKAN 1: Tambahkan tipe agar fineAmount bisa menerima string kosong ""
+  const [editForm, setEditForm] = useState<{
+    fineAmount: number | string;
+    description: string;
+  }>({
     fineAmount: 0,
     description: "",
   });
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Ambil Data Peringatan dengan Pagination
@@ -96,6 +101,7 @@ export default function ManageWarningsView() {
       const res = await fetch(`/api/warnings/${editModal.data.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
+        // Nominal string akan dikonversi ke Number di sini dengan aman saat disubmit
         body: JSON.stringify({
           fineAmount: Number(editForm.fineAmount),
           description: editForm.description,
@@ -442,10 +448,11 @@ export default function ManageWarningsView() {
                   min="0"
                   className="bg-gray-800 border-gray-700 text-white focus:border-blue-500 text-lg font-bold"
                   value={editForm.fineAmount}
+                  // ✨ PERBAIKAN 2: Izinkan string agar angka tidak memantul ke 0 saat kosong
                   onChange={(e) =>
                     setEditForm({
                       ...editForm,
-                      fineAmount: Number(e.target.value),
+                      fineAmount: e.target.value === "" ? "" : e.target.value,
                     })
                   }
                 />
