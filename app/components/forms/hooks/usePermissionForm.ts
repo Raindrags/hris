@@ -368,6 +368,7 @@ export const usePermissionForm = ({
     (sisaKuota <= 0 || requestedHours > sisaKuota);
 
   const processSubmit = async (payload: PermissionSubmitPayload) => {
+    if (loading) return;
     setLoading(true);
     try {
       const token = localStorage.getItem("accessToken");
@@ -434,6 +435,7 @@ export const usePermissionForm = ({
   };
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+    if (loading) return;
     e.preventDefault();
 
     if (!category) return toast.error("Mohon pilih jenis izin.");

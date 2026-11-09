@@ -194,6 +194,7 @@ export const useLeaveForm = (
     calculatedDays > sisaCutiNum ? calculatedDays - sisaCutiNum : 0;
 
   const processSubmit = async (payload: LeaveSubmitPayload) => {
+    if (loading) return;
     setLoading(true);
     try {
       const token = localStorage.getItem("accessToken");
@@ -229,6 +230,7 @@ export const useLeaveForm = (
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (loading) return;
     if (!startDate || !endDate)
       return toast.error("Silakan pilih tanggal mulai dan selesai.");
     if (calculatedDays < 0)

@@ -253,9 +253,21 @@ export function LeaveForm({
             </AlertDialogCancel>
             <AlertDialogAction
               className="bg-amber-600 hover:bg-amber-500 text-white rounded-xl border-none shadow-lg shadow-amber-900/20"
-              onClick={() => pendingPayload && processSubmit(pendingPayload)}
+              disabled={loading}
+              onClick={(e) => {
+                e.preventDefault();
+                if (pendingPayload && !loading) {
+                  processSubmit(pendingPayload);
+                }
+              }}
             >
-              Ya, Lanjutkan
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Memproses...
+                </>
+              ) : (
+                "Ya, Lanjutkan"
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

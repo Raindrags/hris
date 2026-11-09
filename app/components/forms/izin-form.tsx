@@ -273,7 +273,7 @@ export default function PermissionForm({
                   disabled={
                     (category === "IzinKeluar" && !allowBackdate && !isAdmin) ||
                     // ✨ FIX: Jangan kunci jika Admin
-                    (category === "Sakit" && isSakitHariBerikutnya && !isAdmin) 
+                    (category === "Sakit" && isSakitHariBerikutnya && !isAdmin)
                   }
                 >
                   <div
@@ -281,9 +281,13 @@ export default function PermissionForm({
                       buttonVariants({ variant: "outline" }),
                       "justify-start text-left font-normal bg-slate-900 border-slate-700 text-slate-100 hover:bg-slate-800 w-full",
                       !startDate && "text-slate-400",
-                      ((category === "IzinKeluar" && !allowBackdate && !isAdmin) ||
+                      ((category === "IzinKeluar" &&
+                        !allowBackdate &&
+                        !isAdmin) ||
                         // ✨ FIX: Jangan buat opacity pudar jika Admin
-                        (category === "Sakit" && isSakitHariBerikutnya && !isAdmin)) &&
+                        (category === "Sakit" &&
+                          isSakitHariBerikutnya &&
+                          !isAdmin)) &&
                         "opacity-60 cursor-not-allowed",
                     )}
                   >
@@ -294,7 +298,11 @@ export default function PermissionForm({
                   </div>
                 </PopoverTrigger>
                 {/* ✨ FIX: Tampilkan PopoverContent jika Admin */}
-                {!(category === "Sakit" && isSakitHariBerikutnya && !isAdmin) && (
+                {!(
+                  category === "Sakit" &&
+                  isSakitHariBerikutnya &&
+                  !isAdmin
+                ) && (
                   <PopoverContent className="w-auto p-0 bg-slate-900 border-slate-700">
                     <Calendar
                       mode="single"
@@ -303,9 +311,14 @@ export default function PermissionForm({
                       initialFocus
                       disabled={(date) => {
                         // ✨ FIX: Lepas kunci klik kalender jika Admin
-                        if (category === "Sakit" && isSakitHariBerikutnya && !isAdmin)
+                        if (
+                          category === "Sakit" &&
+                          isSakitHariBerikutnya &&
+                          !isAdmin
+                        )
                           return true;
-                        if (category === "NoFP" || allowBackdate || isAdmin) return false;
+                        if (category === "NoFP" || allowBackdate || isAdmin)
+                          return false;
                         return date < todayDate;
                       }}
                       modifiers={{ holiday: isHolidayOrSunday }}
@@ -331,7 +344,9 @@ export default function PermissionForm({
                     <PopoverTrigger
                       disabled={
                         isAutoEndDate ||
-                        (category === "IzinKeluar" && !allowBackdate && !isAdmin)
+                        (category === "IzinKeluar" &&
+                          !allowBackdate &&
+                          !isAdmin)
                       }
                     >
                       <div
@@ -340,7 +355,9 @@ export default function PermissionForm({
                           "justify-start text-left font-normal bg-slate-900 border-slate-700 text-slate-100 hover:bg-slate-800 w-full",
                           !endDate && "text-slate-400",
                           (isAutoEndDate ||
-                            (category === "IzinKeluar" && !allowBackdate && !isAdmin)) &&
+                            (category === "IzinKeluar" &&
+                              !allowBackdate &&
+                              !isAdmin)) &&
                             "opacity-60 cursor-not-allowed",
                         )}
                       >
@@ -362,7 +379,11 @@ export default function PermissionForm({
                           initialFocus
                           disabled={(date) => {
                             // ✨ FIX: Lepas kunci batas H-1 jika Admin
-                            if (category === "Sakit" && isSakitHariBerikutnya && !isAdmin) {
+                            if (
+                              category === "Sakit" &&
+                              isSakitHariBerikutnya &&
+                              !isAdmin
+                            ) {
                               if (h1WorkDay) {
                                 return date < h1WorkDay;
                               }
@@ -836,8 +857,10 @@ export default function PermissionForm({
             </AlertDialogCancel>
             <AlertDialogAction
               className="bg-red-600 hover:bg-red-700 text-white"
-              onClick={() => {
-                if (pendingPayload) {
+              disabled={loading}
+              onClick={(e) => {
+                e.preventDefault();
+                if (pendingPayload && !loading) {
                   processSubmit(pendingPayload);
                 }
               }}
