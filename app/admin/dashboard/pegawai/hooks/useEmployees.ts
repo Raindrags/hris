@@ -1,10 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
-// Pastikan EmployeeFormData di "../types" memiliki properti sortOrder?: string | number
 import { Employee, Supervisor, Division, EmployeeFormData } from "../types";
 import { INITIAL_FORM_STATE, ITEMS_PER_PAGE } from "../constants";
 
-// Helper internal untuk memparsing response dinamis
 const extractArray = <T>(responseData: unknown): T[] => {
   if (!responseData) return [];
   if (Array.isArray(responseData)) return responseData as T[];
@@ -48,13 +46,22 @@ export const useEmployees = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
+  // ✨ FIX: State baru untuk Tab View (aktif / resign) dan Modal Resign
+  const [activeTab, setActiveTab] = useState<"active" | "resigned">("active");
+  const [isResignModalOpen, setIsResignModalOpen] = useState(false);
+  const [resignDate, setResignDate] = useState("");
+  const [selectedEmpForResign, setSelectedEmpForResign] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+
   useEffect(() => {
     fetchData();
   }, []);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm]);
+  }, [searchTerm, activeTab]);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -149,7 +156,6 @@ export const useEmployees = () => {
       supervisorId:
         formData.supervisorId === "none" ? null : formData.supervisorId,
       divisiId: formData.divisiId === "none" ? null : formData.divisiId,
-      // Pastikan string angka diparsing menjadi number
       sortOrder: formData.sortOrder ? Number(formData.sortOrder) : 999,
       jatahIzinKeluar: formData.jatahIzinKeluar
         ? Number(formData.jatahIzinKeluar)
@@ -184,29 +190,99 @@ export const useEmployees = () => {
     }
   };
 
+  // ✨ FIX: Fungsi untuk membuka modal resign
+  const openResignModal = (id: string, name: string) => {
+    setSelectedEmpForResign({ id, name });
+    setResignDate("");
+    setIsResignModalOpen(true);
+  };
+
+  // ✨ FIX: API Handler untuk Memproses Resign
+  const handleResign = async () => {
+    if (!selectedEmpForResign || !resignDate) {
+      toast.error("Mohon pilih tanggal resign");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const res = await fetch(`/api/users/${selectedEmpForResign.id}/resign`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resignDate }),
+      });
+      const data = await res.json();
+
+      if (res.ok && (data.success || data.isActive === false)) {
+        toast.success(
+          `Berhasil menandai ${selectedEmpForResign.name} sebagai Resign`,
+        );
+        setIsResignModalOpen(false);
+        fetchData();
+      } else {
+        toast.error(data.message || "Gagal memproses resign");
+      }
+    } catch (error) {
+      toast.error("Terjadi kesalahan sistem saat memproses resign");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // ✨ FIX: API Handler untuk Membatalkan Resign (Re-hire)
+  const handleCancelResign = async (id: string, name: string) => {
+    if (
+      !confirm(`Yakin ingin membatalkan status resign untuk ${name} (Re-hire)?`)
+    )
+      return;
+
+    setIsLoading(true);
+    try {
+      const res = await fetch(`/api/users/${id}/cancel-resign`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await res.json();
+
+      if (res.ok && (data.success || data.isActive === true)) {
+        toast.success(`Status resign ${name} berhasil dibatalkan`);
+        fetchData();
+      } else {
+        toast.error(data.message || "Gagal membatalkan resign");
+      }
+    } catch (error) {
+      toast.error("Terjadi kesalahan saat membatalkan resign");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const filteredEmployees = useMemo(() => {
     const searchLower = searchTerm.trim().toLowerCase();
-    if (!searchLower) return employees;
 
-    return employees.filter((emp) => {
-      // 1. Ambil data NIY
+    // ✨ FIX: Pisahkan data berdasarkan Tab (Active vs Resign)
+    const filteredByTab = employees.filter((emp) => {
+      const isEmpActive = emp.isActive !== false; // Default true jika undefined
+      if (activeTab === "active") return isEmpActive;
+      return !isEmpActive;
+    });
+
+    if (!searchLower) return filteredByTab;
+
+    return filteredByTab.filter((emp) => {
       const empNiy = (emp.niy || "").toLowerCase();
-
-      // 2. Ambil data Nama (mendukung properti name atau fullName)
       const empName = (emp.name || emp.fullName || "").toLowerCase();
-
       const divId = String(emp.divisiId || emp.divisi?.id);
       const division = divisions.find((d) => String(d.id) === divId);
       const divName = (division?.name || emp.divisi?.name || "").toLowerCase();
 
-      // Return true jika searchTerm cocok dengan salah satu dari ketiga field tersebut
       return (
         empNiy.includes(searchLower) ||
         empName.includes(searchLower) ||
         divName.includes(searchLower)
       );
     });
-  }, [employees, searchTerm, divisions]);
+  }, [employees, searchTerm, divisions, activeTab]);
 
   const totalPages = Math.ceil(filteredEmployees.length / ITEMS_PER_PAGE);
 
@@ -242,6 +318,10 @@ export const useEmployees = () => {
       paginatedEmployees,
       totalPages,
       hideJatahCuti,
+      activeTab,
+      isResignModalOpen,
+      resignDate,
+      selectedEmpForResign,
     },
     actions: {
       setIsModalOpen,
@@ -253,6 +333,12 @@ export const useEmployees = () => {
       handleDelete,
       handleSave,
       getSupervisorName,
+      setActiveTab,
+      setIsResignModalOpen,
+      setResignDate,
+      openResignModal,
+      handleResign,
+      handleCancelResign,
     },
   };
 };

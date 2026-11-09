@@ -31,6 +31,9 @@ export interface Employee {
   joinDate?: string | Date | null;
   isGuru?: boolean;
   jatahIzinKeluar?: string | number;
+  // ✨ FIX: Menambahkan properties untuk fitur resign
+  isActive?: boolean;
+  resignDate?: string | Date | null;
 }
 
 export interface EmployeeFormData {

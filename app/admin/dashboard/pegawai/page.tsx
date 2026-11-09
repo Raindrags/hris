@@ -14,6 +14,8 @@ import {
   ChevronsUpDown,
   Phone,
   AlertTriangle,
+  UserMinus,
+  UserPlus,
 } from "lucide-react";
 import {
   Card,
@@ -96,11 +98,31 @@ export default function PegawaiView() {
         </CardHeader>
 
         <CardContent className="pt-6 space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+            {/* ✨ FIX: TAB NAVIGASI */}
+            <div className="flex bg-gray-800 p-1 rounded-md">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`text-sm px-4 ${state.activeTab === "active" ? "bg-gray-700 text-white" : "text-gray-400 hover:text-white"}`}
+                onClick={() => actions.setActiveTab("active")}
+              >
+                Pegawai Aktif
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`text-sm px-4 ${state.activeTab === "resigned" ? "bg-gray-700 text-white" : "text-gray-400 hover:text-white"}`}
+                onClick={() => actions.setActiveTab("resigned")}
+              >
+                Pegawai Resign
+              </Button>
+            </div>
+
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Cari nama, email, atau role..."
+                placeholder="Cari nama, NIY, atau divisi..."
                 className="pl-9 bg-gray-800 border-gray-700 text-gray-100 placeholder:text-gray-500 focus:border-crimson-700 focus:ring-crimson-500/20"
                 value={state.searchTerm}
                 onChange={(e) => actions.setSearchTerm(e.target.value)}
@@ -115,7 +137,11 @@ export default function PegawaiView() {
                   <TableHead className="text-gray-300">Pegawai</TableHead>
                   <TableHead className="text-gray-300">NIY</TableHead>
                   <TableHead className="text-gray-300">Divisi</TableHead>
-                  <TableHead className="text-gray-300">Atasan</TableHead>
+                  {state.activeTab === "active" ? (
+                    <TableHead className="text-gray-300">Atasan</TableHead>
+                  ) : (
+                    <TableHead className="text-gray-300">Tgl. Resign</TableHead>
+                  )}
                   <TableHead className="text-right text-gray-300">
                     Aksi
                   </TableHead>
@@ -139,14 +165,16 @@ export default function PegawaiView() {
                     >
                       {state.searchTerm
                         ? "Tidak ada pegawai yang sesuai dengan pencarian."
-                        : "Belum ada data pegawai."}
+                        : state.activeTab === "active"
+                          ? "Belum ada data pegawai aktif."
+                          : "Belum ada data pegawai resign."}
                     </TableCell>
                   </TableRow>
                 ) : (
                   state.paginatedEmployees.map((emp) => (
                     <TableRow
                       key={emp.id}
-                      className="border-gray-800 hover:bg-gray-800/40 transition-colors"
+                      className={`border-gray-800 hover:bg-gray-800/40 transition-colors ${state.activeTab === "resigned" ? "opacity-75" : ""}`}
                     >
                       <TableCell>
                         <div className="flex flex-col">
@@ -165,29 +193,83 @@ export default function PegawaiView() {
                       <TableCell className="text-gray-200">
                         {emp.divisi?.name || "-"}
                       </TableCell>
-                      <TableCell className="text-gray-200">
-                        {actions.getSupervisorName(emp)}
-                      </TableCell>
+
+                      {/* ✨ FIX: Conditional Rendering Atasan / Tanggal Resign */}
+                      {state.activeTab === "active" ? (
+                        <TableCell className="text-gray-200">
+                          {actions.getSupervisorName(emp)}
+                        </TableCell>
+                      ) : (
+                        <TableCell className="text-rose-400 text-sm">
+                          {emp.resignDate
+                            ? new Date(emp.resignDate).toLocaleDateString(
+                                "id-ID",
+                                {
+                                  day: "2-digit",
+                                  month: "long",
+                                  year: "numeric",
+                                },
+                              )
+                            : "-"}
+                        </TableCell>
+                      )}
+
                       <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => actions.openEditModal(emp)}
-                        >
-                          <Pencil className="w-4 h-4 text-amber-400" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() =>
-                            actions.handleDelete(
-                              emp.id,
-                              emp.name || emp.fullName || "Pegawai",
-                            )
-                          }
-                        >
-                          <Trash2 className="w-4 h-4 text-red-400" />
-                        </Button>
+                        {state.activeTab === "active" ? (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title="Set Pegawai Resign"
+                              onClick={() =>
+                                actions.openResignModal(
+                                  emp.id,
+                                  emp.name || emp.fullName || "Pegawai",
+                                )
+                              }
+                            >
+                              <UserMinus className="w-4 h-4 text-orange-400" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title="Edit Profil"
+                              onClick={() => actions.openEditModal(emp)}
+                            >
+                              <Pencil className="w-4 h-4 text-amber-400" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title="Hapus Pegawai"
+                              onClick={() =>
+                                actions.handleDelete(
+                                  emp.id,
+                                  emp.name || emp.fullName || "Pegawai",
+                                )
+                              }
+                            >
+                              <Trash2 className="w-4 h-4 text-red-400" />
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-emerald-400 border-emerald-900 bg-emerald-950/20 hover:bg-emerald-900/40 hover:text-emerald-300"
+                              onClick={() =>
+                                actions.handleCancelResign(
+                                  emp.id,
+                                  emp.name || emp.fullName || "Pegawai",
+                                )
+                              }
+                            >
+                              <UserPlus className="w-4 h-4 mr-2" /> Batal Resign
+                              (Re-hire)
+                            </Button>
+                          </>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))
@@ -250,6 +332,68 @@ export default function PegawaiView() {
         </CardContent>
       </Card>
 
+      {/* ✨ FIX: MODAL RESIGN */}
+      <Dialog
+        open={state.isResignModalOpen}
+        onOpenChange={actions.setIsResignModalOpen}
+      >
+        <DialogContent className="sm:max-w-[400px] bg-gray-900 border-gray-700 text-gray-100">
+          <DialogHeader>
+            <DialogTitle className="text-orange-500 flex items-center gap-2">
+              <UserMinus className="w-5 h-5" /> Proses Resign Pegawai
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Anda akan memindahkan{" "}
+              <strong className="text-white">
+                {state.selectedEmpForResign?.name}
+              </strong>{" "}
+              ke daftar pegawai resign. Silakan masukkan tanggal aktif terakhir
+              / tanggal pengunduran diri.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="resignDate" className="text-gray-300">
+                Tanggal Resign / Nonaktif{" "}
+                <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="resignDate"
+                type="date"
+                required
+                className="bg-gray-800 border-gray-700 text-gray-100 focus:border-orange-500"
+                value={state.resignDate}
+                onChange={(e) => actions.setResignDate(e.target.value)}
+              />
+              <p className="text-xs text-gray-500">
+                Laporan absensi untuk pegawai ini akan dipotong sampai tanggal
+                yang Anda tentukan.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => actions.setIsResignModalOpen(false)}
+              disabled={state.isSaving}
+              className="border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white"
+            >
+              Batal
+            </Button>
+            <Button
+              onClick={actions.handleResign}
+              disabled={state.isSaving || !state.resignDate}
+              className="bg-orange-600 hover:bg-orange-700 text-white"
+            >
+              {state.isSaving ? "Memproses..." : "Konfirmasi Resign"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* MODAL EDIT/CREATE (KODE TETAP SAMA) */}
       <Dialog open={state.isModalOpen} onOpenChange={actions.setIsModalOpen}>
         <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto bg-gray-900 border-gray-700 text-gray-100">
           <DialogHeader>
@@ -303,7 +447,6 @@ export default function PegawaiView() {
               />
             </div>
 
-            {/* 💡 INPUT TAMBAHAN: Nomor Urut Absensi (Sort Order) */}
             <div className="space-y-2">
               <Label htmlFor="sortOrder" className="text-gray-300">
                 Nomor Urut Absensi (Opsional)
@@ -313,7 +456,6 @@ export default function PegawaiView() {
                 type="number"
                 placeholder="999"
                 className="bg-gray-800 border-gray-700 text-gray-100 placeholder:text-gray-500 focus:border-crimson-700"
-                // 💡 PERBAIKAN: Binding data secara ketat
                 value={
                   state.formData.sortOrder !== undefined
                     ? state.formData.sortOrder
@@ -575,7 +717,11 @@ export default function PegawaiView() {
                         -- Tidak ada atasan --
                       </CommandItem>
                       {state.employees
-                        .filter((emp) => String(emp.id) !== state.editingId) // Ganti 'sup' jadi 'emp' agar tidak bingung
+                        .filter(
+                          (emp) =>
+                            String(emp.id) !== state.editingId &&
+                            emp.isActive !== false,
+                        ) // 💡 Atasan harus pegawai aktif
                         .map((emp) => (
                           <CommandItem
                             key={emp.id}
