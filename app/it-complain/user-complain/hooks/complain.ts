@@ -5,7 +5,7 @@ import {
   ITComplaintData,
   CCTVComplaintData,
   ComplaintType,
-} from "../types/complaint"; // Sesuaikan path ini dengan struktur folder Anda
+} from "../type"; // Sesuaikan path ini dengan struktur folder Anda
 
 // Helper untuk membaca cookie
 const getCookie = (name: string) => {
