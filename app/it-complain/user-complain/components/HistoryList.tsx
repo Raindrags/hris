@@ -1,6 +1,6 @@
 import React from "react";
-import { ComplaintSubmission } from "../types/complaint";
 import { Clock, Database } from "lucide-react";
+import { ComplaintSubmission } from "../type";
 
 export const HistoryList: React.FC<{ history: ComplaintSubmission[] }> = ({
   history,
