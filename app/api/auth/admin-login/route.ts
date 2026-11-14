@@ -13,12 +13,12 @@ export async function POST(request: Request) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email: body.identifier,
+          email: body.identifier, // Memetakan "identifier" dari frontend ke "email" di backend
           password: body.password,
         }),
       },
     );
-    console.log(process.env.BACKEND_API_URL);
+
     const data = await nestResponse.json();
 
     if (!nestResponse.ok) {
@@ -33,23 +33,33 @@ export async function POST(request: Request) {
       user: data.user,
     });
 
+    // Set Token
     response.cookies.set("access_token", data.access_token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: 60 * 60 * 24,
-    });
-
-    response.cookies.set("role", "ADMIN", {
-      httpOnly: false,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
       maxAge: 60 * 60 * 24, // 1 hari
     });
 
-    // 3. Return response yang sudah berisi instruksi set-cookie
+    // Set Role (PENTING: Gunakan data.user.role dari backend)
+    response.cookies.set("role", data.user.role || "USER", {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24,
+    });
+
+    // (Opsional) Simpan user_data untuk dipanggil di UI History form jika perlu
+    response.cookies.set("user_data", JSON.stringify(data.user), {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24,
+    });
+
     return response;
   } catch (error) {
     return NextResponse.json(

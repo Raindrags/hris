@@ -23,14 +23,12 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
     try {
-      // (BLOK SIMULASI CANVAS BISA ANDA HAPUS ATAU BIARKAN JIKA MASIH PERLU)
-
       const res = await fetch("/api/auth/admin-login", {
         method: "POST",
         headers: {
@@ -44,25 +42,27 @@ const handleLogin = async (e: React.FormEvent) => {
       if (!res.ok) {
         throw new Error(data.message || "Email/Username atau password salah");
       }
+
       if (typeof window !== "undefined") {
-         localStorage.setItem("adminUser", JSON.stringify(data.user));
+        localStorage.setItem("adminUser", JSON.stringify(data.user));
       }
 
-      // 2. Baca role dari respons API
+      // 1. Baca role dari respons API
       const userRole = data.user?.role;
 
-      // 3. Arahkan ke dashboard berdasarkan role
-      if (userRole === "ADMIN_GA") {
+      // 2. Arahkan ke dashboard berdasarkan role
+      if (userRole === "ADMIN_IT") {
+        router.push("/it-complain/admin-complain"); // Arahkan Admin IT ke Dashboard Helpdesk
+      } else if (userRole === "ADMIN_GA") {
         router.push("/carfleet/admin/dashboard"); // Arahkan ke Dashboard GA (Carfleet)
       } else if (userRole === "ADMIN_HRIS") {
         router.push("/admin/dashboard"); // Arahkan ke Dashboard HRIS Utama
       } else {
-        // Jika role tidak dikenali atau ini admin super (opsional)
-        router.push("/admin/dashboard"); 
+        // Fallback untuk peran lain (misal: ADMIN sekolah)
+        router.push("/admin/dashboard");
       }
-      
-      router.refresh();
 
+      router.refresh();
     } catch (err: any) {
       console.error(err);
       setError(err.message || "Terjadi kesalahan sistem.");

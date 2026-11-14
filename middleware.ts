@@ -6,17 +6,15 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // ==============================================================
-  // 🚀 1. PROXY API (SOLUSI CORS & 401 UNAUTHORIZED)
+  // 1. PROXY API (SOLUSI CORS & 401 UNAUTHORIZED)
   // ==============================================================
   if (pathname.startsWith("/api/proxy")) {
     const targetPath = pathname.replace("/api/proxy", "");
 
-    // Pastikan query parameter (seperti ?id=1) ikut terbawa
     const targetUrl = new URL(
       `https://hris.maitreyawirads.dpdns.org/api${targetPath}${request.nextUrl.search}`,
     );
 
-    // ✨ INJEKSI TOKEN: Ambil dari cookie, masukkan ke header Authorization
     const requestHeaders = new Headers(request.headers);
     const proxyToken = request.cookies.get("access_token")?.value;
 
@@ -24,7 +22,6 @@ export async function middleware(request: NextRequest) {
       requestHeaders.set("Authorization", `Bearer ${proxyToken}`);
     }
 
-    // Teruskan request ke backend dengan header yang sudah disuntik token
     return NextResponse.rewrite(targetUrl, {
       request: {
         headers: requestHeaders,
@@ -33,7 +30,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // ==============================================================
-  // 🔒 2. LOGIKA AUTHENTIKASI ASLI ANDA (JWT & RBAC)
+  // 2. LOGIKA AUTHENTIKASI ASLI ANDA (JWT & RBAC)
   // ==============================================================
   const SECRET_KEY = new TextEncoder().encode(
     process.env.JWT_SECRET || "rahasia-negara-super-kuat-123",
@@ -63,11 +60,15 @@ export async function middleware(request: NextRequest) {
   const isCarfleetAdminRoute = pathname.startsWith("/carfleet/admin");
   const isCarfleetUserRoute = pathname.startsWith("/carfleet/user");
 
+  // TAMBAHAN: Rute untuk Admin IT
+  const isItAdminRoute = pathname.startsWith("/it-complain/admin-complain");
+
   const isProtected =
     isAdminHrisRoute ||
     isPegawaiRoute ||
     isCarfleetAdminRoute ||
-    isCarfleetUserRoute;
+    isCarfleetUserRoute ||
+    isItAdminRoute; // Masukkan ke dalam daftar rute yang dilindungi
 
   // Check Token Existence
   if (isProtected && !token) {
@@ -99,6 +100,14 @@ export async function middleware(request: NextRequest) {
 
       if (isCarfleetUserRoute && userRole !== "USER") {
         return NextResponse.redirect(new URL("/unauthorized", request.url));
+      }
+
+      // TAMBAHAN: Validasi Role untuk Admin IT
+      if (isItAdminRoute) {
+        const allowedItRoles = ["ADMIN", "ADMIN_IT"];
+        if (!allowedItRoles.includes(userRole)) {
+          return NextResponse.redirect(new URL("/unauthorized", request.url));
+        }
       }
 
       if (isPegawaiRoute && userRole !== "USER") {

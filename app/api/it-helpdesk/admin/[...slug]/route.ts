@@ -22,15 +22,15 @@ export async function GET(
       );
     }
 
-    // Mengambil path yang dipanggil, misal ['stats'] atau ['complaints']
+    // Mengambil path dinamis (misal: 'stats', 'complaints', atau 'logs')
     const path = params.slug.join("/");
 
-    // Meneruskan query parameters (seperti ?status=PENDING atau ?search=xxx)
+    // Meneruskan parameter query (misal: ?status=PENDING)
     const url = new URL(req.url);
     const searchParams = url.searchParams.toString();
-
     const targetUrl = `${backendUrl}/it-helpdesk/admin/${path}${searchParams ? `?${searchParams}` : ""}`;
 
+    // Meneruskan request ke backend NestJS
     const res = await fetch(targetUrl, {
       method: "GET",
       headers: {
@@ -42,7 +42,7 @@ export async function GET(
     const data = await res.json();
     return NextResponse.json(data, { status: res.status });
   } catch (error) {
-    console.error("Proxy GET Admin Helpdesk error:", error);
+    console.error("Proxy GET Admin IT-Helpdesk error:", error);
     return NextResponse.json(
       { success: false, error: "Terjadi kesalahan pada server proxy" },
       { status: 500 },
@@ -72,12 +72,13 @@ export async function PATCH(
       );
     }
 
-    // Mengambil path yang dipanggil, misal ['complaint', '123', 'status']
+    const body = await req.json();
+
+    // Mengambil path dinamis (misal: 'complaint/123/status')
     const path = params.slug.join("/");
     const targetUrl = `${backendUrl}/it-helpdesk/admin/${path}`;
 
-    const body = await req.json();
-
+    // Meneruskan request ke backend NestJS
     const res = await fetch(targetUrl, {
       method: "PATCH",
       headers: {
@@ -90,7 +91,7 @@ export async function PATCH(
     const data = await res.json();
     return NextResponse.json(data, { status: res.status });
   } catch (error) {
-    console.error("Proxy PATCH Admin Helpdesk error:", error);
+    console.error("Proxy PATCH Admin IT-Helpdesk error:", error);
     return NextResponse.json(
       { success: false, error: "Terjadi kesalahan pada server proxy" },
       { status: 500 },
