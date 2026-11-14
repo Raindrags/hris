@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   ComplaintSubmission,
   UserIdentity,
@@ -7,36 +7,20 @@ import {
   ComplaintType,
 } from "../type";
 
-// Helper untuk membaca cookie user_data yang httpOnly: false
-const getCookie = (name: string) => {
-  if (typeof document === "undefined") return null;
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(";").shift();
-  return null;
-};
-
-// Helper untuk mencegah error React Child Object {id, name}
-const safelyExtractString = (data: any, fallback: string) => {
-  if (!data) return fallback;
-  if (typeof data === "object" && data !== null) {
-    return data.name || fallback;
-  }
-  return String(data);
-};
+const API_BASE_URL = "/api/it-helpdesk";
 
 export const useComplaint = (initialUser?: {
-  nama: any;
+  nama: string;
   niy: string;
-  divisi: any;
+  divisi: string;
 }) => {
   const [activeTab, setActiveTab] = useState<"form" | "history">("form");
   const [formType, setFormType] = useState<ComplaintType>("IT");
 
   const [userIdentity, setUserIdentity] = useState<UserIdentity>({
-    nama: safelyExtractString(initialUser?.nama, "Memuat..."),
+    nama: initialUser?.nama || "Memuat...",
     niy: initialUser?.niy || "Memuat...",
-    divisi: safelyExtractString(initialUser?.divisi, "Memuat..."),
+    divisi: initialUser?.divisi || "Memuat...",
   });
 
   const [itData, setItData] = useState<ITComplaintData>({
@@ -47,59 +31,89 @@ export const useComplaint = (initialUser?: {
 
   const [cctvData, setCctvData] = useState<CCTVComplaintData>({
     titikLokasi: "",
+    tanggalKejadian: "",
     perkiraanJam: "",
     masalah: "",
   });
 
   const [history, setHistory] = useState<ComplaintSubmission[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
+  const [lastTicketCode, setLastTicketCode] = useState<string>("");
+  const [submittedTicket, setSubmittedTicket] =
+    useState<ComplaintSubmission | null>(null);
 
-  // 1. Ambil data user dari Cookie
+  // 1. Ambil Identitas User dari Proxy /api/it-helpdesk/me
   useEffect(() => {
-    const userDataStr = getCookie("user_data");
-    if (userDataStr) {
-      try {
-        const decodedData = decodeURIComponent(userDataStr);
-        const parsedUser = JSON.parse(decodedData);
-
-        setUserIdentity({
-          nama: safelyExtractString(parsedUser.name, "Pengguna"),
-          niy: parsedUser.niy || "-",
-          divisi: safelyExtractString(parsedUser.divisi, "-"),
-        });
-      } catch (error) {
-        console.error("Gagal melakukan parse cookie user_data:", error);
-      }
-    }
-  }, []);
-
-  // 2. Sinkronisasi data user dari initialUser props
-  useEffect(() => {
-    if (initialUser && initialUser.niy) {
+    if (initialUser && initialUser.nama) {
       setUserIdentity({
-        nama: safelyExtractString(initialUser.nama, "Memuat..."),
-        niy: initialUser.niy,
-        divisi: safelyExtractString(initialUser.divisi, "Memuat..."),
+        nama: initialUser.nama,
+        niy: initialUser.niy || "-",
+        divisi: initialUser.divisi || "-",
       });
+      return;
     }
+
+    const fetchUserProfile = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/me`);
+        if (res.ok) {
+          const raw = await res.json();
+          const profile = raw?.data || raw;
+          setUserIdentity({
+            nama: profile.nama || profile.name || "-",
+            niy: profile.niy || "-",
+            divisi: profile.divisi?.name || profile.divisi || "-",
+          });
+        } else {
+          setUserIdentity({
+            nama: "Sesi Habis",
+            niy: "-",
+            divisi: "-",
+          });
+        }
+      } catch (error) {
+        console.error("Gagal memuat identitas user:", error);
+        setUserIdentity({
+          nama: "Gagal Memuat",
+          niy: "-",
+          divisi: "-",
+        });
+      }
+    };
+
+    fetchUserProfile();
   }, [initialUser?.nama, initialUser?.niy, initialUser?.divisi]);
 
-  // 3. Fetch histori keluhan melalui proxy rute Next.js API
-  useEffect(() => {
-    const fetchHistory = async () => {
-      try {
-        const res = await fetch("/api/it-helpdesk/history");
+  const isUserLoaded =
+    userIdentity.nama !== "Memuat..." &&
+    userIdentity.nama !== "Sesi Habis" &&
+    userIdentity.nama !== "Gagal Memuat";
 
-        if (res.ok) {
-          const data = await res.json();
-          // Antisipasi jika API mereturn properti bersarang
-          const rawData = Array.isArray(data) ? data : data?.data || [];
+  // 2. Fetch History -> GET /api/it-helpdesk/history
+  const fetchHistory = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/history`);
 
-          const transformedHistory = rawData.map((item: any) => ({
+      if (res.ok) {
+        const rawResponse = await res.json();
+        const dataList = Array.isArray(rawResponse)
+          ? rawResponse
+          : Array.isArray(rawResponse?.data)
+            ? rawResponse.data
+            : [];
+
+        const transformedHistory: ComplaintSubmission[] = dataList.map(
+          (item: any) => ({
             id: item.id,
+            kodeTiket: item.tiketkomplain || item.kodeTiket || item.id,
             type: item.type,
-            user: userIdentity,
+            user: {
+              nama: item.user?.name || userIdentity.nama,
+              niy: item.user?.niy || userIdentity.niy,
+              divisi: item.user?.divisi?.name || userIdentity.divisi,
+            },
             data:
               item.type === "IT"
                 ? {
@@ -110,25 +124,42 @@ export const useComplaint = (initialUser?: {
                 : {
                     masalah: item.masalah,
                     titikLokasi: item.titikLokasi,
+                    tanggalKejadian: item.tanggalKejadian || "",
                     perkiraanJam: item.perkiraanJam,
                   },
             status: item.status,
+            dikerjakanOleh: item.dikerjakanOleh || null,
+            solusi: item.solusi || null,
+            saran: item.saran || null,
+            keterangan: item.keterangan || null,
+            rating: item.rating ?? null,
+            ulasanUser: item.ulasanUser || null,
+            confirmedAt: item.confirmedAt || null,
             createdAt: new Date(item.createdAt),
-          }));
-          setHistory(transformedHistory);
-        }
-      } catch (error) {
-        console.error("Gagal memuat histori keluhan:", error);
-      }
-    };
+            updatedAt: item.updatedAt
+              ? new Date(item.updatedAt)
+              : new Date(item.createdAt),
+          }),
+        );
 
-    if (userIdentity.niy !== "Memuat...") {
+        setHistory(transformedHistory);
+      }
+    } catch (error) {
+      console.error("Gagal memuat histori keluhan:", error);
+    }
+  }, [userIdentity.nama, userIdentity.niy, userIdentity.divisi]);
+
+  useEffect(() => {
+    if (isUserLoaded) {
       fetchHistory();
     }
-  }, [userIdentity.niy]);
+  }, [isUserLoaded, fetchHistory]);
 
+  // 3. Submit Complaint -> POST /api/it-helpdesk/complaint (Dengan pengunci isSubmitting)
   const submitComplaint = async () => {
-    if (!userIdentity.niy || userIdentity.niy === "Memuat...") {
+    if (isSubmitting) return null;
+
+    if (!isUserLoaded) {
       setModalMessage("Gagal memuat identitas. Silakan muat ulang halaman.");
       setIsModalOpen(true);
       return null;
@@ -145,7 +176,10 @@ export const useComplaint = (initialUser?: {
 
     if (
       formType === "CCTV" &&
-      (!cctvData.titikLokasi || !cctvData.perkiraanJam || !cctvData.masalah)
+      (!cctvData.titikLokasi ||
+        !cctvData.tanggalKejadian ||
+        !cctvData.perkiraanJam ||
+        !cctvData.masalah)
     ) {
       setModalMessage("Mohon lengkapi semua field pada Cek CCTV.");
       setIsModalOpen(true);
@@ -158,12 +192,12 @@ export const useComplaint = (initialUser?: {
       data: formType === "IT" ? itData : cctvData,
     };
 
+    setIsSubmitting(true);
+
     try {
-      const response = await fetch("/api/it-helpdesk/complaint", {
+      const response = await fetch(`${API_BASE_URL}/complaint`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
@@ -171,47 +205,133 @@ export const useComplaint = (initialUser?: {
 
       if (!response.ok) {
         setModalMessage(
-          result.error || result.message || "Terjadi kesalahan pada server.",
+          result.message ||
+            result.error ||
+            "Terjadi kesalahan pada validasi server.",
         );
         setIsModalOpen(true);
         return null;
       }
 
-      const resData = result.data ? result.data : result;
+      const item = result?.data?.data || result?.data || result;
+      const ticketCode =
+        item?.tiketkomplain ||
+        item?.kodeTiket ||
+        result?.tiketkomplain ||
+        item?.id ||
+        "";
 
-      // Masukkan ke state history agar terupdate di UI secara realtime
       const newSubmission: ComplaintSubmission = {
-        id: resData.tiketkomplain || resData.kode || resData.id,
-        type: resData.type,
-        user: userIdentity,
+        id: item.id,
+        kodeTiket: ticketCode,
+        type: item.type || formType,
+        user: {
+          nama: item.user?.name || userIdentity.nama,
+          niy: item.user?.niy || userIdentity.niy,
+          divisi: item.user?.divisi?.name || userIdentity.divisi,
+        },
         data:
-          resData.type === "IT"
+          (item.type || formType) === "IT"
             ? {
-                masalah: resData.masalah,
-                kategori: resData.kategoriIT || resData.kategori,
-                lokasi: resData.lokasiIT || resData.lokasi,
+                masalah: item.masalah || itData.masalah,
+                kategori: item.kategoriIT || itData.kategori,
+                lokasi: item.lokasiIT || itData.lokasi,
               }
             : {
-                masalah: resData.masalah,
-                titikLokasi: resData.titikLokasi,
-                perkiraanJam: resData.perkiraanJam,
+                masalah: item.masalah || cctvData.masalah,
+                titikLokasi: item.titikLokasi || cctvData.titikLokasi,
+                tanggalKejadian:
+                  item.tanggalKejadian || cctvData.tanggalKejadian,
+                perkiraanJam: item.perkiraanJam || cctvData.perkiraanJam,
               },
-        status: resData.status || "PENDING",
-        createdAt: new Date(resData.createdAt || new Date()),
+        status: item.status || "PENDING",
+        dikerjakanOleh: item.dikerjakanOleh || null,
+        solusi: item.solusi || null,
+        saran: item.saran || null,
+        keterangan: item.keterangan || null,
+        rating: item.rating ?? null,
+        ulasanUser: item.ulasanUser || null,
+        confirmedAt: item.confirmedAt || null,
+        createdAt: item.createdAt ? new Date(item.createdAt) : new Date(),
+        updatedAt: item.updatedAt ? new Date(item.updatedAt) : new Date(),
       };
 
+      setLastTicketCode(ticketCode);
+      setSubmittedTicket(newSubmission);
       setHistory((prev) => [newSubmission, ...prev]);
 
-      // Kosongkan form kembali
-      setItData({ masalah: "", kategori: "", lokasi: "" });
-      setCctvData({ titikLokasi: "", perkiraanJam: "", masalah: "" });
+      setModalMessage(
+        `Berhasil! Nomor tiket Anda: ${ticketCode}. Pesan WhatsApp otomatis sedang diteruskan ke Admin IT.`,
+      );
+      setIsModalOpen(true);
 
-      // Kembalikan result untuk dibaca oleh page.tsx (agar ID Tiket bisa ditangkap modal)
-      return result;
+      setItData({ masalah: "", kategori: "", lokasi: "" });
+      setCctvData({
+        titikLokasi: "",
+        tanggalKejadian: "",
+        perkiraanJam: "",
+        masalah: "",
+      });
+
+      return newSubmission;
     } catch (error) {
       setModalMessage("Terjadi kesalahan jaringan saat menyambung ke server.");
       setIsModalOpen(true);
       return null;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // 4. Confirm Complaint & Rating -> PATCH /api/it-helpdesk/complaint/:id/confirm
+  const confirmComplaint = async (
+    id: string,
+    rating: number,
+    ulasanUser?: string,
+  ): Promise<boolean> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/complaint/${id}/confirm`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rating, ulasanUser }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        setModalMessage(
+          result.message ||
+            result.error ||
+            "Gagal mengirim konfirmasi penyelesaian.",
+        );
+        setIsModalOpen(true);
+        return false;
+      }
+
+      setHistory((prev) =>
+        prev.map((item) =>
+          item.id === id
+            ? {
+                ...item,
+                status: "SELESAI",
+                rating,
+                ulasanUser: ulasanUser || null,
+                confirmedAt: new Date(),
+                updatedAt: new Date(),
+              }
+            : item,
+        ),
+      );
+
+      setModalMessage(
+        "Konfirmasi selesai dan rating pelayanan berhasil dikirim!",
+      );
+      setIsModalOpen(true);
+      return true;
+    } catch (error) {
+      setModalMessage("Terjadi kesalahan jaringan saat mengirim konfirmasi.");
+      setIsModalOpen(true);
+      return false;
     }
   };
 
@@ -226,9 +346,13 @@ export const useComplaint = (initialUser?: {
     cctvData,
     setCctvData,
     submitComplaint,
+    isSubmitting,
     history,
     isModalOpen,
     setIsModalOpen,
     modalMessage,
+    lastTicketCode,
+    submittedTicket,
+    confirmComplaint,
   };
 };

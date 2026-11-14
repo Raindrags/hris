@@ -37,6 +37,7 @@ export const useAdminHelpdesk = () => {
     saran: "",
     keterangan: "",
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [logSearch, setLogSearch] = useState("");
   const [logDate, setLogDate] = useState("");
@@ -52,13 +53,14 @@ export const useAdminHelpdesk = () => {
     }
   };
 
-  // 2. Fetch Complaints
+  // 2. Fetch Complaints (Termasuk tanggalKejadian CCTV, rating, dan ulasanUser)
   const fetchComplaints = useCallback(async () => {
     try {
+      // Kamus penerjemah dari nama Tab di UI Admin ke Enum Status di Backend/Prisma
       const statusMap: Record<string, string> = {
         NEW: "PENDING",
         IN_PROGRESS: "DIPROSES",
-        WAITING_CONFIRMATION: "SELESAI",
+        WAITING_CONFIRMATION: "MENUNGGU_KONFIRMASI",
         COMPLETED: "SELESAI",
         CANCELLED: "BATAL",
       };
@@ -74,13 +76,26 @@ export const useAdminHelpdesk = () => {
       const mappedData: AdminComplaint[] = rawData.map((item: any) => ({
         id: item.id,
         kodeTiket: item.tiketkomplain,
+        type: item.type,
+        kategoriIT: item.kategoriIT || null,
         lokasi: item.lokasiIT || item.titikLokasi || "-",
+        tanggalKejadian: item.tanggalKejadian || null,
+        perkiraanJam: item.perkiraanJam || null,
         divisi: item.user?.divisi?.name || "-",
         masalah: item.masalah,
         status: activeTab,
+        rawStatus: item.status,
         pelapor: item.user?.name || "Unknown",
-        dikerjakanOleh: item.dikerjakanOleh,
+        niy: item.user?.niy || "-",
+        dikerjakanOleh: item.dikerjakanOleh || null,
+        solusi: item.solusi || null,
+        saran: item.saran || null,
+        keterangan: item.keterangan || null,
+        rating: item.rating ?? null,
+        ulasanUser: item.ulasanUser || null,
+        confirmedAt: item.confirmedAt || null,
         createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
       }));
 
       setFilteredComplaints(mappedData);
@@ -125,13 +140,14 @@ export const useAdminHelpdesk = () => {
     }
   }, [activeView, activeTab, fetchComplaints, fetchLogs]);
 
-  // 4. Update Status (PATCH)
+  // 4. Update Status (PATCH) dengan pengunci isSubmitting
   const handleAction = async () => {
-    if (!selectedTicket) return;
+    if (!selectedTicket || isSubmitting) return;
 
     let payloadStatus = "";
     if (modalType === "TERIMA") payloadStatus = "DIPROSES";
-    if (modalType === "SELESAI") payloadStatus = "SELESAI";
+    // Saat admin klik Konfirm Selesai, status menjadi MENUNGGU_KONFIRMASI agar user bisa memberi rating
+    if (modalType === "SELESAI") payloadStatus = "MENUNGGU_KONFIRMASI";
     if (modalType === "BATAL") payloadStatus = "BATAL";
 
     const payload = {
@@ -140,6 +156,8 @@ export const useAdminHelpdesk = () => {
         modalType === "TERIMA" ? dikerjakanOleh : selectedTicket.dikerjakanOleh,
       ...(modalType === "SELESAI" && formSelesai),
     };
+
+    setIsSubmitting(true);
 
     try {
       const res = await fetch(
@@ -157,10 +175,12 @@ export const useAdminHelpdesk = () => {
         fetchComplaints();
       } else {
         const err = await res.json();
-        alert(`Gagal mengeksekusi: ${err.message || err.error}`);
+        console.error(`Gagal mengeksekusi: ${err.message || err.error}`);
       }
     } catch (error) {
-      alert("Terjadi kesalahan jaringan.");
+      console.error("Terjadi kesalahan jaringan.", error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -172,6 +192,7 @@ export const useAdminHelpdesk = () => {
   };
 
   const closeModal = () => {
+    if (isSubmitting) return;
     setSelectedTicket(null);
     setModalType(null);
   };
@@ -192,6 +213,7 @@ export const useAdminHelpdesk = () => {
     setDikerjakanOleh,
     formSelesai,
     setFormSelesai,
+    isSubmitting,
     logSearch,
     setLogSearch,
     logDate,

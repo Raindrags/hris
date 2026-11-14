@@ -12,30 +12,35 @@ export default function LayananITPage() {
   // State untuk mengontrol Modal Sukses dan menyimpan Ticket ID dari backend
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [ticketId, setTicketId] = useState("");
+
   const handleFormSubmit = async () => {
     try {
-      const response = await complaintState.submitComplaint();
+      const response: any = await complaintState.submitComplaint();
 
-      if (response) {
-        // PRIORITASKAN kodeTiket (atau properti sejenis) sebelum fallback ke id
-        const generatedId =
-          response.tiketkomplain ||
-          response.data?.tiketkomplain ||
-          response.kode ||
-          response.data?.kode ||
-          response.id ||
-          response.data?.id;
+      // Jika validasi gagal atau server mengembalikan error, hentikan (biarkan SYSTEM_NOTICE yang tampil)
+      if (!response) return;
 
-        if (generatedId) {
-          setTicketId(generatedId);
-        } else {
-          setTicketId("SYSTEM_ERR_NO_ID");
-        }
+      // Prioritaskan kodeTiket / tiketkomplain sebelum fallback ke id
+      const generatedId =
+        response.kodeTiket ||
+        response.tiketkomplain ||
+        response.data?.tiketkomplain ||
+        response.kode ||
+        response.data?.kode ||
+        complaintState.lastTicketCode ||
+        response.id ||
+        response.data?.id;
+
+      if (generatedId) {
+        setTicketId(generatedId);
+        // Tutup SYSTEM_NOTICE agar tidak bertumpuk dengan SuccessModal
+        complaintState.setIsModalOpen(false);
+        setIsSuccessModalOpen(true);
       } else {
         setTicketId("SYSTEM_ERR_NO_ID");
+        complaintState.setIsModalOpen(false);
+        setIsSuccessModalOpen(true);
       }
-
-      setIsSuccessModalOpen(true);
     } catch (error) {
       console.error("Gagal mengirim laporan:", error);
     }
@@ -107,7 +112,11 @@ export default function LayananITPage() {
             >
               <span>FORMULIR</span>
               <div
-                className={`w-0 h-0 border-t-4 border-b-4 border-l-4 border-transparent ${complaintState.activeTab === "form" ? "border-l-white" : "border-l-slate-600"}`}
+                className={`w-0 h-0 border-t-4 border-b-4 border-l-4 border-transparent ${
+                  complaintState.activeTab === "form"
+                    ? "border-l-white"
+                    : "border-l-slate-600"
+                }`}
               ></div>
             </button>
 
@@ -121,7 +130,11 @@ export default function LayananITPage() {
             >
               <span>HISTORI</span>
               <div
-                className={`w-0 h-0 border-t-4 border-b-4 border-l-4 border-transparent ${complaintState.activeTab === "history" ? "border-l-white" : "border-l-slate-600"}`}
+                className={`w-0 h-0 border-t-4 border-b-4 border-l-4 border-transparent ${
+                  complaintState.activeTab === "history"
+                    ? "border-l-white"
+                    : "border-l-slate-600"
+                }`}
               ></div>
             </button>
           </div>
@@ -131,13 +144,16 @@ export default function LayananITPage() {
             {complaintState.activeTab === "form" ? (
               <ComplaintForm {...complaintState} onSubmit={handleFormSubmit} />
             ) : (
-              <HistoryList history={complaintState.history} />
+              <HistoryList
+                history={complaintState.history}
+                onConfirm={complaintState.confirmComplaint}
+              />
             )}
           </div>
         </div>
       </div>
 
-      {/* MODAL: SYSTEM NOTICE */}
+      {/* MODAL: SYSTEM NOTICE (Untuk Validasi / Error / Konfirmasi Rating) */}
       {complaintState.isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4 font-mono">
           <div
@@ -172,7 +188,7 @@ export default function LayananITPage() {
       <SuccessModal
         isOpen={isSuccessModalOpen}
         onClose={() => setIsSuccessModalOpen(false)}
-        ticketId={ticketId} // Teruskan state ticketId ke modal
+        ticketId={ticketId}
       />
     </div>
   );
