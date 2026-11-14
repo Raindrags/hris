@@ -1,93 +1,179 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { HistoryList } from "./components/HistoryList";
-import { ShieldAlert, Server, Cpu, X } from "lucide-react";
-import { useComplaint } from "./hooks/complain";
 import { ComplaintForm } from "./components/complain-form";
+import { SuccessModal } from "./components/success-modal";
+import { useComplaint } from "./hooks/complain";
 
 export default function LayananITPage() {
   const complaintState = useComplaint();
 
+  // State untuk mengontrol Modal Sukses dan menyimpan Ticket ID dari backend
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [ticketId, setTicketId] = useState("");
+  const handleFormSubmit = async () => {
+    try {
+      const response = await complaintState.submitComplaint();
+
+      if (response) {
+        // PRIORITASKAN kodeTiket (atau properti sejenis) sebelum fallback ke id
+        const generatedId =
+          response.tiketkomplain ||
+          response.data?.tiketkomplain ||
+          response.kode ||
+          response.data?.kode ||
+          response.id ||
+          response.data?.id;
+
+        if (generatedId) {
+          setTicketId(generatedId);
+        } else {
+          setTicketId("SYSTEM_ERR_NO_ID");
+        }
+      } else {
+        setTicketId("SYSTEM_ERR_NO_ID");
+      }
+
+      setIsSuccessModalOpen(true);
+    } catch (error) {
+      console.error("Gagal mengirim laporan:", error);
+    }
+  };
+
   return (
-    // Background Dark Blue Futuristic (Sesuai tema GA Super App)
-    <div className="min-h-screen bg-[#020617] text-slate-200 p-4 md:p-8 font-sans">
-      <div className="max-w-4xl mx-auto relative">
-        {/* Ornamen Glow Latar */}
-        <div className="absolute top-[-50px] left-1/2 -translate-x-1/2 w-full md:w-3/4 h-32 bg-cyan-600/10 blur-[100px] pointer-events-none rounded-full" />
+    <div className="min-h-screen bg-slate-900 text-slate-800 p-4 md:p-8 font-mono">
+      <div className="max-w-5xl mx-auto relative">
+        {/* PANEL MECHA UTAMA */}
+        <div
+          className="relative bg-[#eef1f5] border-2 border-slate-400 p-8 shadow-2xl"
+          style={{
+            clipPath:
+              "polygon(0 0, 100% 0, 100% calc(100% - 30px), calc(100% - 30px) 100%, 0 100%, 0 30px)",
+          }}
+        >
+          {/* DEKORASI HUD SUDUT */}
+          <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-slate-400"></div>
+          <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-slate-400"></div>
+          <div className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-slate-400"></div>
+          <div className="absolute top-4 right-1/2 translate-x-1/2 text-[10px] text-slate-400 tracking-[0.2em] font-bold">
+            [ 2 - 2 ]
+          </div>
+          <div className="absolute bottom-4 right-8 text-xs font-bold text-slate-500 tracking-widest flex items-center">
+            <span className="w-4 h-[2px] bg-slate-400 mr-2 transform -rotate-45"></span>
+            02/05
+          </div>
 
-        {/* Header Section */}
-        <div className="flex items-center justify-between mb-8 pb-6 border-b border-slate-800/80">
+          {/* HEADER TEMA SCI-FI */}
+          <div className="flex items-end justify-between mb-10 pb-4 border-b-2 border-slate-300 relative">
+            <div className="absolute -bottom-[2px] left-10 w-32 h-[2px] bg-slate-800"></div>
+            <div>
+              <div className="flex items-center space-x-3 mb-2">
+                <div className="flex space-x-1">
+                  <div className="w-2 h-4 bg-slate-800 skew-x-[-20deg]"></div>
+                  <div className="w-2 h-4 bg-slate-800 skew-x-[-20deg]"></div>
+                </div>
+                <h1 className="text-3xl font-black text-slate-800 tracking-widest uppercase flex items-center">
+                  SYS_HELPDESK
+                </h1>
+              </div>
+              <p className="text-slate-500 text-xs font-bold tracking-widest uppercase">
+                // Portal Manajemen Infrastruktur GA
+              </p>
+            </div>
+
+            <div className="hidden md:flex flex-col items-end opacity-40">
+              <span className="text-[10px] mb-1 font-bold">UPD_</span>
+              <div className="w-8 h-4 border border-slate-500"></div>
+            </div>
+          </div>
+
+          {/* TAB NAVIGASI */}
+          <div className="flex space-x-6 mb-8 relative z-10 pl-4">
+            <span className="absolute left-0 top-1/2 -translate-y-1/2 text-slate-400 text-xs">
+              +
+            </span>
+            <span className="absolute right-0 top-1/2 -translate-y-1/2 text-slate-400 text-xs">
+              +
+            </span>
+
+            <button
+              onClick={() => complaintState.setActiveTab("form")}
+              className={`flex items-center justify-between px-6 py-2 w-48 font-bold text-sm uppercase tracking-wider transition-all border ${
+                complaintState.activeTab === "form"
+                  ? "bg-slate-800 text-white border-slate-800"
+                  : "bg-transparent text-slate-600 border-slate-400 hover:bg-slate-200"
+              }`}
+            >
+              <span>FORMULIR</span>
+              <div
+                className={`w-0 h-0 border-t-4 border-b-4 border-l-4 border-transparent ${complaintState.activeTab === "form" ? "border-l-white" : "border-l-slate-600"}`}
+              ></div>
+            </button>
+
+            <button
+              onClick={() => complaintState.setActiveTab("history")}
+              className={`flex items-center justify-between px-6 py-2 w-48 font-bold text-sm uppercase tracking-wider transition-all border ${
+                complaintState.activeTab === "history"
+                  ? "bg-slate-800 text-white border-slate-800"
+                  : "bg-transparent text-slate-600 border-slate-400 hover:bg-slate-200"
+              }`}
+            >
+              <span>HISTORI</span>
+              <div
+                className={`w-0 h-0 border-t-4 border-b-4 border-l-4 border-transparent ${complaintState.activeTab === "history" ? "border-l-white" : "border-l-slate-600"}`}
+              ></div>
+            </button>
+          </div>
+
+          {/* AREA KONTEN */}
           <div className="relative z-10">
-            <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500 flex items-center">
-              <ShieldAlert className="w-8 h-8 mr-3 text-cyan-400" />
-              IT Helpdesk & CCTV
-            </h1>
-            <p className="text-slate-400 mt-2 text-sm">
-              Portal Manajemen Infrastruktur - GA Super App
-            </p>
+            {complaintState.activeTab === "form" ? (
+              <ComplaintForm {...complaintState} onSubmit={handleFormSubmit} />
+            ) : (
+              <HistoryList history={complaintState.history} />
+            )}
           </div>
-          <div className="hidden md:flex space-x-4 opacity-20">
-            <Server className="w-8 h-8 text-cyan-400" />
-            <Cpu className="w-8 h-8 text-blue-400" />
-          </div>
-        </div>
-
-        {/* Tab Navigasi Utama */}
-        <div className="flex space-x-3 mb-8 relative z-10">
-          <button
-            onClick={() => complaintState.setActiveTab("form")}
-            className={`px-6 py-2.5 rounded-lg font-medium transition-all ${complaintState.activeTab === "form" ? "bg-cyan-950/60 text-cyan-400 border border-cyan-800 shadow-[0_0_15px_rgba(8,112,184,0.2)]" : "bg-slate-900 text-slate-400 hover:bg-slate-800 border border-transparent"}`}
-          >
-            Formulir Laporan
-          </button>
-          <button
-            onClick={() => complaintState.setActiveTab("history")}
-            className={`px-6 py-2.5 rounded-lg font-medium transition-all ${complaintState.activeTab === "history" ? "bg-cyan-950/60 text-cyan-400 border border-cyan-800 shadow-[0_0_15px_rgba(8,112,184,0.2)]" : "bg-slate-900 text-slate-400 hover:bg-slate-800 border border-transparent"}`}
-          >
-            Histori ({complaintState.history.length})
-          </button>
-        </div>
-
-        {/* Render Komponen Berdasarkan Tab */}
-        <div className="relative z-10">
-          {complaintState.activeTab === "form" ? (
-            <ComplaintForm
-              {...complaintState}
-              onSubmit={complaintState.submitComplaint}
-            />
-          ) : (
-            <HistoryList history={complaintState.history} />
-          )}
         </div>
       </div>
 
-      {/* Custom Modal (Pengganti alert bawaan browser) */}
+      {/* MODAL: SYSTEM NOTICE */}
       {complaintState.isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-[#0b1329] border border-cyan-800/60 rounded-2xl p-6 max-w-md w-full shadow-[0_0_40px_rgba(8,112,184,0.2)] relative">
-            <button
-              onClick={() => complaintState.setIsModalOpen(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-            <h3 className="text-xl font-bold text-white mb-2 flex items-center">
-              <ShieldAlert className="w-5 h-5 mr-2 text-cyan-400" /> System
-              Notice
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4 font-mono">
+          <div
+            className="bg-[#eef1f5] border-2 border-slate-800 p-6 max-w-md w-full relative"
+            style={{
+              clipPath:
+                "polygon(0 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%)",
+            }}
+          >
+            <div className="flex space-x-1 mb-4">
+              <div className="w-1 h-4 bg-red-600 skew-x-[-20deg]"></div>
+              <div className="w-1 h-4 bg-red-600 skew-x-[-20deg]"></div>
+            </div>
+            <h3 className="text-lg font-black text-slate-800 mb-2 uppercase tracking-widest">
+              SYSTEM_NOTICE
             </h3>
-            <p className="text-slate-300 leading-relaxed mb-6 mt-4">
+            <p className="text-slate-600 text-sm leading-relaxed mb-6 mt-4 font-bold">
               {complaintState.modalMessage}
             </p>
             <button
               onClick={() => complaintState.setIsModalOpen(false)}
-              className="w-full bg-slate-800 hover:bg-slate-700 text-cyan-400 font-medium py-2.5 rounded-lg border border-cyan-900 transition-colors"
+              className="w-full bg-slate-800 text-white font-bold py-3 uppercase tracking-widest hover:bg-slate-700 transition-colors flex justify-between items-center px-4"
             >
-              Tutup
+              <span>ACKNOWLEDGE</span>
+              <div className="w-0 h-0 border-t-4 border-b-4 border-l-6 border-transparent border-l-white"></div>
             </button>
           </div>
         </div>
       )}
+
+      {/* MODAL: BERHASIL SUBMIT */}
+      <SuccessModal
+        isOpen={isSuccessModalOpen}
+        onClose={() => setIsSuccessModalOpen(false)}
+        ticketId={ticketId} // Teruskan state ticketId ke modal
+      />
     </div>
   );
 }

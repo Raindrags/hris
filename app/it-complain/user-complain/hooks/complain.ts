@@ -5,24 +5,15 @@ import {
   ITComplaintData,
   CCTVComplaintData,
   ComplaintType,
-} from "../type"; // Sesuaikan path ini dengan struktur folder Anda
+} from "../type";
 
-// Helper untuk membaca cookie
+// Helper untuk membaca cookie user_data yang httpOnly: false
 const getCookie = (name: string) => {
   if (typeof document === "undefined") return null;
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
   if (parts.length === 2) return parts.pop()?.split(";").shift();
   return null;
-};
-
-// Helper untuk ekstrak token (cek localStorage dulu, jika tidak ada cek cookie)
-const getAccessToken = () => {
-  if (typeof window !== "undefined") {
-    const local = localStorage.getItem("access_token");
-    if (local) return local;
-  }
-  return getCookie("access_token");
 };
 
 // Helper untuk mencegah error React Child Object {id, name}
@@ -64,7 +55,7 @@ export const useComplaint = (initialUser?: {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
 
-  // 1. Ambil data dari Cookie saat komponen pertama kali dimuat
+  // 1. Ambil data user dari Cookie
   useEffect(() => {
     const userDataStr = getCookie("user_data");
     if (userDataStr) {
@@ -83,7 +74,7 @@ export const useComplaint = (initialUser?: {
     }
   }, []);
 
-  // 2. Sinkronisasi data user jika props initialUser dari parent berubah
+  // 2. Sinkronisasi data user dari initialUser props
   useEffect(() => {
     if (initialUser && initialUser.niy) {
       setUserIdentity({
@@ -94,23 +85,18 @@ export const useComplaint = (initialUser?: {
     }
   }, [initialUser?.nama, initialUser?.niy, initialUser?.divisi]);
 
-  // 3. Fetch histori keluhan dari backend NestJS
+  // 3. Fetch histori keluhan melalui proxy rute Next.js API
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const token = getAccessToken();
-        if (!token) return;
-
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/it-helpdesk/history`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          },
-        );
+        const res = await fetch("/api/it-helpdesk/history");
 
         if (res.ok) {
           const data = await res.json();
-          const transformedHistory = data.map((item: any) => ({
+          // Antisipasi jika API mereturn properti bersarang
+          const rawData = Array.isArray(data) ? data : data?.data || [];
+
+          const transformedHistory = rawData.map((item: any) => ({
             id: item.id,
             type: item.type,
             user: userIdentity,
@@ -145,7 +131,7 @@ export const useComplaint = (initialUser?: {
     if (!userIdentity.niy || userIdentity.niy === "Memuat...") {
       setModalMessage("Gagal memuat identitas. Silakan muat ulang halaman.");
       setIsModalOpen(true);
-      return;
+      return null;
     }
 
     if (
@@ -154,7 +140,7 @@ export const useComplaint = (initialUser?: {
     ) {
       setModalMessage("Mohon lengkapi semua field pada Keluhan IT.");
       setIsModalOpen(true);
-      return;
+      return null;
     }
 
     if (
@@ -163,7 +149,7 @@ export const useComplaint = (initialUser?: {
     ) {
       setModalMessage("Mohon lengkapi semua field pada Cek CCTV.");
       setIsModalOpen(true);
-      return;
+      return null;
     }
 
     const payload = {
@@ -173,60 +159,59 @@ export const useComplaint = (initialUser?: {
     };
 
     try {
-      const token = getAccessToken();
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/it-helpdesk`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(payload),
+      const response = await fetch("/api/it-helpdesk/complaint", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
+        body: JSON.stringify(payload),
+      });
 
       const result = await response.json();
 
       if (!response.ok) {
         setModalMessage(
-          result.error || "Terjadi kesalahan pada validasi server.",
+          result.error || result.message || "Terjadi kesalahan pada server.",
         );
         setIsModalOpen(true);
-        return;
+        return null;
       }
 
+      const resData = result.data ? result.data : result;
+
+      // Masukkan ke state history agar terupdate di UI secara realtime
       const newSubmission: ComplaintSubmission = {
-        id: result.data.id,
-        type: result.data.type,
+        id: resData.tiketkomplain || resData.kode || resData.id,
+        type: resData.type,
         user: userIdentity,
         data:
-          result.data.type === "IT"
+          resData.type === "IT"
             ? {
-                masalah: result.data.masalah,
-                kategori: result.data.kategoriIT,
-                lokasi: result.data.lokasiIT,
+                masalah: resData.masalah,
+                kategori: resData.kategoriIT || resData.kategori,
+                lokasi: resData.lokasiIT || resData.lokasi,
               }
             : {
-                masalah: result.data.masalah,
-                titikLokasi: result.data.titikLokasi,
-                perkiraanJam: result.data.perkiraanJam,
+                masalah: resData.masalah,
+                titikLokasi: resData.titikLokasi,
+                perkiraanJam: resData.perkiraanJam,
               },
-        status: result.data.status,
-        createdAt: new Date(result.data.createdAt),
+        status: resData.status || "PENDING",
+        createdAt: new Date(resData.createdAt || new Date()),
       };
 
       setHistory((prev) => [newSubmission, ...prev]);
-      setModalMessage(
-        `Berhasil! Pesan WhatsApp otomatis sedang diteruskan ke Admin IT.`,
-      );
-      setIsModalOpen(true);
 
+      // Kosongkan form kembali
       setItData({ masalah: "", kategori: "", lokasi: "" });
       setCctvData({ titikLokasi: "", perkiraanJam: "", masalah: "" });
+
+      // Kembalikan result untuk dibaca oleh page.tsx (agar ID Tiket bisa ditangkap modal)
+      return result;
     } catch (error) {
       setModalMessage("Terjadi kesalahan jaringan saat menyambung ke server.");
       setIsModalOpen(true);
+      return null;
     }
   };
 

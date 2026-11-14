@@ -1,14 +1,5 @@
 import React from "react";
 import {
-  Video,
-  Monitor,
-  AlertCircle,
-  Send,
-  User,
-  BadgeInfo,
-  Briefcase,
-} from "lucide-react";
-import {
   CCTVComplaintData,
   ComplaintType,
   ITComplaintData,
@@ -26,7 +17,6 @@ interface FormProps {
   onSubmit: () => void;
 }
 
-// Helper untuk memastikan yang dirender selalu string
 const renderString = (val: any, fallback: string) => {
   if (!val) return fallback;
   if (typeof val === "object") return val.name || val.nama || fallback;
@@ -44,134 +34,164 @@ export const ComplaintForm: React.FC<FormProps> = ({
   onSubmit,
 }) => {
   return (
-    <div className="space-y-6">
-      {/* Identitas User (Read-Only) */}
-      <div className="bg-slate-900/60 p-6 rounded-xl border border-cyan-800/50 shadow-[0_0_15px_rgba(8,112,184,0.1)] backdrop-blur-sm">
-        <h3 className="text-lg font-semibold text-cyan-400 mb-4 flex items-center">
-          <AlertCircle className="w-5 h-5 mr-2" /> Identitas Pelapor
+    <div className="space-y-8 font-mono">
+      {/* IDENTITAS PELAPOR - Boks Transparan bergaris keras */}
+      <div className="relative border border-slate-300 p-6 bg-white/50">
+        <h3 className="text-xs font-black text-slate-800 mb-4 tracking-widest uppercase flex items-center">
+          <span className="w-2 h-2 bg-slate-800 inline-block mr-2"></span>
+          ID_USER // TERAUTENTIKASI
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Box Nama Lengkap */}
-          <div className="bg-[#0b1329] border border-slate-700/60 rounded-lg px-4 py-3 flex items-center">
-            <User className="w-4 h-4 text-slate-500 mr-3" />
-            <div>
-              <p className="text-xs text-slate-500 mb-0.5">Nama Lengkap</p>
-              <p className="text-sm font-medium text-slate-200">
-                {renderString(userIdentity.nama, "Memuat...")}
-              </p>
-            </div>
-          </div>
 
-          {/* Box NIY */}
-          <div className="bg-[#0b1329] border border-slate-700/60 rounded-lg px-4 py-3 flex items-center">
-            <BadgeInfo className="w-4 h-4 text-slate-500 mr-3" />
-            <div>
-              <p className="text-xs text-slate-500 mb-0.5">NIY</p>
-              <p className="text-sm font-medium text-slate-200 font-mono">
-                {renderString(userIdentity.niy, "Memuat...")}
-              </p>
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div>
+            <p className="text-[10px] text-slate-500 mb-1 font-bold uppercase tracking-wider">
+              NAMA_LENGKAP
+            </p>
+            <p className="text-sm font-black text-slate-800 uppercase border-b-2 border-slate-800 pb-1">
+              {renderString(userIdentity.nama, "MEMUAT...")}
+            </p>
           </div>
-
-          {/* Box Divisi */}
-          <div className="bg-[#0b1329] border border-slate-700/60 rounded-lg px-4 py-3 flex items-center">
-            <Briefcase className="w-4 h-4 text-slate-500 mr-3" />
-            <div>
-              <p className="text-xs text-slate-500 mb-0.5">Divisi</p>
-              <p className="text-sm font-medium text-slate-200">
-                {renderString(userIdentity.divisi, "Memuat...")}
-              </p>
-            </div>
+          <div>
+            <p className="text-[10px] text-slate-500 mb-1 font-bold uppercase tracking-wider">
+              NIY_KODE
+            </p>
+            <p className="text-sm font-black text-slate-800 uppercase border-b-2 border-slate-800 pb-1">
+              {renderString(userIdentity.niy, "MEMUAT...")}
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] text-slate-500 mb-1 font-bold uppercase tracking-wider">
+              DIVISI_UNIT
+            </p>
+            <p className="text-sm font-black text-slate-800 uppercase border-b-2 border-slate-800 pb-1">
+              {renderString(userIdentity.divisi, "MEMUAT...")}
+            </p>
           </div>
         </div>
       </div>
 
-      <div className="flex space-x-2 border-b border-slate-800 mb-6">
-        <button
-          onClick={() => setFormType("IT")}
-          className={`flex items-center px-6 py-3 font-medium text-sm transition-all ${formType === "IT" ? "text-cyan-400 border-b-2 border-cyan-400 bg-cyan-950/30" : "text-slate-500 hover:text-slate-300"}`}
-        >
-          <Monitor className="w-4 h-4 mr-2" /> Keluhan IT
-        </button>
-        <button
-          onClick={() => setFormType("CCTV")}
-          className={`flex items-center px-6 py-3 font-medium text-sm transition-all ${formType === "CCTV" ? "text-cyan-400 border-b-2 border-cyan-400 bg-cyan-950/30" : "text-slate-500 hover:text-slate-300"}`}
-        >
-          <Video className="w-4 h-4 mr-2" /> Pengecekan CCTV
-        </button>
+      {/* RADIO SELECTION GAYA HUD */}
+      <div className="flex items-center space-x-6 pt-4 border-t border-slate-300">
+        <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">
+          PILIH_MODUL //
+        </span>
+
+        <label className="flex items-center space-x-2 cursor-pointer group">
+          <div
+            className={`w-4 h-4 border-2 flex items-center justify-center transition-colors ${formType === "IT" ? "border-slate-800" : "border-slate-400 group-hover:border-slate-600"}`}
+          >
+            {formType === "IT" && <div className="w-2 h-2 bg-slate-800"></div>}
+          </div>
+          <input
+            type="radio"
+            className="hidden"
+            checked={formType === "IT"}
+            onChange={() => setFormType("IT")}
+          />
+          <span
+            className={`text-sm font-bold tracking-wider ${formType === "IT" ? "text-slate-800" : "text-slate-500"}`}
+          >
+            KELUHAN_IT
+          </span>
+        </label>
+
+        <label className="flex items-center space-x-2 cursor-pointer group">
+          <div
+            className={`w-4 h-4 border-2 flex items-center justify-center transition-colors ${formType === "CCTV" ? "border-slate-800" : "border-slate-400 group-hover:border-slate-600"}`}
+          >
+            {formType === "CCTV" && (
+              <div className="w-2 h-2 bg-slate-800"></div>
+            )}
+          </div>
+          <input
+            type="radio"
+            className="hidden"
+            checked={formType === "CCTV"}
+            onChange={() => setFormType("CCTV")}
+          />
+          <span
+            className={`text-sm font-bold tracking-wider ${formType === "CCTV" ? "text-slate-800" : "text-slate-500"}`}
+          >
+            CEK_CCTV
+          </span>
+        </label>
       </div>
 
-      {/* Dynamic Form Area */}
-      <div className="bg-slate-900/40 p-6 rounded-xl border border-slate-800/80">
+      {/* FORM DINAMIS */}
+      <div className="relative pl-6">
+        {/* Garis vertikal dekoratif di sebelah kiri form */}
+        <div className="absolute left-0 top-0 w-1 h-full bg-slate-300"></div>
+        <div className="absolute left-0 top-1/4 w-1 h-1/4 bg-slate-800"></div>
+
         {formType === "IT" ? (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-slate-400 mb-1.5">
-                Kategori Masalah
+              <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">
+                KATEGORI_PERANGKAT <span className="text-red-500">*</span>
               </label>
               <select
                 value={itData.kategori}
                 onChange={(e) =>
                   setItData({ ...itData, kategori: e.target.value as any })
                 }
-                className="w-full bg-[#0b1329] border border-slate-700 rounded-lg px-4 py-2.5 text-slate-200 focus:outline-none focus:border-cyan-500"
+                className="w-full bg-white border-2 border-slate-300 p-3 text-slate-800 font-bold text-sm uppercase focus:outline-none focus:border-slate-800 rounded-none appearance-none cursor-pointer"
               >
                 <option value="" disabled>
-                  -- Pilih Perangkat --
+                  -- PILIH OPSI --
                 </option>
-                <option value="Printer">Printer / Scanner</option>
-                <option value="PC/Laptop">PC / Laptop</option>
-                <option value="Internet">Jaringan Internet / WiFi</option>
+                <option value="Printer">PRINTER / SCANNER</option>
+                <option value="PC/Laptop">PC / LAPTOP</option>
+                <option value="Internet">JARINGAN / WIFI</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-400 mb-1.5">
-                Lokasi Perangkat
+              <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">
+                LOKASI_UNIT <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
-                placeholder="Contoh: Ruang Meeting Lantai 2"
+                placeholder="CONTOH: RUANG MEETING LT.2"
                 value={itData.lokasi}
                 onChange={(e) =>
                   setItData({ ...itData, lokasi: e.target.value })
                 }
-                className="w-full bg-[#0b1329] border border-slate-700 rounded-lg px-4 py-2.5 text-slate-200 focus:outline-none focus:border-cyan-500"
+                className="w-full bg-transparent border-b-2 border-slate-300 p-3 text-slate-800 font-bold text-sm uppercase focus:outline-none focus:border-slate-800 rounded-none placeholder-slate-400"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-400 mb-1.5">
-                Detail Masalah
+              <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">
+                DESKRIPSI_MASALAH <span className="text-red-500">*</span>
               </label>
               <textarea
                 rows={4}
-                placeholder="Jelaskan kendala secara spesifik..."
+                placeholder="INPUT DATA DIAGNOSTIK..."
                 value={itData.masalah}
                 onChange={(e) =>
                   setItData({ ...itData, masalah: e.target.value })
                 }
-                className="w-full bg-[#0b1329] border border-slate-700 rounded-lg px-4 py-2.5 text-slate-200 focus:outline-none focus:border-cyan-500 resize-none"
+                className="w-full bg-white border-2 border-slate-300 p-3 text-slate-800 font-bold text-sm uppercase focus:outline-none focus:border-slate-800 rounded-none resize-none placeholder-slate-400"
               />
             </div>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-slate-400 mb-1.5">
-                Titik Lokasi CCTV
+              <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">
+                TITIK_LOKASI_KAMERA <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
-                placeholder="Contoh: Koridor Utama Gedung A, Area Parkir"
+                placeholder="CONTOH: KORIDOR UTAMA"
                 value={cctvData.titikLokasi}
                 onChange={(e) =>
                   setCctvData({ ...cctvData, titikLokasi: e.target.value })
                 }
-                className="w-full bg-[#0b1329] border border-slate-700 rounded-lg px-4 py-2.5 text-slate-200 focus:outline-none focus:border-cyan-500"
+                className="w-full bg-transparent border-b-2 border-slate-300 p-3 text-slate-800 font-bold text-sm uppercase focus:outline-none focus:border-slate-800 rounded-none placeholder-slate-400"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-400 mb-1.5">
-                Perkiraan Jam Kejadian
+              <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">
+                ESTIMASI_WAKTU <span className="text-red-500">*</span>
               </label>
               <input
                 type="time"
@@ -179,32 +199,47 @@ export const ComplaintForm: React.FC<FormProps> = ({
                 onChange={(e) =>
                   setCctvData({ ...cctvData, perkiraanJam: e.target.value })
                 }
-                className="w-full bg-[#0b1329] border border-slate-700 rounded-lg px-4 py-2.5 text-slate-200 focus:outline-none focus:border-cyan-500 [color-scheme:dark]"
+                className="w-full bg-white border-2 border-slate-300 p-3 text-slate-800 font-bold text-sm uppercase focus:outline-none focus:border-slate-800 rounded-none"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-400 mb-1.5">
-                Masalah / Alasan Pengecekan
+              <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">
+                ALASAN_INVESTIGASI <span className="text-red-500">*</span>
               </label>
               <textarea
                 rows={4}
-                placeholder="Contoh: Barang hilang, pengecekan absensi..."
+                placeholder="INPUT DATA INVESTIGASI..."
                 value={cctvData.masalah}
                 onChange={(e) =>
                   setCctvData({ ...cctvData, masalah: e.target.value })
                 }
-                className="w-full bg-[#0b1329] border border-slate-700 rounded-lg px-4 py-2.5 text-slate-200 focus:outline-none focus:border-cyan-500 resize-none"
+                className="w-full bg-white border-2 border-slate-300 p-3 text-slate-800 font-bold text-sm uppercase focus:outline-none focus:border-slate-800 rounded-none resize-none placeholder-slate-400"
               />
             </div>
           </div>
         )}
 
-        <button
-          onClick={onSubmit}
-          className="mt-6 w-full flex items-center justify-center bg-gradient-to-r from-cyan-600 to-blue-700 hover:from-cyan-500 hover:to-blue-600 text-white font-semibold py-3.5 px-6 rounded-lg shadow-[0_0_20px_rgba(8,112,184,0.3)] transition-all transform hover:scale-[1.01]"
-        >
-          <Send className="w-4 h-4 mr-2" /> Submit Pengajuan
-        </button>
+        {/* BUTTON SUBMIT GAYA MECHA */}
+        <div className="mt-10 flex items-center">
+          <button
+            onClick={onSubmit}
+            className="flex items-center justify-between bg-slate-800 text-white font-black py-4 px-8 w-64 hover:bg-slate-700 transition-colors uppercase tracking-[0.2em]"
+            style={{
+              clipPath:
+                "polygon(0 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%)",
+            }}
+          >
+            <span>EXECUTE</span>
+            <div className="w-0 h-0 border-t-6 border-b-6 border-l-8 border-transparent border-l-white"></div>
+          </button>
+
+          {/* Garis-garis diagonal di sebelah tombol meniru referensi */}
+          <div className="ml-4 flex space-x-1">
+            <div className="w-3 h-8 border-r-4 border-slate-400 transform skew-x-[-20deg]"></div>
+            <div className="w-3 h-8 border-r-4 border-slate-400 transform skew-x-[-20deg]"></div>
+            <div className="w-3 h-8 border-r-4 border-slate-400 transform skew-x-[-20deg]"></div>
+          </div>
+        </div>
       </div>
     </div>
   );
