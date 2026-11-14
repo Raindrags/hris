@@ -1,10 +1,6 @@
 import React from "react";
-import {
-  AdminComplaint,
-  ActionLog,
-  DashboardStats,
-  ComplaintStatus,
-} from "../../types/admin-helpdesk";
+import { ActionLog, AdminComplaint, DashboardStats } from "../type";
+
 
 // --- A. SUMMARY CARDS ---
 export const DashboardStatsPanel = ({ stats }: { stats: DashboardStats }) => (
